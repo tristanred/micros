@@ -1,33 +1,42 @@
 AS=i686-elf-as
+ASFLAGS=-g
 
 CC=i686-elf-gcc
-CFLAGS=-std=gnu99 -ffreestanding -O2 -Wall -Wextra
+CFLAGS=-std=gnu99 -ffreestanding -g -Og -Wall -Wextra
 
-LFLAGS=-ffreestanding -O2 -nostdlib -lgcc
+LFLAGS=-ffreestanding -Og -nostdlib -lgcc
+
+BUILDDIR=build/
+
+OUTDIR=out/
 
 all: build
 
-build: bootloader kernel linker verify
+prepare:
+	mkdir -p $(BUILDDIR)
+	mkdir -p $(OUTDIR)
 
-bootloader: boot.s
-	$(AS) boot.s -o boot.o
+build: prepare bootloader kernel linker verify
 
-kernel: kernel.c
-	$(CC) -c kernel.c -o kernel.o $(CFLAGS)
+bootloader: prepare boot.s
+	$(AS) boot.s -o $(BUILDDIR)boot.o $(ASFLAGS)
 
-linker: kernel bootloader linker.ld
-	$(CC) -T linker.ld -o myos.bin boot.o kernel.o $(LFLAGS)
+kernel: prepare kernel.c
+	$(CC) -c kernel.c -o $(BUILDDIR)kernel.o $(CFLAGS)
 
-verify: myos.bin
-	grub-file --is-x86-multiboot myos.bin
+linker: prepare kernel bootloader linker.ld
+	$(CC) -T linker.ld -o $(OUTDIR)myos.bin $(BUILDDIR)boot.o $(BUILDDIR)kernel.o $(LFLAGS)
+
+verify: $(OUTDIR)myos.bin
+	grub-file --is-x86-multiboot $(OUTDIR)myos.bin
 
 .PHONY: run
 run: build
-	qemu-system-i386 -kernel myos.bin -curses
+	qemu-system-i386 -kernel $(OUTDIR)myos.bin -curses
 
 .PHONY: clean
 clean:
-	rm -rf boot.o kernel.o myos.bin myos.iso isodir/
+	rm -rf $(OUTDIR) $(BUILDDIR) myos.iso isodir/
 
 makeiso: build
 	./makeiso.sh
