@@ -2,3 +2,4 @@ isodir
 *.o
 *.iso
 *.bin
+.ftpconfig

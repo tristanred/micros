@@ -1,13 +1,14 @@
+### COMPILERS ###
 AS=i686-elf-as
-ASFLAGS=-g
-
 CC=i686-elf-gcc
-CFLAGS=-std=gnu99 -ffreestanding -g -Og -Wall -Wextra
 
+### FLAGS ###
+ASFLAGS=-g
+CFLAGS=-std=gnu99 -ffreestanding -g -Og -Wall -Wextra
 LFLAGS=-ffreestanding -Og -nostdlib -lgcc
 
+### DIRECTORIES ###
 BUILDDIR=build/
-
 OUTDIR=out/
 
 all: build
@@ -33,6 +34,9 @@ verify: $(OUTDIR)myos.bin
 .PHONY: run
 run: build
 	qemu-system-i386 -kernel $(OUTDIR)myos.bin -curses
+
+debug: build
+	qemu-system-i386 -s -S -kernel $(OUTDIR)myos.bin -curses
 
 .PHONY: clean
 clean:
