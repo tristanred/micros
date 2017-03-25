@@ -13,9 +13,12 @@ void fbInitialize()
     {
         for(uint32_t j = 0; j < FBCOLS; j++)
         {
-            int offset = (i * FBROWS) + j;
+            int offset = (i * FBCOLS) + j;
             
-            fb[offset] = 0;
+            // BUG 24/03/2017 : Setting 2nd and 3rd parameter of this call
+            // will add an extra parameter to the kernel_main function and
+            // cause an early exit because a paremeter is not null. Weird.
+            fb[offset] = fbGetVGAEntry(' ', fbColorFront, fbColorBack);
         }
     }
 }
@@ -28,7 +31,7 @@ void fbMoveCursor(uint8_t col, uint8_t row)
 
 void fbPutChar(char c)
 {
-    int offset = (fbRowPos * FBROWS) + fbColPos;
+    int offset = (fbRowPos * FBCOLS) + fbColPos;
     
     fb[offset] = fbGetVGAEntry(c, fbColorFront, fbColorBack);
     

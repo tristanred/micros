@@ -66,5 +66,14 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
 
     fbInitialize();
     
-    fbPutString("asdadasd");
+    char fbFill[80 * 25];
+    
+    for(int i = 0; i < (80 * 25); i++)
+    {
+        fbFill[i] = 'a';
+    }
+    
+    fbFill[80 * 25] = '\0';
+    
+    fbPutString(fbFill);
 }
