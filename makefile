@@ -14,19 +14,20 @@ OUTDIR=out/
 all: build
 
 prepare:
-	mkdir -p $(BUILDDIR)
 	mkdir -p $(OUTDIR)
+	mkdir -p $(BUILDDIR)
 
 build: prepare bootloader kernel linker verify
 
 bootloader: prepare boot.s
 	$(AS) boot.s -o $(BUILDDIR)boot.o $(ASFLAGS)
 
-kernel: prepare kernel.c
-	$(CC) -c kernel.c -o $(BUILDDIR)kernel.o $(CFLAGS)
+kernel: prepare
+	$(CC) -c *.c $(CFLAGS)
+	mv *.o $(BUILDDIR)
 
 linker: prepare kernel bootloader linker.ld
-	$(CC) -T linker.ld -o $(OUTDIR)myos.bin $(BUILDDIR)boot.o $(BUILDDIR)kernel.o $(LFLAGS)
+	$(CC) -T linker.ld -o $(OUTDIR)myos.bin $(BUILDDIR)*.o $(LFLAGS)
 
 verify: $(OUTDIR)myos.bin
 	grub-file --is-x86-multiboot $(OUTDIR)myos.bin
