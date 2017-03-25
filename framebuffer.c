@@ -1,5 +1,6 @@
 #include "framebuffer.h"
 #include "string.h"
+#include "io_func.h"
 
 void fbInitialize()
 {
@@ -27,6 +28,13 @@ void fbMoveCursor(uint8_t col, uint8_t row)
 {
     fbColPos = col;
     fbRowPos = row;
+    
+    uint16_t pos = col + (row * FBCOLS);
+    
+    outb(FB_COMMAND_PORT, FB_HIGH_BYTE_COMMAND);
+    outb(FB_DATA_PORT,    ((pos >> 8) & 0x00FF));
+    outb(FB_COMMAND_PORT, FB_LOW_BYTE_COMMAND);
+    outb(FB_DATA_PORT,    pos & 0x00FF);
 }
 
 void fbPutChar(char c)

@@ -23,7 +23,7 @@ bootloader: prepare boot.s
 	$(AS) boot.s -o $(BUILDDIR)boot.o $(ASFLAGS)
 
 kernel: prepare
-	$(CC) -c *.c $(CFLAGS)
+	$(CC) -c *.c *.s $(CFLAGS)
 	mv *.o $(BUILDDIR)
 
 linker: prepare kernel bootloader linker.ld

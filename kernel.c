@@ -76,4 +76,7 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     fbFill[80 * 25] = '\0';
     
     fbPutString(fbFill);
+    
+    fbMoveCursor(5, 5);
+    fbPutChar(' ');
 }
