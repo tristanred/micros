@@ -29,7 +29,7 @@
 
 #include "bootmem.h"
 #include "framebuffer.h"
-
+#include "serial.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -79,4 +79,11 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     
     fbMoveCursor(5, 5);
     fbPutChar(' ');
+    
+    COMPTR comTest = seSetupCOMPort(SERIAL_COM1_BASE);
+    
+    seWriteByte(comTest, 'a');
+    seWriteByte(comTest, 'b');
+    seWriteByte(comTest, 'c');
+    seWriteByte(comTest, 'd');
 }

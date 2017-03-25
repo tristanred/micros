@@ -2,6 +2,14 @@
 #include "string.h"
 #include "io_func.h"
 
+/*
+ * Framebuffer data format
+ *
+ * Bit:     | 15 14 13 12 11 10 9 8 | 7 6 5 4 | 3 2 1 0 |
+ * Content: | ASCII                 | FG      | BG      |
+ */
+
+
 void fbInitialize()
 {
     fb = FBADDR;
