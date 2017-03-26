@@ -1,6 +1,7 @@
 #include "serial.h"
 
 #include "io_func.h"
+#include "string.h"
 
 void seConfigureBaudRate(uint16_t com, uint16_t speedDivisor)
 {
@@ -46,17 +47,17 @@ uint16_t seCheckBufferEmpty(uint16_t com)
     return inb(SERIAL_LINE_STATUS_PORT(com)) & 0x20;
 }
 
-COMPTR seSetupCOMPort(uint16_t com)
+COMPRT seSetupCOMPort(uint16_t com)
 {
     seConfigureBaudRate(com, 1);
     seConfigureLine(com);
     seConfigureBuffers(com);
     seConfigureModem(com);
     
-    return (COMPTR)com;
+    return (COMPRT)com;
 }
 
-void seWriteByte(COMPTR comPort, uint16_t data)
+void seWriteByte(COMPRT comPort, uint8_t data)
 {
     while(seCheckBufferEmpty((uint16_t)comPort) == 1)
     {
@@ -64,4 +65,21 @@ void seWriteByte(COMPTR comPort, uint16_t data)
     }
     
     outb((uint16_t)comPort, data);
+}
+
+void seWriteString(COMPRT comPort, const char* str)
+{
+    int length = strlen(str);
+    
+    for(int i = 0; i < length; i++)
+    {
+        seWriteByte(comPort, str[i]);
+    }
+}
+
+size_t seReadByte(COMPRT comPort, uint8_t* buffer, size_t bytesToRead)
+{
+    buffer[0] = 0;
+    
+    return 0;
 }

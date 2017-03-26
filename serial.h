@@ -4,10 +4,15 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef uint16_t COMPTR;
+typedef uint16_t COMPRT;
 
 // COM 1
 #define SERIAL_COM1_BASE                0x3F8
+#define SERIAL_COM2_BASE                0x2F8
+#define SERIAL_COM3_BASE                0x3E8
+#define SERIAL_COM4_BASE                0x2E8
+
+//
 #define SERIAL_DATA_PORT(base)          (base)
 #define SERIAL_FIFO_COMMAND_PORT(base)  (base + 2)
 #define SERIAL_LINE_COMMAND_PORT(base)  (base + 3)
@@ -25,8 +30,11 @@ void seConfigureModel(uint16_t com);
 
 uint16_t seCheckBufferEmpty(uint16_t com);
 
-COMPTR seSetupCOMPort(uint16_t com);
+COMPRT seSetupCOMPort(uint16_t com);
 
-void seWriteByte(COMPTR comPort, uint16_t data);
+void seWriteByte(COMPRT comPort, uint8_t data);
+void seWriteString(COMPRT comPort, const char* str);
+
+size_t seReadByte(COMPRT comPort, uint8_t* buffer, size_t bytesToRead);
 
 #endif
