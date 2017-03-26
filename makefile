@@ -4,7 +4,7 @@ CC=i686-elf-gcc
 
 ### FLAGS ###
 ASFLAGS=-g
-CFLAGS=-std=gnu99 -ffreestanding -g -Og -Wall -Wextra
+CFLAGS=-std=gnu99 -ffreestanding -g -Og -O0 -Wall -Wextra
 LFLAGS=-ffreestanding -Og -nostdlib -lgcc
 
 ### DIRECTORIES ###

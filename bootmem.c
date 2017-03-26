@@ -1,5 +1,7 @@
 #include "bootmem.h"
 
+#include "kernel_log.h"
+
 void btmConfigureMemoryRanges(multiboot_info_t* mbi)
 {
     /*
@@ -16,15 +18,24 @@ void btmConfigureMemoryRanges(multiboot_info_t* mbi)
      * the address pointer to go to the next element.
      */
 
+    kWriteLog("***** Multiboot Info listing *****");
     
     mtbInfo = mbi;
     
-    // int len = arg1->mmap_length;
-    // void* addr = arg1->mmap_addr;
+    kWriteLog("*** Memory Ranges ***");
+    //int len = mbi->mmap_length;
+    //void* addr = (void*)mbi->mmap_addr;
+    
+    // for(int i = 0; i < len; i++)
+    // {
+    //     kWriteLog("");
     //
-    // multiboot_memory_map_t* x = (multiboot_memory_map_t*)mbi;
+    //     multiboot_memory_map_t* x = (multiboot_memory_map_t*)mbi + i;
     //
-    // multiboot_memory_map_t* y = x + 1;
-    // multiboot_memory_map_t* z = x + 2;
-
+    //
+    //
+    // }
+    //
+    
+    
 }

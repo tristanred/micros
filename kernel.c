@@ -30,6 +30,8 @@
 #include "bootmem.h"
 #include "framebuffer.h"
 #include "serial.h"
+#include "kernel_log.h"
+#include "memory.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -44,6 +46,7 @@ void kErrorBeforeInit(uint32_t errno, char* msg)
     
 }
 
+
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
 #endif
@@ -56,6 +59,10 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
         return; // PANIC ??
     }
     
+    kSetupLog(SERIAL_COM1_BASE);
+    
+    kWriteLog("***** Kernel Init *****");
+    
     /*
      * The kernel_main method currently receives the Multiboot info structure
      * from the boot.s code, contained in register EBX with the help of
@@ -64,8 +71,24 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
      */
     btmConfigureMemoryRanges(arg1);
 
+    kmInitManager();
+
     fbInitialize();
     
+    char* arr = kmKernelAlloc(16);
+    arr[0] = 'a';
+    arr[1] = 'b';
+    arr[2] = 'c';
+    arr[3] = 'd';
+    arr[4] = 'e';
+    
+    char* arr2 = kmKernelAlloc(16);
+    arr2[0] = 'z';
+    arr2[1] = 'x';
+    arr2[2] = 'y';
+    arr2[3] = 'w';
+    
+    kWriteLog("Setting screen fill pattern.");
     char fbFill[80 * 25];
     
     for(int i = 0; i < (80 * 25); i++)
@@ -80,4 +103,5 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     fbMoveCursor(5, 5);
     fbPutChar(' ');
         
+    kWriteLog("Kernel End");
 }

@@ -79,7 +79,15 @@ void seWriteString(COMPRT comPort, const char* str)
 
 size_t seReadByte(COMPRT comPort, uint8_t* buffer, size_t bytesToRead)
 {
-    buffer[0] = 0;
+    size_t readBytes = 0;
     
-    return 0;
+    while(readBytes < bytesToRead)
+    {
+        buffer[readBytes] = inb(comPort);
+    }
+    
+    // TODO : Currently no way to detect end of communication by checking COM
+    // status.
+    
+    return readBytes;
 }

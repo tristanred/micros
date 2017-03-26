@@ -24,3 +24,9 @@ size_t strlen_s(const char* str, size_t strsz)
         
     return len;
 }
+
+char* GetNumberDigits(uint32_t number)
+{
+    number = number;
+    return 0;
+}
