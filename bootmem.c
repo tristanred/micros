@@ -31,11 +31,10 @@ void btmConfigureMemoryRanges(multiboot_info_t* mbi)
         kWriteLog_format1d("Memory range %d memory map.", i);
     
         multiboot_memory_map_t* x = (multiboot_memory_map_t*)mbi + i;
-    
-    
-    
+        
+        kWriteLog_format1d("Size=%d", x->size);
+        kWriteLog_format1d("Address=%d", x->addr);
+        kWriteLog_format1d("Length=%d", x->len);
+        kWriteLog_format1d("Type=%d", x->type);
     }
-    
-    
-    
 }

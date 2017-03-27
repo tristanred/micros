@@ -26,7 +26,7 @@ size_t strlen_s(const char* str, size_t strsz)
     return len;
 }
 
-int sprintf_1d(char* buffer, const char* format, int number)
+int sprintf_1d(char* buffer, const char* format, uint64_t number)
 {
     size_t formatSize = strlen(format);
     char* numberString = strdigits(number);
@@ -63,7 +63,7 @@ int sprintf_1d(char* buffer, const char* format, int number)
     
     buffer[stopPoint] = '\0';
     
-    return stopPoint;    
+    return stopPoint;
 }
 
 char* strcpy(char* dest, const char* src)
@@ -120,11 +120,17 @@ char* strrev(char* str)
     return reverse;
 }
 
-char* strdigits(uint32_t number)
+char* strdigits(uint64_t number)
 {
     char result[256];
     int digitCounter = 0;
     int divider = number;
+    
+    if(divider == 0)
+    {
+        result[0] = '0';
+        digitCounter++;
+    }
     
     while(divider != 0)
     {

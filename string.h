@@ -10,7 +10,7 @@ size_t strlen_s(const char* str, size_t strsz);
 
 // TEMP sprintf functions
 
-int sprintf_1d(char* buffer, const char* format, int number);
+int sprintf_1d(char* buffer, const char* format, uint64_t number);
 
 char *strcpy( char *dest, const char *src );
 char *strncpy( char *dest, const char *src, size_t count );
@@ -18,6 +18,6 @@ char *strncpy( char *dest, const char *src, size_t count );
 // My functions
 char* strrev(char* str);
 
-char* strdigits(uint32_t number);
+char* strdigits(uint64_t number);
 
 #endif

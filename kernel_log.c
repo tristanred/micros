@@ -16,7 +16,7 @@ void kWriteLog(const char* str)
     }
 }
 
-void kWriteLog_format1d(const char* str, uint32_t number)
+void kWriteLog_format1d(const char* str, uint64_t number)
 {
     char outBuf[256];
     
