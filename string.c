@@ -123,8 +123,8 @@ char* strrev(char* str)
 char* strdigits(uint64_t number)
 {
     char result[256];
-    int digitCounter = 0;
-    int divider = number;
+    uint64_t digitCounter = 0;
+    uint64_t divider = number;
     
     if(divider == 0)
     {
@@ -134,7 +134,7 @@ char* strdigits(uint64_t number)
     
     while(divider != 0)
     {
-        int remainder = divider % 10;
+        uint64_t remainder = divider % 10;
         
         char digitCode = remainder + 48;
         
@@ -142,6 +142,8 @@ char* strdigits(uint64_t number)
         
         result[digitCounter++] = digitCode;
     }
+    
+    result[digitCounter] = '\0';
     
     char* reversedResult = strrev(result);
     
