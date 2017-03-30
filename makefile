@@ -1,9 +1,10 @@
 ### COMPILERS ###
-AS=i686-elf-as
+# Note: Trying to use NASM instead of my custom gnu Assembler
+AS=nasm
 CC=i686-elf-gcc
 
 ### FLAGS ###
-ASFLAGS=-g
+ASFLAGS=-g -felf32
 CFLAGS=-std=gnu99 -ffreestanding -g -Og -O0 -Wall -Wextra
 LFLAGS=-ffreestanding -Og -nostdlib -lgcc
 
@@ -21,9 +22,10 @@ build: prepare bootloader kernel linker verify
 
 bootloader: prepare boot.s
 	$(AS) boot.s -o $(BUILDDIR)boot.o $(ASFLAGS)
+	#$(AS) boot.s -o $(BUILDDIR)boot.o $(ASFLAGS)
 
 kernel: prepare
-	$(CC) -c *.c *.s $(CFLAGS)
+	$(CC) -c *.c $(CFLAGS)
 	mv *.o $(BUILDDIR)
 
 linker: prepare kernel bootloader linker.ld
