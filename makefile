@@ -22,9 +22,10 @@ build: prepare bootloader kernel linker verify
 
 bootloader: prepare boot.s
 	$(AS) boot.s -o $(BUILDDIR)boot.o $(ASFLAGS)
-	#$(AS) boot.s -o $(BUILDDIR)boot.o $(ASFLAGS)
 
-kernel: prepare
+kernel: prepare gdt.s
+	$(AS) io_func.s -o $(BUILDDIR)io_funcs.o $(ASFLAGS)
+	$(AS) gdt.s -o $(BUILDDIR)gdt.o $(ASFLAGS)
 	$(CC) -c *.c $(CFLAGS)
 	mv *.o $(BUILDDIR)
 
