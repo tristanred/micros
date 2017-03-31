@@ -70,6 +70,7 @@ _start:
 	; aligned above and we've since pushed a multiple of 16 bytes to the
 	; stack since (pushed 0 bytes so far) and the alignment is thus
 	; preserved and the call is well defined.
+    push ebx
 	extern kernel_main
 	call kernel_main
  
