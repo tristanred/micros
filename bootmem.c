@@ -2,6 +2,7 @@
 
 #include "kernel_log.h"
 
+
 void btmConfigureMemoryRanges(multiboot_info_t* mbi)
 {
     /*
@@ -17,16 +18,18 @@ void btmConfigureMemoryRanges(multiboot_info_t* mbi)
      * Right now for example we are checking the first 3 ranges by incrementing
      * the address pointer to go to the next element.
      */
-
     kWriteLog("***** Multiboot Info listing *****");
     
     mtbInfo = mbi;
     
     kWriteLog("*** Memory Ranges ***");
-    int len = mbi->mmap_length;
+    multiboot_uint32_t len = mbi->mmap_length;
     void* addr = (void*)mbi->mmap_addr;
     
-    for(size_t i = 0; i < len; i++)
+    kWriteLog_format1d("Multiboot Info length %d.", len);
+    kWriteLog_format1d("Multiboot address %d.", (uint32_t)addr);
+    
+    for(multiboot_uint32_t i = 0; i < len; i++)
     {
         kWriteLog_format1d("Memory range %d memory map.", i);
     
@@ -36,5 +39,12 @@ void btmConfigureMemoryRanges(multiboot_info_t* mbi)
         kWriteLog_format1d("Address=%d", x->addr);
         kWriteLog_format1d("Length=%d", x->len);
         kWriteLog_format1d("Type=%d", x->type);
+        
+        if(x->size == 0)
+        {
+            kWriteLog("Found entry with size 0. Presume end of memory map.");
+            
+            return;
+        }
     }
 }

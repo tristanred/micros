@@ -12,4 +12,5 @@ loadGdt:
     jmp 0x08:fload
 
 fload:
-    ret.asm
+    ret                 ; was ret.asm
+   

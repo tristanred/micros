@@ -32,6 +32,7 @@
 #include "serial.h"
 #include "kernel_log.h"
 #include "memory.h"
+#include "gdt.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -73,6 +74,8 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
      */
     btmConfigureMemoryRanges(arg1);
 
+    setupGdt();
+    
     kmInitManager();
 
     fbInitialize();
