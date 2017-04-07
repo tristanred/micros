@@ -26,6 +26,8 @@ bootloader: prepare boot.s
 kernel: prepare agdt.asm
 	$(AS) io_func.s -o $(BUILDDIR)io_funcs.o $(ASFLAGS)
 	$(AS) agdt.asm -o $(BUILDDIR)agdt.o $(ASFLAGS)
+	$(AS) aidt.asm -o $(BUILDDIR)aidt.o $(ASFLAGS)
+	$(AS) interrupts.asm -o $(BUILDDIR)interrupts.o $(ASFLAGS)
 	$(CC) -c *.c $(CFLAGS)
 	mv *.o $(BUILDDIR)
 

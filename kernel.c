@@ -53,12 +53,12 @@ extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
 {
-    if(arg2 != 0 || arg3 != 0)
-    {
-        kErrorBeforeInit(99, "kernel_main was passed unexpected parameters.");
-        
-        return; // PANIC ??
-    }
+    // if(arg2 != 0 || arg3 != 0)
+    // {
+    //     kErrorBeforeInit(99, "kernel_main was passed unexpected parameters.");
+    //
+    //     return; // PANIC ??
+    // }
     
     kSetupLog(SERIAL_COM1_BASE);
     
@@ -75,6 +75,10 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     btmConfigureMemoryRanges(arg1);
 
     setupGdt();
+    setupIdt();
+    
+    // asm volatile ("int $0x3");
+    // asm volatile ("int $0x4");
     
     kmInitManager();
 
@@ -109,5 +113,8 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     fbMoveCursor(5, 5);
     fbPutChar(' ');
         
+    asm volatile ("int $0x3");
+    asm volatile ("int $0x4");
+    
     kWriteLog("Kernel End");
 }
