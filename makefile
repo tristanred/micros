@@ -39,10 +39,10 @@ verify: $(OUTDIR)myos.bin
 
 .PHONY: run
 run: build
-	qemu-system-i386 -serial file:$(OUTDIR)serial.log -m 10M -kernel $(OUTDIR)myos.bin -curses
+	qemu-system-i386 -serial file:$(OUTDIR)serial.log -kernel $(OUTDIR)myos.bin -curses
 
 debug: build
-	qemu-system-i386 -serial file:$(OUTDIR)serial.log -m 10M -s -S -kernel $(OUTDIR)myos.bin -curses
+	qemu-system-i386 -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
 
 .PHONY: clean
 clean:

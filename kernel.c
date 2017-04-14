@@ -33,6 +33,8 @@
 #include "kernel_log.h"
 #include "memory.h"
 #include "gdt.h"
+#include "idt.h"
+#include "timer.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -84,6 +86,9 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
 
     fbInitialize();
     
+    asm volatile("sti");
+    init_timer(50);
+    
     char* arr = kmKernelAlloc(sizeof(char) * 16);
     arr[0] = 'a';
     arr[1] = 'b';
@@ -96,25 +101,17 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     arr2[1] = 'x';
     arr2[2] = 'y';
     arr2[3] = 'w';
-    
-    kWriteLog("Setting screen fill pattern.");
-    
-    char fbFill[80 * 25];
-    
-    for(int i = 0; i < (80 * 25); i++)
-    {
-        fbFill[i] = 'a';
-    }
-    
-    fbFill[80 * 25] = '\0';
-    
-    fbPutString(fbFill);
-    
-    fbMoveCursor(5, 5);
-    fbPutChar(' ');
+        
+    fbMoveCursor(0, 0);
         
     asm volatile ("int $0x3");
     asm volatile ("int $0x4");
+    
+    uint32_t cycles = 0;
+    while(1)
+    {
+        cycles++;
+    }
     
     kWriteLog("Kernel End");
 }

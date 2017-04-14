@@ -1,8 +1,11 @@
 #include "idt.h"
 
+#include "io_func.h"
+
 #include "kernel_log.h"
 
 idtEntry idtEntries[256];
+isr_t interrupt_handlers[256];
 
  /*
   * Flags byte
@@ -64,6 +67,36 @@ void setupIdt()
     idtSetEntry(30,(uint32_t)isr30, 0x08, 0x8E);
     idtSetEntry(31,(uint32_t)isr31, 0x08, 0x8E);
     
+    // Configure hardware IRQ's
+    outb(0x20, 0x11);
+    outb(0xA0, 0x11);
+    outb(0x21, 0x20);
+    outb(0xA1, 0x28);
+    outb(0x21, 0x04);
+    outb(0xA1, 0x02);
+    outb(0x21, 0x01);
+    outb(0xA1, 0x01);
+    outb(0x21, 0x0);
+    outb(0xA1, 0x0);
+    
+    idtSetEntry(32, (uint32_t)irq0, 0x08, 0x8E);
+    idtSetEntry(33, (uint32_t)irq1, 0x08, 0x8E);
+    idtSetEntry(34, (uint32_t)irq2, 0x08, 0x8E);
+    idtSetEntry(35, (uint32_t)irq3, 0x08, 0x8E);
+    idtSetEntry(36, (uint32_t)irq4, 0x08, 0x8E);
+    idtSetEntry(37, (uint32_t)irq5, 0x08, 0x8E);
+    idtSetEntry(38, (uint32_t)irq6, 0x08, 0x8E);
+    idtSetEntry(39, (uint32_t)irq7, 0x08, 0x8E);
+    idtSetEntry(40, (uint32_t)irq8, 0x08, 0x8E);
+    idtSetEntry(41, (uint32_t)irq9, 0x08, 0x8E);
+    idtSetEntry(42, (uint32_t)irq10, 0x08, 0x8E);
+    idtSetEntry(43, (uint32_t)irq11, 0x08, 0x8E);
+    idtSetEntry(44, (uint32_t)irq12, 0x08, 0x8E);
+    idtSetEntry(45, (uint32_t)irq13, 0x08, 0x8E);
+    idtSetEntry(46, (uint32_t)irq14, 0x08, 0x8E);
+    idtSetEntry(47, (uint32_t)irq15, 0x08, 0x8E);
+    
+    
     loadIdt((uint32_t)&idtPointer);
 }
 
@@ -73,4 +106,30 @@ void isr_handler(registers_t regs)
    kWriteLog("recieved interrupt: ");
    kWriteLog_format1d("%d", (uint32_t)regs.int_no);
    kWriteLog('\n');
+}
+
+// This gets called from our ASM interrupt handler stub.
+void irq_handler(registers_t regs)
+{
+   // Send an EOI (end of interrupt) signal to the PICs.
+   // If this interrupt involved the slave.
+   if (regs.int_no >= 40)
+   {
+       // Send reset signal to slave.
+       outb(0xA0, 0x20);
+   }
+   // Send reset signal to master. (As well as slave, if necessary).
+   outb(0x20, 0x20);
+
+   if (interrupt_handlers[regs.int_no] != 0)
+   {
+       isr_t handler = interrupt_handlers[regs.int_no];
+       handler(regs);
+   }
+}
+
+
+void register_interrupt_handler(uint8_t n, isr_t handler)
+{
+  interrupt_handlers[n] = handler;
 }
