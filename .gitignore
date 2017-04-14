@@ -3,3 +3,4 @@ isodir
 *.iso
 *.bin
 .ftpconfig
+.tags*
