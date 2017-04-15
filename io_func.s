@@ -1,9 +1,6 @@
 global outb
 global inb
 
-extern gdtPointer
-global loadGdt
-
 ; outb - Send a byte to an I/O port
 ; stack: [esp + 8] Byte data
 ;        [esp + 4] Target I/O port.
