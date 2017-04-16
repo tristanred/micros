@@ -3,6 +3,7 @@
 #include "kernel_log.h"
 #include "io_func.h"
 #include "framebuffer.h"
+#include "keyboard.h"
 
 uint32_t tick = 0;
 
@@ -16,24 +17,12 @@ static void timer_callback(registers_t regs)
    //fbPutChar('c');
 }
 
-static void keyboard_callback(registers_t regs)
-{
-   fbPutChar('c');
-
-   // Reading from keyboard IO port 0x60
-   // Result is scancode of the key
-   // qemu keyboard seems to be scancodes set 1 but set 2 is apparently the
-   // more popular.
-   // See : http://www.osdever.net/papers/view/ibm-pc-keyboard-information-for-software-developers
-   unsigned char res = inb(0x60);   
-}
-
 void init_timer(uint32_t frequency)
 {
    // Firstly, register our timer callback.
    register_interrupt_handler(IRQ0, &timer_callback);
    
-   register_interrupt_handler(IRQ1, &keyboard_callback);
+   register_interrupt_handler(IRQ1, &keyboard_interrupt_handler);
 
    // The value we send to the PIT is the value to divide it's input clock
    // (1193180 Hz) by, to get our required frequency. Important to note is
