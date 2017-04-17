@@ -35,6 +35,7 @@
 #include "gdt.h"
 #include "idt.h"
 #include "timer.h"
+#include "keyboard.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -89,6 +90,8 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     asm volatile("sti");
     init_timer(50);
     
+    SetupKeyboardDriver(SCANCODE_SET1);
+    
     char* arr = kmKernelAlloc(sizeof(char) * 16);
     arr[0] = 'a';
     arr[1] = 'b';
@@ -110,6 +113,20 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     uint32_t cycles = 0;
     while(1)
     {
+        keyboard_state_t kb;
+        GetKeyboardState(&kb);
+        
+        if(kb.hasInput != 0)
+        {
+            if(IsPrintableCharacter(kb.currentKeycode) == 1)
+            {
+                unsigned char input = GetAscii(kb.currentKeycode);
+                fbPutChar(input);
+            }
+        }
+        
+        ResetKeyboardState();
+        
         cycles++;
     }
     
