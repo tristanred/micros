@@ -9,12 +9,9 @@ uint32_t tick = 0;
 
 static void timer_callback(registers_t regs)
 {
-   tick++;
-   //kWriteLog("Tick: ");
-   //kWriteLog_format1d("%d", tick);
-   //kWriteLog("\n");
-   
-   //fbPutChar('c');
+    (void)regs;
+
+    tick++;
 }
 
 void init_timer(uint32_t frequency)
