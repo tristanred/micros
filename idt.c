@@ -105,7 +105,7 @@ void isr_handler(registers_t regs)
 {
    kWriteLog("recieved interrupt: ");
    kWriteLog_format1d("%d", (uint32_t)regs.int_no);
-   kWriteLog('\n');
+   kWriteLog("\n");
 }
 
 // This gets called from our ASM interrupt handler stub.
