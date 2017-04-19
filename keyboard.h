@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "idt.h"
+#include "common.h"
 
 /*
  * OS Keycodes list. This list is in the same order as the scancode set 1 so
@@ -135,27 +136,37 @@ uint16_t* current_scancode_set;
 // ascii map without any key modifiers
 uint8_t keycode_ascii_map[104];
 
-typedef int keycode;
+// State of the keys, 0 for released and 1 for pressed
+uint8_t key_states[104];
+
+typedef uint16_t keycode;
 
 struct keyboard_state
 {
-    int hasInput;
-    
     uint8_t currentScancode;
     uint16_t currentKeycode;
     
+    uint8_t* keyStates;
+    
+    /*
+     * | 7 6 5 4 |  |   3    |   2    |   1   |   0   |
+     *   Unused        NUM     CapsLk   Shift   CTRL
+     */
+    uint8_t flags;
 } current_keyboard_state;
 typedef struct keyboard_state keyboard_state_t;
 
 // Driver internal methods
 void keyboard_interrupt_handler(registers_t regs);
 
+void SetFlagsFromKey(keyboard_state_t* state, BOOL keyPressed);
+
 // Public methods
 void GetKeyboardState(keyboard_state_t* kb);
-void ResetKeyboardState();
 unsigned char GetAscii(keycode k);
-
+BOOL IsKeyDown(keycode k);
 int IsPrintableCharacter(keycode k);
+BOOL IsControlCharacter(keycode code);
 
  // Kernel methods
 void SetupKeyboardDriver(int keyboard_scancodes);

@@ -4,6 +4,8 @@
 
 void keyboard_interrupt_handler(registers_t regs)
 {
+    (void)regs;
+    
     // Reading from keyboard IO port 0x60
     // Result is scancode of the key
     // qemu keyboard seems to be scancodes set 1 but set 2 is apparently the
@@ -12,8 +14,9 @@ void keyboard_interrupt_handler(registers_t regs)
     unsigned char res = inb(0x60);
 
     current_keyboard_state.currentScancode = res;
-    current_keyboard_state.hasInput = 1;
     
+    // TODO : To avoid doing a table scan each time, the keycodes and scancode
+    // should be ordered by value in the list so scancode == keycode index
     for(size_t i = 0; i < scancode_sets_keys; i++)
     {
         if(current_scancode_set[i] == res)
@@ -22,7 +25,88 @@ void keyboard_interrupt_handler(registers_t regs)
         }
     }
     
-    //fbPutChar('c');
+    BOOL keyDown = res >= 0x80;
+    if(!keyDown)
+    {
+        //current_keyboard_state.inputType = KEY_RELEASE;
+        key_states[current_keyboard_state.currentKeycode] = 0;
+    }
+    else
+    {
+        //current_keyboard_state.inputType = KEY_DOWN;
+        key_states[current_keyboard_state.currentKeycode] = 1;
+    }
+    
+    if(IsControlCharacter(current_keyboard_state.currentKeycode))
+    {
+        SetFlagsFromKey(&current_keyboard_state, keyDown);
+    }
+        
+    Debugger();
+}
+
+BOOL IsControlCharacter(keycode code)
+{
+    if( (code >= CAPS && code <= RIGHT_CTRL) )
+        return TRUE;
+        
+    return FALSE;
+}
+
+BOOL IsKeyDown(keycode k)
+{
+    return key_states[k] == 1;
+}
+
+void SetFlagsFromKey(keyboard_state_t* state, BOOL keyPressed)
+{
+   if(state->currentKeycode == LEFT_SHIFT || state->currentKeycode == RIGHT_SHIFT)
+   {
+       if(keyPressed)
+       {
+           state->flags |= 0x2;
+       }
+       else
+       {
+           state->flags &= ~(1 << 1);
+       }
+   }
+
+   if(state->currentKeycode == LEFT_CTRL || state->currentKeycode == RIGHT_CTRL)
+   {
+       if(keyPressed)
+       {
+           state->flags |= 0x1;
+       }
+       else
+       {
+           state->flags &= ~(1 << 0);
+       }
+   }
+
+   if(state->currentKeycode == CAPS)
+   {
+       if(keyPressed)
+       {
+           state->flags |= 0x4;
+       }
+       else
+       {
+           state->flags &= ~(1 << 2);
+       }
+   }
+
+   if(state->currentKeycode == NUM_LOCK)
+   {
+       if(keyPressed)
+       {
+           state->flags |= 0x8;
+       }
+       else
+       {
+           state->flags &= ~(1 << 3);
+       }
+   }
 }
 
 void GetKeyboardState(keyboard_state_t* kb)
@@ -31,15 +115,7 @@ void GetKeyboardState(keyboard_state_t* kb)
     {
         kb->currentScancode = current_keyboard_state.currentScancode;
         kb->currentKeycode = current_keyboard_state.currentKeycode;
-        kb->hasInput = current_keyboard_state.hasInput;
     }
-}
-
-void ResetKeyboardState()
-{
-    current_keyboard_state.hasInput = 0;
-    current_keyboard_state.currentKeycode = 0;
-    current_keyboard_state.currentScancode = 0;
 }
 
 unsigned char GetAscii(keycode k)
@@ -49,7 +125,7 @@ unsigned char GetAscii(keycode k)
 
 int IsPrintableCharacter(keycode k)
 {
-    if(k >= 0 && k <= 36)
+    if(k <= 36)
     {
         return 1;
     }
@@ -60,6 +136,8 @@ int IsPrintableCharacter(keycode k)
 void SetupKeyboardDriver(int keyboard_scancodes)
 {
     scancode_sets_keys = 104;
+    
+    current_keyboard_state.keyStates = key_states;
     
     switch(keyboard_scancodes)
     {
@@ -187,7 +265,7 @@ void InitializeScancodeSetOne()
     scancode_set1_values[102] = 0x34;
     scancode_set1_values[103] = 0x35;
     
-    current_scancode_set = &scancode_set1_values;
+    current_scancode_set = scancode_set1_values;
     
     keycode_ascii_map[0] = 0x61;
     keycode_ascii_map[1] = 0x62;

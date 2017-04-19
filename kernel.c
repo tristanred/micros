@@ -36,6 +36,7 @@
 #include "idt.h"
 #include "timer.h"
 #include "keyboard.h"
+#include "common.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -54,7 +55,7 @@ void kErrorBeforeInit(uint32_t errno, char* msg)
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
 #endif
-void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
+void kernel_main(multiboot_info_t* arg1)
 {
     // if(arg2 != 0 || arg3 != 0)
     // {
@@ -63,8 +64,9 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     //     return; // PANIC ??
     // }
     
-    kSetupLog(SERIAL_COM1_BASE);
     
+    kSetupLog(SERIAL_COM1_BASE);
+
     kWriteLog("***** Kernel Init *****");
     
     kWriteLog_format1d("WASD %d egugugug", 1234);
@@ -111,22 +113,24 @@ void kernel_main(multiboot_info_t* arg1, uint8_t* arg2, uint8_t* arg3)
     asm volatile ("int $0x4");
     
     uint32_t cycles = 0;
+    
+    keycode lastKeyCode = -1;
     while(1)
     {
         keyboard_state_t kb;
         GetKeyboardState(&kb);
         
-        if(kb.hasInput != 0)
+        Debugger();
+        
+        if(IsPrintableCharacter(kb.currentKeycode) && IsKeyDown(kb.currentKeycode) && kb.currentKeycode != lastKeyCode)
         {
-            if(IsPrintableCharacter(kb.currentKeycode) == 1)
-            {
-                unsigned char input = GetAscii(kb.currentKeycode);
-                fbPutChar(input);
-            }
+            unsigned char as = GetAscii(kb.currentKeycode);
+            
+            fbPutChar(as);
+            
+            lastKeyCode = kb.currentKeycode;
         }
-        
-        ResetKeyboardState();
-        
+
         cycles++;
     }
     
