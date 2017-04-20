@@ -37,6 +37,7 @@
 #include "timer.h"
 #include "keyboard.h"
 #include "common.h"
+#include "string.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -87,10 +88,35 @@ void kernel_main(multiboot_info_t* arg1)
     
     kmInitManager();
 
+    Debugger();
+
+    char* test = kmKernelAlloc(127);
+    test[0] = 'a';
+    test[1] = 'b';
+    test[2] = 'c';
+    test[3] = 'd';
+    test[4] = 'e';
+    
+    size_t countBeforeFree= kmCountFreeSmallPoolUnits();
+    
+    kmKernelFree(test);
+    
+    size_t countAfterFree = kmCountFreeSmallPoolUnits();
+    
+    
+    char* test2 = kmKernelAlloc(300);
+    test2[0] = 'a';
+    test2[1] = 'b';
+    test2[2] = 'c';
+    test2[3] = 'd';
+    test2[4] = 'e';
+
+    kmKernelFree(test2);
+
     fbInitialize();
     
     asm volatile("sti");
-    init_timer(50);
+    init_timer(1000);
     
     SetupKeyboardDriver(SCANCODE_SET1);
     
@@ -114,22 +140,29 @@ void kernel_main(multiboot_info_t* arg1)
     
     uint32_t cycles = 0;
     
-    keycode lastKeyCode = -1;
     while(1)
     {
-        keyboard_state_t kb;
-        GetKeyboardState(&kb);
+        fbMoveCursor(0, 0);
         
-        Debugger();
+        char msstr[255];
         
-        if(IsPrintableCharacter(kb.currentKeycode) && IsKeyDown(kb.currentKeycode) && kb.currentKeycode != lastKeyCode)
-        {
-            unsigned char as = GetAscii(kb.currentKeycode);
-            
-            fbPutChar(as);
-            
-            lastKeyCode = kb.currentKeycode;
-        }
+        sprintf_1d(msstr, "%d", mscounter);
+        
+        fbPutString(msstr);
+        
+        // keyboard_state_t kb;
+        // GetKeyboardState(&kb);
+        //
+        // Debugger();
+        //
+        // if(IsPrintableCharacter(kb.currentKeycode) && IsKeyDown(kb.currentKeycode) && kb.currentKeycode != lastKeyCode)
+        // {
+        //     unsigned char as = GetAscii(kb.currentKeycode);
+        //
+        //     fbPutChar(as);
+        //
+        //     lastKeyCode = kb.currentKeycode;
+        // }
 
         cycles++;
     }

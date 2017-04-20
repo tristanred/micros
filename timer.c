@@ -12,6 +12,12 @@ static void timer_callback(registers_t regs)
     (void)regs;
 
     tick++;
+    
+    if(tick >= timer_div / 1000)
+    {
+        mscounter++;
+        tick = 0;
+    }
 }
 
 void init_timer(uint32_t frequency)
@@ -21,11 +27,14 @@ void init_timer(uint32_t frequency)
    
    register_interrupt_handler(IRQ1, &keyboard_interrupt_handler);
 
+   timer_freq = frequency;
+
    // The value we send to the PIT is the value to divide it's input clock
    // (1193180 Hz) by, to get our required frequency. Important to note is
    // that the divisor must be small enough to fit into 16-bits.
    uint32_t divisor = 1193180 / frequency;
-
+   timer_div = divisor;
+   
    // Send the command byte.
    outb(0x43, 0x36);
 
