@@ -4,7 +4,35 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "common.h"
+
 uint32_t kmNextAvailableMemoryAddress;
+
+/* POOL ALLOCATOR
+ *
+ *
+ */
+struct AllocationUnit
+{
+    uint32_t size;
+    uint32_t p;
+    BOOL isFree;
+};
+typedef struct AllocationUnit alloc_unit_t;
+
+#define small_pool_unit 256
+#define page_pool_unit 1024 * 4
+#define large_pool_unit 1024 * 32
+
+#define small_pool_size 10 * 1024
+#define page_pool_size 610
+#define large_pool_size 160
+
+uint32_t basePoolsAddress;
+
+alloc_unit_t smallPool[small_pool_size];
+alloc_unit_t pagePool[page_pool_size];
+alloc_unit_t largePool[large_pool_size];
 
 void kmInitManager();
 
@@ -17,5 +45,12 @@ void kmKernelFree(void* ptr);
 void kmKernelCopy(void* ptrFrom, void* ptrTo);
 
 void kmKernelZero(void* ptrFrom);
+
+
+// Pool management method
+
+size_t kmCountFreeSmallPoolUnits();
+size_t kmCountFreePagePoolUnits();
+size_t kmCountFreeLargePoolUnits();
 
 #endif

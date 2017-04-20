@@ -150,5 +150,7 @@ char* strdigits(uint64_t number)
     char* outResult = kmKernelAlloc(sizeof(char) * digitCounter + 1);
     strcpy(outResult, reversedResult);
     
+    kmKernelFree(reversedResult);
+    
     return outResult;
 }
