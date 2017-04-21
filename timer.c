@@ -46,3 +46,12 @@ void init_timer(uint32_t frequency)
    outb(0x40, l);
    outb(0x40, h);
 }
+
+void sleep(uint32_t t)
+{
+    uint32_t target = mscounter + t;
+    
+    while(mscounter <= target)
+    {
+    }
+}

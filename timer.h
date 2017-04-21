@@ -11,4 +11,6 @@ uint32_t mscounter;
 
 void init_timer(uint32_t frequency);
 
+void sleep(uint32_t t);
+
 #endif
