@@ -38,6 +38,7 @@
 #include "keyboard.h"
 #include "common.h"
 #include "string.h"
+#include "vector.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -88,51 +89,26 @@ void kernel_main(multiboot_info_t* arg1)
     
     kmInitManager();
 
-    Debugger();
-
-    char* test = kmKernelAlloc(127);
-    test[0] = 'a';
-    test[1] = 'b';
-    test[2] = 'c';
-    test[3] = 'd';
-    test[4] = 'e';
-    
-    size_t countBeforeFree= kmCountFreeSmallPoolUnits();
-    
-    kmKernelFree(test);
-    
-    size_t countAfterFree = kmCountFreeSmallPoolUnits();
-    
-    
-    char* test2 = kmKernelAlloc(300);
-    test2[0] = 'a';
-    test2[1] = 'b';
-    test2[2] = 'c';
-    test2[3] = 'd';
-    test2[4] = 'e';
-
-    kmKernelFree(test2);
 
     fbInitialize();
     
     asm volatile("sti");
     init_timer(1000);
     
+    Debugger();
+
+    vector* vec = vector_create();
+    
+    vector_add(vec, 1);
+    vector_add(vec, 2);
+    vector_add(vec, 3);
+    vector_add(vec, 4);
+    vector_add(vec, 5);
+    
+    void* x = vector_get_at(vec, 10);
+    
     SetupKeyboardDriver(SCANCODE_SET1);
     
-    char* arr = kmKernelAlloc(sizeof(char) * 16);
-    arr[0] = 'a';
-    arr[1] = 'b';
-    arr[2] = 'c';
-    arr[3] = 'd';
-    arr[4] = 'e';
-    
-    char* arr2 = kmKernelAlloc(sizeof(char) * 16);
-    arr2[0] = 'z';
-    arr2[1] = 'x';
-    arr2[2] = 'y';
-    arr2[3] = 'w';
-        
     fbMoveCursor(0, 0);
         
     asm volatile ("int $0x3");
@@ -150,20 +126,6 @@ void kernel_main(multiboot_info_t* arg1)
         
         fbPutString(msstr);
         
-        // keyboard_state_t kb;
-        // GetKeyboardState(&kb);
-        //
-        // Debugger();
-        //
-        // if(IsPrintableCharacter(kb.currentKeycode) && IsKeyDown(kb.currentKeycode) && kb.currentKeycode != lastKeyCode)
-        // {
-        //     unsigned char as = GetAscii(kb.currentKeycode);
-        //
-        //     fbPutChar(as);
-        //
-        //     lastKeyCode = kb.currentKeycode;
-        // }
-
         cycles++;
     }
     
