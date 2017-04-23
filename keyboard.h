@@ -168,7 +168,7 @@ BOOL IsKeyDown(keycode k);
 int IsPrintableCharacter(keycode k);
 BOOL IsControlCharacter(keycode code);
 
- // Kernel methods
+// Kernel methods
 void SetupKeyboardDriver(int keyboard_scancodes);
  
 void InitializeScancodeSetOne();

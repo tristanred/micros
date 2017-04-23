@@ -15,7 +15,7 @@ uint32_t kmNextAvailableMemoryAddress;
 struct AllocationUnit
 {
     uint32_t size;
-    uint32_t p;
+    void* p;
     BOOL isFree;
 };
 typedef struct AllocationUnit alloc_unit_t;

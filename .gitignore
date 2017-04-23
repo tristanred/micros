@@ -4,3 +4,4 @@ isodir
 *.bin
 .ftpconfig
 .tags*
+.vscode

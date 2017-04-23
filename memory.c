@@ -132,7 +132,7 @@ void kmKernelFree(void* ptr)
         }
     }
     
-    kWriteLog_format1d("Could not find allocation for %d", ptr);
+    kWriteLog_format1d("Could not find allocation for %d", (uint32_t)ptr);
 }
 
 void kmKernelCopy(void* ptrFrom, void* ptrTo)
