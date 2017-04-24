@@ -32,7 +32,7 @@ void vector_add(vector* vec, void* element)
         vector_resize(vec, vec->size * 2);
     }
     
-    vec->dataElements[vec->count] = element;
+    vec->dataElements[vec->count] = (uint32_t)element;
     vec->count++;
 }
 
@@ -41,14 +41,14 @@ void vector_insert(vector* vec, size_t index, void* element)
     if(vec == NULL)
         return;
 
-    if(vec->count + 1 > vec->size == FALSE)
+    if((vec->count + 1 > vec->size) == FALSE)
     {
         vector_resize(vec, vec->size*2);
     }
     
     vector_shift_right(vec, index);
     
-    vec->dataElements[index] = element;
+    vec->dataElements[index] = (uint32_t)element;
 }
 
 void vector_remove(vector* vec, void* element)
@@ -58,7 +58,7 @@ void vector_remove(vector* vec, void* element)
     
     for(size_t i = 0; i < vec->count; i++)
     {
-        if(vec->dataElements[i] == element)
+        if(vec->dataElements[i] == (uint32_t)element)
         {
             vector_shift_left(vec, i + 1);
             vec->count--;
@@ -88,7 +88,7 @@ void* vector_get_at(vector* vec, size_t index)
     if(index >= vec->size)
         return NULL;
     
-    return vec->dataElements[index];
+    return (void*)vec->dataElements[index];
 }
 
 // Vector management methods

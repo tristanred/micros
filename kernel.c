@@ -53,20 +53,11 @@ void kErrorBeforeInit(uint32_t errno, char* msg)
     
 }
 
-
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kernel_main(multiboot_info_t* arg1)
 {
-    // if(arg2 != 0 || arg3 != 0)
-    // {
-    //     kErrorBeforeInit(99, "kernel_main was passed unexpected parameters.");
-    //
-    //     return; // PANIC ??
-    // }
-    
-    
     kSetupLog(SERIAL_COM1_BASE);
 
     kWriteLog("***** Kernel Init *****");
@@ -94,8 +85,6 @@ void kernel_main(multiboot_info_t* arg1)
     
     asm volatile("sti");
     init_timer(1000);
-    
-    Debugger();
 
     vector* vec = vector_create();
     

@@ -1,6 +1,7 @@
 #include "keyboard.h"
 #include "framebuffer.h"
 #include "io_func.h"
+#include "vector.h"
 
 void keyboard_interrupt_handler(registers_t regs)
 {
@@ -43,6 +44,17 @@ void keyboard_interrupt_handler(registers_t regs)
     }
         
     Debugger();
+    
+    for(size_t i = 0; i < keyboard_hooks->count; i++)
+    {
+        hookfn func = keyboard_hooks->dataElements[i];
+        
+        keyevent_info info;
+        info.key_state = keyDown ? 1 : 2;
+        info.key = current_keyboard_state.currentKeycode;
+        
+        func(&info);
+    }
 }
 
 BOOL IsControlCharacter(keycode code)
@@ -133,11 +145,23 @@ int IsPrintableCharacter(keycode k)
     return 0;
 }
 
+void RegisterKeyboardHook(hookfn function)
+{
+    vector_add(keyboard_hooks, function);
+}
+
+void DeregisterKeyboardHook(hookfn function)
+{
+    vector_remove(keyboard_hooks, function);
+}
+
 void SetupKeyboardDriver(int keyboard_scancodes)
 {
     scancode_sets_keys = 104;
     
     current_keyboard_state.keyStates = key_states;
+    
+    keyboard_hooks = vector_create();
     
     switch(keyboard_scancodes)
     {

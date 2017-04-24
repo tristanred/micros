@@ -1,11 +1,13 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+
 #include <stddef.h>
 #include <stdint.h>
 
 #include "idt.h"
 #include "common.h"
+#include "vector.h"
 
 /*
  * OS Keycodes list. This list is in the same order as the scancode set 1 so
@@ -139,6 +141,12 @@ uint8_t keycode_ascii_map[104];
 // State of the keys, 0 for released and 1 for pressed
 uint8_t key_states[104];
 
+enum
+{
+    KEYDOWN = 0,
+    KEYUP = 1
+};
+
 typedef uint16_t keycode;
 
 struct keyboard_state
@@ -156,6 +164,18 @@ struct keyboard_state
 } current_keyboard_state;
 typedef struct keyboard_state keyboard_state_t;
 
+typedef struct
+{
+    int key_state;
+    
+    keycode key;
+    
+} keyevent_info;
+
+typedef void (*hookfn)(keyevent_info*);
+vector* keyboard_hooks;
+
+
 // Driver internal methods
 void keyboard_interrupt_handler(registers_t regs);
 
@@ -167,6 +187,9 @@ unsigned char GetAscii(keycode k);
 BOOL IsKeyDown(keycode k);
 int IsPrintableCharacter(keycode k);
 BOOL IsControlCharacter(keycode code);
+
+void RegisterKeyboardHook(hookfn function);
+void DeregisterKeyboardHook(hookfn function);
 
 // Kernel methods
 void SetupKeyboardDriver(int keyboard_scancodes);
