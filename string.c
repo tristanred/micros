@@ -63,6 +63,8 @@ int sprintf_1d(char* buffer, const char* format, uint64_t number)
     
     buffer[stopPoint] = '\0';
     
+    kmKernelFree(numberString);
+    
     return stopPoint;
 }
 

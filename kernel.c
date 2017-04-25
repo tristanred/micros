@@ -60,6 +60,8 @@ void kernel_main(multiboot_info_t* arg1)
 {
     kSetupLog(SERIAL_COM1_BASE);
 
+    kmInitManager();
+
     kWriteLog("***** Kernel Init *****");
     
     kWriteLog_format1d("WASD %d egugugug", 1234);
@@ -77,9 +79,6 @@ void kernel_main(multiboot_info_t* arg1)
     
     // asm volatile ("int $0x3");
     // asm volatile ("int $0x4");
-    
-    kmInitManager();
-
 
     fbInitialize();
     
