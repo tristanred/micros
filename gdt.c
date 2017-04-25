@@ -52,11 +52,11 @@ void setupGdt()
    gdtPointer.limit   = (sizeof(gdtEntry_t) * 3) - 1;
    gdtPointer.base      = (uint32_t)&gdt;
 
-   gdtSetGate(0, 0, 0, 0, 0);
-   gdtSetGate(1, 0, 0xFFFFFFFF, 0x9A, 0xCF);
-   gdtSetGate(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
-   gdtSetGate(3, 0, 0xFFFFFFFF, 0xFA, 0xCF);
-   gdtSetGate(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);
+   gdtSetGate(0, 0, 0, 0, 0); // Null segment
+   gdtSetGate(1, 0, 0xFFFFFFFF, 0x9A, 0xCF); // Kernel Code
+   gdtSetGate(2, 0, 0xFFFFFFFF, 0x92, 0xCF); // Kernel Data
+   gdtSetGate(3, 0, 0xFFFFFFFF, 0xFA, 0xCF); // User Code
+   gdtSetGate(4, 0, 0xFFFFFFFF, 0xF2, 0xCF); // User Data
 
    loadGdt();
 }

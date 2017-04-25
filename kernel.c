@@ -39,6 +39,7 @@
 #include "common.h"
 #include "string.h"
 #include "vector.h"
+#include "error.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -58,6 +59,8 @@ extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kernel_main(multiboot_info_t* arg1)
 {
+    panic = FALSE;
+    
     kSetupLog(SERIAL_COM1_BASE);
 
     kmInitManager();
@@ -104,7 +107,9 @@ void kernel_main(multiboot_info_t* arg1)
     
     uint32_t cycles = 0;
     
-    while(1)
+    int i = 1 / 0;
+    
+    while(!panic)
     {
         fbMoveCursor(0, 0);
         

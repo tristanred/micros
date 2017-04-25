@@ -1,6 +1,7 @@
 #include "idt.h"
 
 #include "io_func.h"
+#include "error.h"
 
 #include "kernel_log.h"
 
@@ -20,7 +21,7 @@ void idtSetEntry(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags)
 {
     idtEntries[num].loffset = base & 0xFFFF;
     idtEntries[num].hoffset = (base >> 16) & 0xFFFF;
- 
+
     idtEntries[num].selector     = sel;
     idtEntries[num].zero = 0;
     // We must uncomment the OR below when we get to using user-mode.
@@ -106,6 +107,14 @@ void isr_handler(registers_t regs)
    kWriteLog("recieved interrupt: ");
    kWriteLog_format1d("%d", (uint32_t)regs.int_no);
    kWriteLog("\n");
+   
+   if(regs.int_no == 0) // DIV 0 ERROR
+   {
+       regs.eip++;
+       
+       panic = TRUE;
+   }
+   
 }
 
 // This gets called from our ASM interrupt handler stub.
@@ -130,5 +139,5 @@ void irq_handler(registers_t regs)
 
 void register_interrupt_handler(uint8_t n, isr_t handler)
 {
-  interrupt_handlers[n] = handler;
+    interrupt_handlers[n] = handler;
 }

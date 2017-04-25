@@ -24,7 +24,6 @@ typedef struct registers
    uint32_t eip, cs, eflags, useresp, ss; // Pushed by the processor automatically.
 } registers_t;
 
-
 extern void loadIdt();
 
 void setupIdt();
