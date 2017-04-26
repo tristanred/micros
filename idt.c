@@ -110,11 +110,23 @@ void isr_handler(registers_t regs)
    
    if(regs.int_no == 0) // DIV 0 ERROR
    {
-       regs.eip++;
+    //    regs.eip++;
        
-       panic = TRUE;
+    //    panic = TRUE;
+        DivideByZeroFault();
    }
-   
+   else if(regs.int_no == 8) // DOUBLE FAULT
+   {
+       TemplateFault("DOUBLE FAULT");
+   }
+   else if(regs.int_no == 13) // GP FAULT
+   {
+       GeneralProtectionFault();
+   }
+   else
+   {
+       TemplateFault("ERROR");
+   }
 }
 
 // This gets called from our ASM interrupt handler stub.

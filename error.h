@@ -5,4 +5,10 @@
 
 BOOL panic;
 
+//
+void TemplateFault(char* msg);
+
+void DivideByZeroFault();
+void GeneralProtectionFault();
+
 #endif

@@ -31,13 +31,14 @@ align 4
 stack_bottom:
 resb 16384 ; 16 KiB
 stack_top:
- 
+
+global error
 ; The linker script specifies _start as the entry point to the kernel and the
 ; bootloader will jump to this position once the kernel has been loaded. It
 ; doesn't make sense to return from this function as the bootloader is gone.
 ; Declare _start as a function symbol with the given symbol size.
 section .text
-global _start:function (_start.end - _start)
+global _start:function (end - _start)
 _start:
 	; The bootloader has loaded us into 32-bit protected mode on a x86
 	; machine. Interrupts are disabled. Paging is disabled. The processor
@@ -54,7 +55,7 @@ _start:
 	; stack (as it grows downwards on x86 systems). This is necessarily done
 	; in assembly as languages such as C cannot function without a stack.
 	mov esp, stack_top
- 
+	
 	; This is a good place to initialize crucial processor state before the
 	; high-level kernel is entered. It's best to minimize the early
 	; environment where crucial features are offline. Note that the
@@ -73,7 +74,7 @@ _start:
     push ebx
 	extern kernel_main
 	call kernel_main
- 
+	
 	; If the system has nothing more to do, put the computer into an
 	; infinite loop. To do that:
 	; 1) Disable interrupts with cli (clear interrupt enable in eflags).
@@ -85,6 +86,11 @@ _start:
 	; 3) Jump to the hlt instruction if it ever wakes up due to a
 	;    non-maskable interrupt occurring or due to system management mode.
 	cli
-.hang:	hlt
-	jmp .hang
-.end:
+hang:	hlt
+	jmp hang
+	
+error:
+	jmp hang
+	
+end:
+

@@ -20,8 +20,8 @@ prepare:
 
 build: prepare bootloader kernel linker verify
 
-bootloader: prepare boot.s
-	$(AS) boot.s -o $(BUILDDIR)boot.o $(ASFLAGS)
+bootloader: prepare boot.asm
+	$(AS) boot.asm -o $(BUILDDIR)boot.o $(ASFLAGS)
 
 kernel: prepare agdt.asm
 	$(AS) io_func.s -o $(BUILDDIR)io_funcs.o $(ASFLAGS)
