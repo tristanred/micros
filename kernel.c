@@ -40,6 +40,7 @@
 #include "string.h"
 #include "vector.h"
 #include "error.h"
+#include "terminal.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -105,19 +106,19 @@ void kernel_main(multiboot_info_t* arg1)
     asm volatile ("int $0x3");
     asm volatile ("int $0x4");
     
-    uint32_t cycles = 0;
+    term_init();
     
-    int i = 1 / 0;
+    uint32_t cycles = 0;
     
     while(!panic)
     {
-        fbMoveCursor(0, 0);
+        // fbMoveCursor(0, 0);
         
-        char msstr[255];
+        // char msstr[255];
         
-        sprintf_1d(msstr, "%d", mscounter);
+        // sprintf_1d(msstr, "%d", mscounter);
         
-        fbPutString(msstr);
+        // fbPutString(msstr);
         
         cycles++;
     }

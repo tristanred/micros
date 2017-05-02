@@ -55,3 +55,8 @@ void sleep(uint32_t t)
     {
     }
 }
+
+uint32_t getmscount()
+{
+    return mscounter;
+}

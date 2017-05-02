@@ -36,11 +36,18 @@ uint16_t* fb;
 uint8_t fbColorFront;
 uint8_t fbColorBack;
 
-// CORE FUNCTIONS
+// PRIVATE FUNCTIONS
+uint16_t fbGetVGAEntry(char c, uint8_t forecolor, uint8_t backcolor);
+
+
+// KERNEL FUNCTIONS
 void fbInitialize();
+
+
+// PUBLIC INTERFACE
+
 void fbMoveCursor(uint8_t col, uint8_t row);
 void fbPutChar(char c);
-uint16_t fbGetVGAEntry(char c, uint8_t forecolor, uint8_t backcolor);
 void fbSetColor(uint8_t forecolor, uint8_t backcolor);
 
 // EXTENDED FUNCTIONS
