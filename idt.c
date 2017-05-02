@@ -123,10 +123,6 @@ void isr_handler(registers_t regs)
    {
        GeneralProtectionFault();
    }
-   else
-   {
-       TemplateFault("ERROR");
-   }
 }
 
 // This gets called from our ASM interrupt handler stub.
