@@ -26,14 +26,16 @@ void keyboard_interrupt_handler(registers_t regs)
         }
     }
     
-    BOOL keyDown = res >= 0x80;
+    BOOL keyDown = !(res >= 0x80);
     if(!keyDown)
     {
+        kWriteLog_format1d("KEY RELEASE %d", (uint64_t)current_keyboard_state.currentKeycode);
         //current_keyboard_state.inputType = KEY_RELEASE;
         key_states[current_keyboard_state.currentKeycode] = 0;
     }
     else
     {
+        kWriteLog_format1d("KEY PRESS %d", (uint64_t)current_keyboard_state.currentKeycode);
         //current_keyboard_state.inputType = KEY_DOWN;
         key_states[current_keyboard_state.currentKeycode] = 1;
     }
@@ -42,15 +44,16 @@ void keyboard_interrupt_handler(registers_t regs)
     {
         SetFlagsFromKey(&current_keyboard_state, keyDown);
     }
-        
-    Debugger();
     
     for(size_t i = 0; i < keyboard_hooks->count; i++)
     {
         hookfn func = keyboard_hooks->dataElements[i];
         
         keyevent_info info;
-        info.key_state = keyDown ? 1 : 2;
+        
+        // TODO : Simplify ?
+        info.key_state = keyDown ? KEYDOWN : KEYUP;
+        
         info.key = current_keyboard_state.currentKeycode;
         
         func(&info);
