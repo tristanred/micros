@@ -25,7 +25,7 @@ void kmInitManager()
         pagePool[i].p = (void*)(pagePoolStartAddress + 4096*i);
     }
     
-    for(int i = 0; i > large_pool_size; i++)
+    for(int i = 0; i < large_pool_size; i++)
     {
         largePool[i].size = 32 * 1024;
         largePool[i].isFree = TRUE;
@@ -53,6 +53,7 @@ void* kmKernelAlloc(size_t size)
             }
         }
         
+        Debugger();
         kWriteLog("Small pool is full !");
     }
     else if(size <= page_pool_unit)
@@ -67,6 +68,7 @@ void* kmKernelAlloc(size_t size)
             }
         }
         
+        Debugger();        
         kWriteLog("Page pool is full !");
     }
     else if(size <= large_pool_unit)
@@ -81,6 +83,7 @@ void* kmKernelAlloc(size_t size)
             }
         }
         
+        Debugger();
         kWriteLog("Large pool is full !");
     }
     else
