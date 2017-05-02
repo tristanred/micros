@@ -28,6 +28,8 @@ void term_setup(terminal* term)
     
     term->nCols = 10;
     term->nRows = 5;
+    
+    fbMoveCursor(term->fbOriginX, term->fbOriginY);
 }
 
 void term_update()
@@ -102,9 +104,6 @@ void term_kb_hook(keyevent_info* info)
 
 void term_putChar(unsigned char c)
 {
-    fbMoveCursor(currentTerminal->fbOriginX + currentTerminal->cursorX, 
-                 currentTerminal->fbOriginY + currentTerminal->cursorY);
-    
     fbPutChar(c);
     
     currentTerminal->cursorX++;
@@ -121,6 +120,8 @@ void term_putChar(unsigned char c)
         }
     }
     
+    fbMoveCursor(currentTerminal->fbOriginX + currentTerminal->cursorX, 
+                    currentTerminal->fbOriginY + currentTerminal->cursorY);
 }
 
 void term_putString(unsigned char* str)
