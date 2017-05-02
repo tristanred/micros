@@ -9,16 +9,11 @@ void term_init()
 {
     RegisterKeyboardHook(&term_kb_hook);
     
-    for(size_t i = 0; i < MAX_TERMINALS; i++)
-    {
-        terminal* t = kmKernelAlloc(sizeof(terminal));
+    terminal* t = kmKernelAlloc(sizeof(terminal));
         
-        terminals[i] = t;
-        
-        term_setup(t);
-    }
+    term_setup(t);
     
-    currentTerminal = terminals[0];
+    currentTerminal = t;
 }
 
 void term_setup(terminal* term)
@@ -38,11 +33,6 @@ void term_setup(terminal* term)
 void term_update()
 {
     lastTerminalUpdateTime = getmscount();
-}
-
-void term_switch(size_t termNb)
-{
-    
 }
 
 void term_draw(terminal* term)
@@ -78,19 +68,23 @@ void term_kb_hook(keyevent_info* info)
 {
     Debugger();
     
-    if(IsPrintableCharacter(info->key) == FALSE)
-    {
-        // Process ENTER and BACKSPACE and stuff
-        
-        return;
-    }
-    
-    unsigned char* c = GetAscii(info->key);
-    
     uint32_t t = getmscount();
     
     if(info->key_state == KEYDOWN)
     {
+        if(IsPrintableCharacter(info->key) == FALSE)
+        {
+            // Process ENTER and BACKSPACE and stuff
+            if(info->key == ENTER)
+            {
+                currentTerminal->cursorY++;
+            }
+            
+            return;
+        }
+        
+        unsigned char c = GetAscii(info->key);
+        
         if(t >= lastTerminalUpdateTime + KEYBOARD_REPEAT_TIME)
         {
             size_t pos = (currentTerminal->cursorY * 80) + currentTerminal->cursorX;
@@ -99,6 +93,10 @@ void term_kb_hook(keyevent_info* info)
             
             term_putChar(c);
         }
+    }
+    else
+    {
+        
     }
 }
 
@@ -129,7 +127,7 @@ void term_putString(unsigned char* str)
 {
     int nextIndex = 0;
     
-    while(str[nextIndex] != NULL)
+    while(str[nextIndex] != 0)
     {
         term_putChar(str[nextIndex]);
         

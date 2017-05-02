@@ -2,6 +2,7 @@
 #include "framebuffer.h"
 #include "io_func.h"
 #include "vector.h"
+#include "kernel_log.h"
 
 void keyboard_interrupt_handler(registers_t regs)
 {
@@ -47,7 +48,7 @@ void keyboard_interrupt_handler(registers_t regs)
     
     for(size_t i = 0; i < keyboard_hooks->count; i++)
     {
-        hookfn func = keyboard_hooks->dataElements[i];
+        hookfn func = (hookfn)keyboard_hooks->dataElements[i];
         
         keyevent_info info;
         

@@ -88,16 +88,6 @@ void kernel_main(multiboot_info_t* arg1)
     
     asm volatile("sti");
     init_timer(1000);
-
-    vector* vec = vector_create();
-    
-    vector_add(vec, 1);
-    vector_add(vec, 2);
-    vector_add(vec, 3);
-    vector_add(vec, 4);
-    vector_add(vec, 5);
-    
-    void* x = vector_get_at(vec, 10);
     
     SetupKeyboardDriver(SCANCODE_SET1);
     

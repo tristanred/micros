@@ -24,8 +24,6 @@ typedef struct
     
 } terminal;
 
-terminal* terminals[MAX_TERMINALS];
-size_t currentTerminalIndex;
 terminal* currentTerminal;
 
 // Timing values
@@ -37,8 +35,6 @@ void term_init();
 void term_setup(terminal* term);
 
 void term_update();
-
-void term_switch(size_t termNb);
 
 void term_draw(terminal* term);
 
