@@ -63,7 +63,7 @@ void keyboard_interrupt_handler(registers_t regs)
 
 BOOL IsControlCharacter(keycode code)
 {
-    if( (code >= CAPS && code <= RIGHT_CTRL) )
+    if( (code >= CAPS && code <= RIGHT_ALT) )
         return TRUE;
         
     return FALSE;
@@ -141,12 +141,17 @@ unsigned char GetAscii(keycode k)
 
 int IsPrintableCharacter(keycode k)
 {
-    if(k <= 36)
+    if
+    (
+        k <= BACKSLASH ||
+        k == SPACE ||
+        (k >= KEYPAD_DIV && k <= FRONT_SLASH)
+    )
     {
-        return 1;
+        return TRUE;
     }
     
-    return 0;
+    return FALSE;
 }
 
 void RegisterKeyboardHook(hookfn function)
