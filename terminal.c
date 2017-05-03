@@ -68,8 +68,6 @@ void term_draw(terminal* term)
 
 void term_kb_hook(keyevent_info* info)
 {
-    Debugger();
-    
     uint32_t t = getmscount();
     
     if(info->key_state == KEYDOWN)
@@ -79,7 +77,11 @@ void term_kb_hook(keyevent_info* info)
             // Process ENTER and BACKSPACE and stuff
             if(info->key == ENTER)
             {
-                currentTerminal->cursorY++;
+                term_enter();
+            }
+            else if(info->key == BACKSPACE)
+            {
+                term_erase();
             }
             
             return;
@@ -93,13 +95,119 @@ void term_kb_hook(keyevent_info* info)
             
             currentTerminal->fbcontent[pos] = c;
             
-            term_putChar(c);
+            term_write(c);
         }
     }
     else
     {
         
     }
+}
+
+void term_move_right()
+{
+    currentTerminal->cursorX++;
+    
+    if(currentTerminal->cursorX >= currentTerminal->nCols)
+    {
+        currentTerminal->cursorX = 0;
+        currentTerminal->cursorY++;
+        
+        if(currentTerminal->cursorY >= currentTerminal->nRows)
+        {
+            currentTerminal->cursorY = 0;
+        }
+    }
+    
+    term_set_cursor(currentTerminal->cursorX, currentTerminal->cursorY);
+}
+
+void term_move_left()
+{
+    currentTerminal->cursorX--;
+    
+    if(currentTerminal->cursorX < 0)
+    {
+        currentTerminal->cursorX = currentTerminal->nCols - 1;
+        currentTerminal->cursorY--;
+        
+        if(currentTerminal->cursorY < 0)
+        {
+            currentTerminal->cursorY = 0;
+        }
+    }
+    
+    term_set_cursor(currentTerminal->cursorX, currentTerminal->cursorY);
+}
+
+void term_move_up()
+{
+    currentTerminal->cursorY--;
+    
+    if(currentTerminal->cursorY < 0)
+    {
+        currentTerminal->cursorY = 0;
+    }
+    
+    term_set_cursor(currentTerminal->cursorX, currentTerminal->cursorY);
+}
+
+void term_move_down()
+{
+    currentTerminal->cursorY++;
+    
+    if(currentTerminal->cursorY >= currentTerminal->nRows)
+    {
+        currentTerminal->cursorY = currentTerminal->nRows - 1;
+    }
+    
+    term_set_cursor(currentTerminal->cursorX, currentTerminal->cursorY);
+}
+
+void term_set_cursor(uint8_t col, uint8_t row)
+{
+    uint8_t tCol = col;
+    if(col >= currentTerminal->nCols)
+        tCol = currentTerminal->nCols;
+    
+    uint8_t tRow = row;
+    if(row >= currentTerminal->nRows)
+        tRow = currentTerminal->nRows;
+        
+    currentTerminal->cursorX = tCol;
+    currentTerminal->cursorY = tRow;
+    
+    fbMoveCursor(currentTerminal->cursorX + currentTerminal->fbOriginX, 
+                 currentTerminal->cursorY + currentTerminal->fbOriginY);
+}
+
+void term_write(unsigned char c)
+{
+    fbPutChar(c);
+    
+    term_move_right();
+}
+
+void term_erase()
+{
+    if(currentTerminal->cursorX == 0 && currentTerminal->cursorY == 0)
+        return;
+    
+    term_move_left();
+    
+    fbPutChar(' ');
+    
+    term_set_cursor(currentTerminal->cursorX, currentTerminal->cursorY);    
+}
+
+void term_enter()
+{
+    term_set_cursor(0, currentTerminal->cursorY + 1);
+}
+
+void term_showSplashScreen()
+{
+    
 }
 
 void term_putChar(unsigned char c)
@@ -122,19 +230,4 @@ void term_putChar(unsigned char c)
     
     fbMoveCursor(currentTerminal->fbOriginX + currentTerminal->cursorX, 
                     currentTerminal->fbOriginY + currentTerminal->cursorY);
-}
-
-void term_putString(unsigned char* str)
-{
-    int nextIndex = 0;
-    
-    while(str[nextIndex] != 0)
-    {
-        term_putChar(str[nextIndex]);
-        
-        
-        
-        
-        nextIndex++;
-    }
 }

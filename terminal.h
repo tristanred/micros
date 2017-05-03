@@ -14,13 +14,12 @@ typedef struct
 {
     unsigned char* fbcontent;
     
-    size_t cursorX;
-    size_t cursorY;
-    
-    size_t fbOriginX;
-    size_t fbOriginY;
-    size_t nCols;
-    size_t nRows;
+    int cursorX;
+    int cursorY;
+    int fbOriginX;
+    int fbOriginY;
+    int nCols;
+    int nRows;
     
 } terminal;
 
@@ -40,11 +39,22 @@ void term_draw(terminal* term);
 
 // PUBLIC INTERFACE
 
+void term_move_right();
+void term_move_left();
+void term_move_up();
+void term_move_down();
+
+void term_set_cursor(uint8_t col, uint8_t row);
+
+void term_write(unsigned char c);
+void term_erase();
+
+void term_enter();
+
+
 void term_showSplashScreen();
 
 void term_putChar(unsigned char c);
-
-void term_putString(unsigned char* str);
 
 // PRIVATE METHODS
 
