@@ -98,6 +98,8 @@ void kernel_main(multiboot_info_t* arg1)
     
     term_init();
     
+    term_showSplashScreen();
+    
     uint32_t cycles = 0;
     
     while(!panic)

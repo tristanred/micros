@@ -83,6 +83,11 @@ void fbPutString(char* str)
     for(uint32_t i = 0; i < stringLengthSafe; i++)
     {
         fbPutChar(str[i]);
+        
+        if(str[i] == '\n')
+        {
+            fbMoveCursor(0, fbRowPos + 1);
+        }
     }
 }
 

@@ -23,11 +23,11 @@ void term_setup(terminal* term)
     term->cursorX = 0;
     term->cursorY = 0;
     
-    term->fbOriginX = 5;
-    term->fbOriginY = 5;
+    term->fbOriginX = 1;
+    term->fbOriginY = 10;
     
-    term->nCols = 10;
-    term->nRows = 5;
+    term->nCols = 78;
+    term->nRows = 9;
     
     fbMoveCursor(term->fbOriginX, term->fbOriginY);
 }
@@ -39,15 +39,15 @@ void term_update()
 
 void term_draw(terminal* term)
 {
-    size_t baseX = term->fbOriginX;
-    size_t baseY = term->fbOriginY;
+    int baseX = term->fbOriginX;
+    int baseY = term->fbOriginY;
     
     fbMoveCursor(baseX, baseY);
     
-    size_t currentX = baseX;
-    size_t currentY = baseY;
+    int currentX = baseX;
+    int currentY = baseY;
     
-    size_t i = 0;
+    int i = 0;
     
     while(currentY <= term->nRows)
     {
@@ -164,13 +164,13 @@ void term_move_down()
     term_set_cursor(currentTerminal->cursorX, currentTerminal->cursorY);
 }
 
-void term_set_cursor(uint8_t col, uint8_t row)
+void term_set_cursor(int col, int row)
 {
-    uint8_t tCol = col;
+    int tCol = col;
     if(col >= currentTerminal->nCols)
         tCol = currentTerminal->nCols;
     
-    uint8_t tRow = row;
+    int tRow = row;
     if(row >= currentTerminal->nRows)
         tRow = currentTerminal->nRows;
         
@@ -207,7 +207,19 @@ void term_enter()
 
 void term_showSplashScreen()
 {
+    int currX = fbColPos;
+    int currY = fbRowPos;
     
+    fbMoveCursor(0, 0);
+    
+    fbPutString("                __  __ _____ _____ _____   ____   _____ \n");
+    fbPutString("               |  \\/  |_   _/ ____|  __ \\ / __ \\ / ____|\n");
+    fbPutString("               | \\  / | | || |    | |__) | |  | | (___  \n");
+    fbPutString("               | |\\/| | | || |    |  _  /| |  | |\\___ \\ \n");
+    fbPutString("               | |  | |_| || |____| | \\ \\| |__| |____) |\n");
+    fbPutString("               |_|  |_|_____\\_____|_|  \\_\\ ____/|_____/ \n");
+    
+    fbMoveCursor(currX, currY);
 }
 
 void term_putChar(unsigned char c)
