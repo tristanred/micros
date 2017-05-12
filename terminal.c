@@ -66,44 +66,6 @@ void term_draw(terminal* term)
     }
 }
 
-void term_kb_hook(keyevent_info* info)
-{
-    uint32_t t = getmscount();
-    
-    if(info->key_state == KEYDOWN)
-    {
-        if(IsPrintableCharacter(info->key) == FALSE)
-        {
-            // Process ENTER and BACKSPACE and stuff
-            if(info->key == ENTER)
-            {
-                term_enter();
-            }
-            else if(info->key == BACKSPACE)
-            {
-                term_erase();
-            }
-            
-            return;
-        }
-        
-        unsigned char c = GetAscii(info->key);
-        
-        if(t >= lastTerminalUpdateTime + KEYBOARD_REPEAT_TIME)
-        {
-            size_t pos = (currentTerminal->cursorY * 80) + currentTerminal->cursorX;
-            
-            currentTerminal->fbcontent[pos] = c;
-            
-            term_write(c);
-        }
-    }
-    else
-    {
-        
-    }
-}
-
 void term_move_right()
 {
     currentTerminal->cursorX++;
@@ -242,4 +204,42 @@ void term_putChar(unsigned char c)
     
     fbMoveCursor(currentTerminal->fbOriginX + currentTerminal->cursorX, 
                     currentTerminal->fbOriginY + currentTerminal->cursorY);
+}
+
+void term_kb_hook(keyevent_info* info)
+{
+    uint32_t t = getmscount();
+    
+    if(info->key_state == KEYDOWN)
+    {
+        if(IsPrintableCharacter(info->key) == FALSE)
+        {
+            // Process ENTER and BACKSPACE and stuff
+            if(info->key == ENTER)
+            {
+                term_enter();
+            }
+            else if(info->key == BACKSPACE)
+            {
+                term_erase();
+            }
+            
+            return;
+        }
+        
+        unsigned char c = GetAscii(info->key);
+        
+        if(t >= lastTerminalUpdateTime + KEYBOARD_REPEAT_TIME)
+        {
+            size_t pos = (currentTerminal->cursorY * 80) + currentTerminal->cursorX;
+            
+            currentTerminal->fbcontent[pos] = c;
+            
+            term_write(c);
+        }
+    }
+    else
+    {
+        
+    }
 }
