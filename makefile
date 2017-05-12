@@ -28,6 +28,7 @@ kernel: prepare agdt.asm
 	$(AS) agdt.asm -o $(BUILDDIR)agdt.o $(ASFLAGS)
 	$(AS) aidt.asm -o $(BUILDDIR)aidt.o $(ASFLAGS)
 	$(AS) interrupts.asm -o $(BUILDDIR)interrupts.o $(ASFLAGS)
+	$(AS) graphical.asm -o $(BUILDDIR)graphical_asm.o $(ASFLAGS)
 	$(CC) -c *.c $(CFLAGS)
 	mv *.o $(BUILDDIR)
 
