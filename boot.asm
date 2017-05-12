@@ -1,7 +1,8 @@
 ; Declare constants for the multiboot header.
 MBALIGN  equ  1<<0              ; align loaded modules on page boundaries
 MEMINFO  equ  1<<1              ; provide memory map
-FLAGS    equ  MBALIGN | MEMINFO ; this is the Multiboot 'flag' field
+VIDINFO  equ  1<<2              ; video flag
+FLAGS    equ  MBALIGN | MEMINFO | VIDINFO ; this is the Multiboot 'flag' field
 MAGIC    equ  0x1BADB002        ; 'magic number' lets bootloader find the header
 CHECKSUM equ -(MAGIC + FLAGS)   ; checksum of above, to prove we are multiboot
  
@@ -15,6 +16,15 @@ align 4
 	dd MAGIC
 	dd FLAGS
 	dd CHECKSUM
+	dd 0 ; header_addr
+	dd 0 ; load_addr
+	dd 0 ; load_end_addr
+	dd 0 ; bss_end_addr
+	dd 0 ; entry addr
+	dd 0 ; mode_type
+	dd 640 ; width
+	dd 480 ; height
+	dd 24 ; depth
  
 ; The multiboot standard does not define the value of the stack pointer register
 ; (esp) and it is up to the kernel to provide a stack. This allocates room for a
