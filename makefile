@@ -50,3 +50,4 @@ clean:
 
 makeiso: build
 	./makeiso.sh
+	mv myos.iso out/myos.iso
