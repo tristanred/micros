@@ -45,10 +45,10 @@ runiso: makeiso
 	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log $(OUTDIR)myos.iso
 
 debugiso: makeiso
-	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.iso
+	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -s -S $(OUTDIR)myos.iso
 
 debug: build
-	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -s -S $(OUTDIR)myos.bin -curses
+	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
 
 .PHONY: clean
 clean:
