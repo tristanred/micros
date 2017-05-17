@@ -16,6 +16,16 @@ void do_stuff()
     // Read the input status #2 register
     unsigned char input2 = inb(0x3ba);
     
+    // Set the current Misc Graphic register
+    
+    // Special register access
+    
+    // Put the sub-register address in the Address port
+    outb(0x3ce, 0x06);
+    outb(0x3cf, 0xF);
+    // Check if data was written ok
+    unsigned char resData = inb(0x3cf);
+    
     
     int i = 0;
 }
