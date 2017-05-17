@@ -41,9 +41,6 @@
 #include "vector.h"
 #include "error.h"
 #include "terminal.h"
-#include "graphical.h"
-
-extern void set_vga_mode(uint8_t mode, uint8_t command);
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -73,53 +70,19 @@ void kernel_main(multiboot_info_t* arg1)
     
     kWriteLog_format1d("WASD %d egugugug", 1234);
     
-//       multiboot_uint32_t vbe_control_info;
-//   multiboot_uint32_t vbe_mode_info;
-//   multiboot_uint16_t vbe_mode;
-//   multiboot_uint16_t vbe_interface_seg;
-//   multiboot_uint16_t vbe_interface_off;
-//   multiboot_uint16_t vbe_interface_len;
-
-    kWriteLog_format1d("vbe_control_info = %d", arg1->vbe_control_info);
-    kWriteLog_format1d("vbe_mode_info = %d", arg1->vbe_mode_info);
-    kWriteLog_format1d("vbe_mode = %d", arg1->vbe_mode);
-    kWriteLog_format1d("vbe_interface_seg = %d", arg1->vbe_interface_seg);
-    kWriteLog_format1d("vbe_interface_off = %d", arg1->vbe_interface_off);
-    kWriteLog_format1d("vbe_interface_len = %d", arg1->vbe_interface_len);
-    
-    kWriteLog("Done scannign multiboot");
-    
     /*
      * The kernel_main method currently receives the Multiboot info structure
      * from the boot.s code, contained in register EBX with the help of
      * the boot loader. The other arguments are to test the presence of
      * other parameters pushed into the method, helpful for debugging.
      */
-    //btmConfigureMemoryRanges(arg1);
+    btmConfigureMemoryRanges(arg1);
 
     setupGdt();
     setupIdt();
     
-    asm volatile ("int $0x3");
-    asm volatile ("int $0x4");
-
-    set_vga_mode(0x99, 0x00);
-    
-    //drawTest(arg1->vbe_interface_seg + arg1->vbe_interface_off);
-
-    Debugger();
-
-    uint32_t i = 0;
-    uint8_t* start = (uint8_t*)arg1->vbe_interface_seg + arg1->vbe_interface_off;
-    while(i < (640*480*24))
-    {
-        start[i] = 255;
-        start[i + 1] = 0;
-        start[i + 1] = 0;
-        i += 3;
-    }
-
-    return;
+    // asm volatile ("int $0x3");
+    // asm volatile ("int $0x4");
 
     fbInitialize();
     

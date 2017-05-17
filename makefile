@@ -28,7 +28,6 @@ kernel: prepare agdt.asm
 	$(AS) agdt.asm -o $(BUILDDIR)agdt.o $(ASFLAGS)
 	$(AS) aidt.asm -o $(BUILDDIR)aidt.o $(ASFLAGS)
 	$(AS) interrupts.asm -o $(BUILDDIR)interrupts.o $(ASFLAGS)
-	$(AS) graphical.asm -o $(BUILDDIR)graphical_asm.o $(ASFLAGS)
 	$(CC) -c *.c $(CFLAGS)
 	mv *.o $(BUILDDIR)
 
@@ -42,19 +41,18 @@ verify: $(OUTDIR)myos.bin
 run: build
 	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -kernel $(OUTDIR)myos.bin -curses
 
-debug: build
-	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
-
-runiso : build
+runiso: makeiso
 	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log $(OUTDIR)myos.iso
 
-debugiso : build
-	qemu-system-i386 -m 128M -s -S -serial file:$(OUTDIR)serial.log $(OUTDIR)myos.iso
+debugiso: makeiso
+	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.iso
+
+debug: build
+	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -s -S $(OUTDIR)myos.bin -curses
 
 .PHONY: clean
 clean:
-	rm -rf $(OUTDIR) $(BUILDDIR) isodir/
+	rm -rf $(OUTDIR) $(BUILDDIR) myos.iso isodir/
 
 makeiso: build
 	./makeiso.sh
-	mv myos.iso out/myos.iso

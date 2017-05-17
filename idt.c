@@ -2,7 +2,6 @@
 
 #include "io_func.h"
 #include "error.h"
-#include "common.h"
 
 #include "kernel_log.h"
 
