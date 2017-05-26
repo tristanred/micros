@@ -37,18 +37,23 @@ linker: prepare kernel bootloader linker.ld
 verify: $(OUTDIR)myos.bin
 	grub-file --is-x86-multiboot $(OUTDIR)myos.bin
 
+# Commandline flags passed to the kernel multiboot
+# d : Debug flags. Currently passed to all targets for development.
+# g : enable the VGA graphics framebuffer. Text mode is used by default.
+#
+
 .PHONY: run
 run: build
-	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -kernel $(OUTDIR)myos.bin -curses
+	qemu-system-i386 -m 128M -append d -serial file:$(OUTDIR)serial.log -kernel $(OUTDIR)myos.bin -curses
 
 runiso: makeiso
-	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log $(OUTDIR)myos.iso
+	qemu-system-i386 -m 128M -append d -serial file:$(OUTDIR)serial.log $(OUTDIR)myos.iso
 
 debugiso: makeiso
-	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -s -S $(OUTDIR)myos.iso
+	qemu-system-i386 -m 128M -append gd -serial file:$(OUTDIR)serial.log -s -S $(OUTDIR)myos.iso
 
 debug: build
-	qemu-system-i386 -m 128M -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
+	qemu-system-i386 -m 128M -append gd -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
 
 .PHONY: clean
 clean:
