@@ -1,0 +1,9 @@
+OS boot steps
+
+1. Draw MICROS ascii logo
+
+2. Keep logo on screen for 2 seconds during the load up.
+
+3. Remove logo and welcome the user
+
+4. Show the terminal interface

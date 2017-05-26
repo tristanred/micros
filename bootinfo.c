@@ -1,51 +1,51 @@
-#include "vbe.h"
+#include "bootinfo.h"
 
 void ReadMultibootFlags(multiboot_info_t* info)
 {
-    if(info->flags & 0x1)
+    if(info->flags & 1)
     {
         MemoryInfo = TRUE;
         availableLowerMemory = info->mem_lower;
         availableUpperMemory = info->mem_upper;
     }
-    if(info->flags & 0x2)
+    if(info->flags & 2)
     {
         BootDevice = TRUE;
     }
-    if(info->flags & 0x4)
+    if(info->flags & 4)
     {
         CmdLine = TRUE;
         CommandlineText = (unsigned char*)info->cmdline;
     }
-    if(info->flags & 0x8)
+    if(info->flags & 8)
     {
         BootModules = TRUE;
     }
-    if(info->flags & 0x16 || info->flags & 0x32)
+    if(info->flags & 16 || info->flags & 32)
     {
         SymsTables = TRUE;
     }
-    if(info->flags & 0x64)
+    if(info->flags & 64)
     {
         MemoryMaps = TRUE;
     }
-    if(info->flags & 0x128)
+    if(info->flags & 128)
     {
         DriveInfo = TRUE;
     }
-    if(info->flags & 0x256)
+    if(info->flags & 256)
     {
         RomConfig = TRUE;
     }
-    if(info->flags & 0x512)
+    if(info->flags & 512)
     {
         BootloaderName = TRUE;
     }
-    if(info->flags & 0x1024)
+    if(info->flags & 1024)
     {
         ApmTable = TRUE;
     }
-    if(info->flags & 0x2048)
+    if(info->flags & 2048)
     {
         VideoInfo = TRUE;
     }

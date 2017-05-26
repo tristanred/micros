@@ -15,9 +15,16 @@ int sprintf_1d(char* buffer, const char* format, uint64_t number);
 char *strcpy( char *dest, const char *src );
 char *strncpy( char *dest, const char *src, size_t count );
 
+
 // My functions
+
+// Split a string into multiple strings separated by 'separator'
+char** strspl(char* buffer, char* separator, size_t amount);
+
+// Reverse a string
 char* strrev(char* str);
 
+// Convert a number to a string
 char* strdigits(uint64_t number);
 
 #endif

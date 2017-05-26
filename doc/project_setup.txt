@@ -1,0 +1,22 @@
+== User Steps ==
+
+* Clone the repo : 
+
+https://github.com/kratosaurion7/micros.git
+
+* Call ./Setup.sh to download the dependencies
+
+=== Setup Steps ===
+
+Download the cross-compiler
+
+Download the linux packages : xorriso, grub-mkrescue, etc (TODO)
+
+
+* Call ./Configure.sh
+
+=== Configure Steps ===
+
+Call cmake to generate the Makefile(s)
+
+* Call ./Build.sh with an argument specifying the type of build needed

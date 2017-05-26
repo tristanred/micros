@@ -42,8 +42,6 @@
 #include "error.h"
 #include "terminal.h"
 
-#include "vga.h"
-
 uint32_t kErrorBad;
 char* kBadErrorMessage;
 
@@ -62,8 +60,6 @@ extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kernel_main(multiboot_info_t* arg1)
 {    
-    do_stuff();
-    
     panic = FALSE;
     
     kSetupLog(SERIAL_COM1_BASE);

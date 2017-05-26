@@ -107,6 +107,14 @@ char* strncpy(char* dest, const char* src, size_t count)
     return dest;
 }
 
+char** strspl(char* buffer, char* separator, size_t amount)
+{
+    size_t buflen = strlen(buffer);
+    size_t seplen = strlen(separator);
+    
+    return NULL;
+}
+
 char* strrev(char* str)
 {
     size_t len = strlen(str);

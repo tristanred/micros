@@ -1,10 +1,11 @@
+#ifndef BOOTINFO_H
+#define BOOTINFO_H
+
 #include <stddef.h>
 #include <stdint.h>
 
 #include "multiboot.h"
 #include "common.h"
-
-// Stored VBE info
 
 // Flags
 uint32_t flags;
@@ -33,3 +34,5 @@ uint32_t availableUpperMemory;
 unsigned char* CommandlineText;
 
 void ReadMultibootFlags(multiboot_info_t* info);
+
+#endif
