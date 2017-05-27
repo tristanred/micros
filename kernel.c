@@ -64,6 +64,9 @@ void kernel_main(multiboot_info_t* arg1)
 {    
     panic = FALSE;
     
+    setup_kernel_block();
+    init_module_kernel_features(kernel_info);
+    
     kSetupLog(SERIAL_COM1_BASE);
 
     kmInitManager();
@@ -119,3 +122,28 @@ void kernel_main(multiboot_info_t* arg1)
     
     kWriteLog("Kernel End");
 }
+
+void setup_kernel_block()
+{
+    kernel_info = (struct kernel_info_block*)0x100000;
+    
+    kernel_info->modules_start_address = (uint32_t)(&kernel_info + sizeof(struct kernel_info_block));
+    kernel_info->modules_end_address = (uint32_t)(&kernel_info + (1024*1024*5)); // 5MB
+    kernel_info->modules_current_offset = kernel_info->modules_start_address;
+}
+
+// void* alloc_kernel_module(size_t size)
+// {
+//     if(!has_free_modules_space())
+//         return NULL;
+    
+//     uint32_t nextModuleAddress = kernel_info->modules_current_offset + size;
+//     kernel_info->modules_current_offset += size;
+    
+//     return (void*)nextModuleAddress;
+// }
+
+// BOOL has_free_modules_space()
+// {
+//     return kernel_info->modules_start_address + kernel_info->modules_current_offset < kernel_info->modules_end_address;
+// }

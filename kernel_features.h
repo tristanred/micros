@@ -26,6 +26,8 @@ struct kernel_features{
     unsigned char** kernel_options;
 };
 
+struct kernel_features* features;
+
 void init_module_kernel_features(struct kernel_info_block* kinfo);
 
 void parse_commandline(unsigned char* cmdline);

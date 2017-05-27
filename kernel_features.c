@@ -5,8 +5,12 @@
 
 void init_module_kernel_features(struct kernel_info_block* kinfo)
 {
-    struct kernel_features x;
-    kinfo->m_kernel_features = x;
+    features = &kinfo->m_kernel_features;
+    
+    features->current_graphic_mode = 0;
+    features->isDebugBuild = FALSE;
+    features->kernel_options_size = 0;
+    features->kernel_options = NULL;
 }
 
 void kfDetectFeatures(multiboot_info_t* info)
