@@ -1,5 +1,13 @@
 #include "kernel_features.h"
 
+#include "multiboot.h"
+#include "kernel.h"
+
+void init_module_kernel_features(struct kernel_info_block* kinfo)
+{
+    struct kernel_features x;
+    kinfo->m_kernel_features = x;
+}
 
 void kfDetectFeatures(multiboot_info_t* info)
 {
@@ -16,7 +24,7 @@ void kfDetectFeatures(multiboot_info_t* info)
     if(info->flags & 4)
     {
         //CmdLine = TRUE;
-        char* CommandlineText = (unsigned char*)info->cmdline;
+        unsigned char* CommandlineText = (unsigned char*)info->cmdline;
         
         parse_commandline(CommandlineText);
         
@@ -25,15 +33,15 @@ void kfDetectFeatures(multiboot_info_t* info)
 
 void parse_commandline(unsigned char* cmdline)
 {
-    
+    (void)cmdline;
 }
 
 BOOL kfSupportGraphics()
 {
-    
+    return FALSE;
 }
 
 BOOL kfDebugMode()
 {
-    
+    return TRUE;
 }

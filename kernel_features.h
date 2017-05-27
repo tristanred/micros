@@ -4,8 +4,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "multiboot.h"
+struct kernel_info_block;
+
 #include "common.h"
+#include "multiboot.h"
+
 
 // Private Members
 enum graphical_modes {
@@ -14,15 +17,16 @@ enum graphical_modes {
     NONE
 };
 
-typedef struct {
+struct kernel_features{
     enum graphical_modes current_graphic_mode;
     
     BOOL isDebugBuild;
     
     size_t kernel_options_size;
     unsigned char** kernel_options;
-    
-} kernel_features;
+};
+
+void init_module_kernel_features(struct kernel_info_block* kinfo);
 
 void parse_commandline(unsigned char* cmdline);
 

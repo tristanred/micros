@@ -25,6 +25,8 @@
  * #include <stdint.h>      http://www.cplusplus.com/reference/cstdint/
  */
 
+#include "kernel.h"
+
 #include "multiboot.h"
 
 #include "bootmem.h"

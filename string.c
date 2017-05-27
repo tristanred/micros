@@ -109,8 +109,15 @@ char* strncpy(char* dest, const char* src, size_t count)
 
 char** strspl(char* buffer, char* separator, size_t amount)
 {
+    (void)buffer;
+    (void)separator;
+    (void)amount;
+    
     size_t buflen = strlen(buffer);
     size_t seplen = strlen(separator);
+    
+    (void)buflen;
+    (void)seplen;
     
     return NULL;
 }
