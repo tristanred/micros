@@ -1,0 +1,36 @@
+Demo Milestone :
+
+* Bootmem should detect the correct size of RAM
+
+* Animated boot sequence
+
+* Fake-Terminal to run simple commands
+  - Framebuffer text editing
+  - User press enter to enter a new line
+  - Show realtime ms ticks.
+
+* Better logging of the boot sequence
+
+* Catch General Protection faults and show an alert on screen then HALT
+
+
+Polish
+
+* Remove the keyboard handler registration from timer.c
+
+* Folder reorganization
+
+* Memory Manager dynamic allocation
+    - By storing the size of the allocation right before the allocated block
+      and keeping the allocations in a dynamic array we can avoid going through
+      the memory pools of the current implementation.
+      
+* Correct 1ms or less timer tick.
+
+* Fullscreen lines swirl-like animation
+
+
+Files needing organization
+
+* Cleanup GDT and IDT files + comment & document
+
