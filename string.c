@@ -107,6 +107,53 @@ char* strncpy(char* dest, const char* src, size_t count)
     return dest;
 }
 
+int strcmp( const char *lhs, const char *rhs )
+{
+    size_t i;
+    while(lhs[i])
+    {
+        if(lhs[i] != rhs[i])
+        {
+            if(lhs[i] > rhs[i])
+            {
+                return 1;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        
+        i++;
+    }
+    
+    return 0;
+}
+
+int strncmp( const char *lhs, const char *rhs, size_t count )
+{
+    size_t i;
+    while(lhs[i] && i < count)
+    {
+        if(lhs[i] != rhs[i])
+        {
+            if(lhs[i] > rhs[i])
+            {
+                return 1;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        
+        i++;
+    }
+    
+    return 0;
+}
+
+
 char** strspl(char* buffer, char* separator, size_t amount)
 {
     (void)buffer;
