@@ -53,4 +53,9 @@ size_t kmCountFreeSmallPoolUnits();
 size_t kmCountFreePagePoolUnits();
 size_t kmCountFreeLargePoolUnits();
 
+// User mode memory methods
+// Currently define'd while userspace implementation is created
+#define malloc kmKernelAlloc
+#define free kmKernelFree
+
 #endif

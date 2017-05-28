@@ -1,5 +1,6 @@
 #include "kernel_features.h"
 
+#include "string.h"
 #include "multiboot.h"
 #include "kernel.h"
 
@@ -18,8 +19,8 @@ void kfDetectFeatures(multiboot_info_t* info)
     if(info->flags & 1)
     {
         //MemoryInfo = TRUE;
-        //availableLowerMemory = info->mem_lower;
-        //availableUpperMemory = info->mem_upper;
+        features->availableLowerMemory = info->mem_lower;
+        features->availableUpperMemory = info->mem_upper;
     }
     if(info->flags & 2)
     {
@@ -30,14 +31,45 @@ void kfDetectFeatures(multiboot_info_t* info)
         //CmdLine = TRUE;
         unsigned char* CommandlineText = (unsigned char*)info->cmdline;
         
-        parse_commandline(CommandlineText);
+        features->kernel_options = parse_commandline(CommandlineText, features->kernel_options_size);
         
+        activate_options(features->kernel_options, features->kernel_options_size);
     }
 }
 
-void parse_commandline(unsigned char* cmdline)
+/**
+ * Format of the commandline arguments
+ *
+ * out/myos.bin -f dg
+ * ^            ^
+ * |            -f : build features
+ * |                 d = debug ON
+ * |                 g = vga graphics ON
+ * kernel filename
+ * 
+ * 
+ *
+ */
+
+unsigned char** parse_commandline(unsigned char* cmdline, size_t argsSize)
 {
     (void)cmdline;
+    (void)argsSize;
+    
+    return NULL;
+}
+
+BOOL validate_commandline(unsigned char* cmdline)
+{
+    (void)cmdline;
+    
+    return TRUE;
+}
+
+void activate_options(unsigned char** cmdline, size_t size)
+{
+    (void)cmdline;
+    (void)size;
 }
 
 BOOL kfSupportGraphics()
