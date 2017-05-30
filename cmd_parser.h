@@ -12,9 +12,11 @@ enum cmdparser_state {
     CMDP_SWITCH_START,
     CMDP_SWITCH_SCAN_NAME,
     CMDP_SWITCH_SCAN_VALUE,
+    CMDP_SWITCH_END,
     
     CMDP_PLAIN_START,
     CMDP_PLAIN_SCAN,
+    CMDP_PLAIN_END,
     
     CMDP_DONE
 };
@@ -24,16 +26,19 @@ struct commandline_parser {
     size_t currentIndex;
     
     enum cmdparser_state current_state;
-    
-    int arglistIndex;
-    int currentArgIndex;
+   
+    int arglistIndex; // 
     char** arglist;
+    
+    int currentArgIndex;
     
     BOOL IsDone;
 };
 
 struct commandline_parser make_commandline_parser(char* commandline);
 
-void process_commandline(struct commandline_parser* parser);
+char** process_commandline(char* cmdstring, int* count);
+
+void process_commandline_states(struct commandline_parser* parser);
 
 #endif

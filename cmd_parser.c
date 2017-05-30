@@ -6,18 +6,36 @@
 struct commandline_parser make_commandline_parser(char* commandline)
 {
     struct commandline_parser newParser;
+    newParser.current_state = CMDP_START;
     newParser.commandlineString = commandline;
     newParser.currentIndex = 0;
     
     newParser.arglistIndex = 0;
     newParser.arglist = malloc(sizeof(char*));
+    newParser.currentArgIndex = 0;
     
     newParser.IsDone = FALSE;
     
     return newParser;
 }
 
-void process_commandline(struct commandline_parser* parser)
+char** process_commandline(char* cmdstring, int* count)
+{
+    (void)count;
+    
+    struct commandline_parser parser = make_commandline_parser(cmdstring);
+    
+    while(parser.IsDone == FALSE)
+    {
+        process_commandline_states(&parser);
+    }
+    
+    *count = parser.arglistIndex;
+    
+    return parser.arglist;
+}
+
+void process_commandline_states(struct commandline_parser* parser)
 {
     switch(parser->current_state)
     {
@@ -31,13 +49,20 @@ void process_commandline(struct commandline_parser* parser)
         }
         case CMDP_SCAN:
         {
+            // Check if out of bounds
+            if(parser->currentIndex >= strlen(parser->commandlineString))
+            {
+                parser->current_state = CMDP_DONE;
+                break;
+            }
+            
             if(parser->commandlineString[parser->currentIndex] == '-')
             {
-                parser->current_state = CMDP_SWITCH_SCAN_NAME;
+                parser->current_state = CMDP_SWITCH_START;
             }
             else if(parser->commandlineString[parser->currentIndex] != ' ')
             {
-                parser->current_state = CMDP_PLAIN_SCAN;
+                parser->current_state = CMDP_PLAIN_START;
             }
             else
             {
@@ -48,8 +73,10 @@ void process_commandline(struct commandline_parser* parser)
         }
         case CMDP_SWITCH_START:
         {
-            parser->arglistIndex++;
+            //parser->arglistIndex++; // Increment at the end of an arg scan ?
             parser->arglist[parser->arglistIndex] = malloc(sizeof(char) * 256);
+            
+            parser->currentArgIndex = 0;
             
             parser->current_state = CMDP_SWITCH_SCAN_NAME;
             
@@ -61,12 +88,14 @@ void process_commandline(struct commandline_parser* parser)
             parser->currentIndex++;
             parser->currentArgIndex++;
             
+            // Check if out of bounds
             if(parser->currentIndex >= strlen(parser->commandlineString))
             {
                 parser->current_state = CMDP_DONE;
                 break;
             }
 
+            // Found the end of the name
             if(parser->commandlineString[parser->currentIndex] == ' ')
             {
                 parser->current_state = CMDP_SWITCH_SCAN_VALUE;
@@ -80,17 +109,77 @@ void process_commandline(struct commandline_parser* parser)
             parser->currentIndex++;
             parser->currentArgIndex++;
             
+            // Check if out of bounds            
             if(parser->currentIndex >= strlen(parser->commandlineString))
             {
                 parser->current_state = CMDP_DONE;
                 break;
             }
 
+            // Found the end of the value
             if(parser->commandlineString[parser->currentIndex] == ' ')
             {
-                parser->current_state = CMDP_SCAN;
+                parser->current_state = CMDP_SWITCH_END;
             }
 
+            break;
+        }
+        case CMDP_SWITCH_END:
+        {
+            // Place a null terminator at the end of the extracted argument.
+            // No need to re-increment currentArgIndex since it's going to be
+            // reset to 0 at the next pass.
+            parser->arglist[parser->arglistIndex][parser->currentArgIndex] = '\0';
+            
+            parser->arglistIndex++;
+            
+            parser->current_state = CMDP_SCAN;
+            
+            break;
+        }
+        case CMDP_PLAIN_START:
+        {
+            parser->arglist[parser->arglistIndex] = malloc(sizeof(char) * 256);
+            
+            parser->currentArgIndex = 0;
+            
+            parser->current_state = CMDP_PLAIN_SCAN;
+
+            break;
+        }
+        case CMDP_PLAIN_SCAN:
+        {
+            parser->arglist[parser->arglistIndex][parser->currentArgIndex] = parser->commandlineString[parser->currentIndex];
+            parser->currentIndex++;
+            parser->currentArgIndex++;
+            
+            // Check if out of bounds            
+            if(parser->currentIndex >= strlen(parser->commandlineString))
+            {
+                parser->current_state = CMDP_DONE;
+                break;
+            }
+
+            // Found the end of the value
+            if(parser->commandlineString[parser->currentIndex] == ' ')
+            {
+                parser->current_state = CMDP_PLAIN_END;
+            }
+
+            break;
+        }
+        case CMDP_PLAIN_END:
+        {
+            parser->arglistIndex++;
+            
+            parser->current_state = CMDP_SCAN;
+
+            break;
+        }
+        case CMDP_DONE:
+        {
+            parser->IsDone = TRUE;
+            
             break;
         }
         default:
