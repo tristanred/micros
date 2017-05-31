@@ -1,5 +1,7 @@
 #include "string.h"
+
 #include "memory.h"
+#include "vector.h"
 
 size_t strlen(const char* str)
 {
@@ -154,19 +156,43 @@ int strncmp( const char *lhs, const char *rhs, size_t count )
 }
 
 
-char** strspl(char* buffer, char* separator, size_t amount)
+char** strspl(char* buffer, char* separator, size_t* amount)
 {
-    (void)buffer;
-    (void)separator;
-    (void)amount;
-    
     size_t buflen = strlen(buffer);
-    size_t seplen = strlen(separator);
+    struct vector* elements = vector_create();
     
-    (void)buflen;
-    (void)seplen;
+    size_t index = 0;
     
-    return NULL;
+    size_t accumulatorIndex = 0;
+    char* accumulator = malloc(sizeof(char) * 256));
+    while(i < buflen)
+    {
+        if(strcmp(buffer[i], separator))
+        {
+            // Finish the current element
+            vector_add(elements, accumulator);
+            accumulator = malloc(sizeof(char) * 256));
+            accumulatorIndex = 0;
+        }
+        else
+        {
+            accumulator[accumulatorIndex] = buffer[index];
+            accumulatorIndex++;
+        }
+        
+        index++;
+    }
+    
+    *amount = elements->count;
+    
+    char** result = malloc(elements->count * sizeof(char*));
+    
+    for(size_t i = 0; i < elements->count; i++)
+    {
+        result[i] = (char*)vector_get_at(elements, i);
+    }
+    
+    return result;
 }
 
 char* strrev(char* str)

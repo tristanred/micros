@@ -3,15 +3,15 @@
 
 #include "common.h"
 
-vector* vector_create()
+struct vector* vector_create()
 {
     return vector_create_size(10);
 }
 
 // Vector public interface
-vector* vector_create_size(size_t size)
+struct vector* vector_create_size(size_t size)
 {
-    vector* vec = kmKernelAlloc(sizeof(vector));
+    struct vector* vec = kmKernelAlloc(sizeof(struct vector));
     
     vec->size = size;
     vec->count = 0;
@@ -20,7 +20,7 @@ vector* vector_create_size(size_t size)
     return vec;
 }
 
-void vector_add(vector* vec, void* element)
+void vector_add(struct vector* vec, void* element)
 {
     if(vec == NULL)
         return;
@@ -36,7 +36,7 @@ void vector_add(vector* vec, void* element)
     vec->count++;
 }
 
-void vector_insert(vector* vec, size_t index, void* element)
+void vector_insert(struct vector* vec, size_t index, void* element)
 {
     if(vec == NULL)
         return;
@@ -51,7 +51,7 @@ void vector_insert(vector* vec, size_t index, void* element)
     vec->dataElements[index] = (uint32_t)element;
 }
 
-void vector_remove(vector* vec, void* element)
+void vector_remove(struct vector* vec, void* element)
 {
     if(vec == NULL)
         return;
@@ -68,7 +68,7 @@ void vector_remove(vector* vec, void* element)
     }
 }
 
-void vector_remove_at(vector* vec, size_t index)
+void vector_remove_at(struct vector* vec, size_t index)
 {
     if(vec == NULL)
         return;
@@ -80,7 +80,7 @@ void vector_remove_at(vector* vec, size_t index)
     vec->count--;
 }
 
-void* vector_get_at(vector* vec, size_t index)
+void* vector_get_at(struct vector* vec, size_t index)
 {
     if(vec == NULL)
         return NULL;
@@ -92,7 +92,7 @@ void* vector_get_at(vector* vec, size_t index)
 }
 
 // Vector management methods
-void vector_resize(vector* vec, size_t newSize)
+void vector_resize(struct vector* vec, size_t newSize)
 {
     if(vec == NULL)
         return;
@@ -115,7 +115,7 @@ void vector_resize(vector* vec, size_t newSize)
     }
 }
 
-void vector_shift_left(vector* vec, size_t startIndex)
+void vector_shift_left(struct vector* vec, size_t startIndex)
 {
     if(vec == NULL)
         return;
@@ -134,7 +134,7 @@ void vector_shift_left(vector* vec, size_t startIndex)
     //kmKernelCopy(vec->dataElements[startIndex], vec->dataElements[startIndex - 1]);
 }
 
-void vector_shift_right(vector* vec, size_t startIndex)
+void vector_shift_right(struct vector* vec, size_t startIndex)
 {
     if(vec == NULL)
         return;

@@ -1,14 +1,16 @@
 #include "kernel_features.h"
 
+#include "memory.h"
 #include "string.h"
 #include "multiboot.h"
 #include "kernel.h"
+#include "cmd_parser.h"
 
 void init_module_kernel_features(struct kernel_info_block* kinfo)
 {
     features = &kinfo->m_kernel_features;
     
-    features->current_graphic_mode = 0;
+    features->current_graphic_mode = TEXT;
     features->isDebugBuild = FALSE;
     features->kernel_options_size = 0;
     features->kernel_options = NULL;
@@ -31,9 +33,17 @@ void kfDetectFeatures(multiboot_info_t* info)
         //CmdLine = TRUE;
         unsigned char* CommandlineText = (unsigned char*)info->cmdline;
         
-        features->kernel_options = parse_commandline(CommandlineText, features->kernel_options_size);
+        if(validate_commandline(CommandlineText))
+        {
+            features->kernel_options = parse_commandline(CommandlineText, features->kernel_options_size);
+            
+            activate_options(features->kernel_options, features->kernel_options_size);
+        }
+        else
+        {
+            
+        }
         
-        activate_options(features->kernel_options, features->kernel_options_size);
     }
 }
 
@@ -51,25 +61,66 @@ void kfDetectFeatures(multiboot_info_t* info)
  *
  */
 
-unsigned char** parse_commandline(unsigned char* cmdline, size_t argsSize)
-{
-    (void)cmdline;
-    (void)argsSize;
-    
-    return NULL;
-}
-
+/**
+ * Currently only checking for string length under 256 because commandline
+ * parser is restricted for arguments under 256 chars.
+ */
 BOOL validate_commandline(unsigned char* cmdline)
 {
-    (void)cmdline;
+    size_t length = strlen(cmdline);
     
-    return TRUE;
+    return length < 256;
 }
 
-void activate_options(unsigned char** cmdline, size_t size)
+void activate_options(unsigned char** cmdline, int size)
 {
-    (void)cmdline;
-    (void)size;
+    for(int i = 0; i < size; i++)
+    {
+        char* argument = cmdline[i];
+        
+        if(strncmp(argument, "-f", 2))
+        {
+            size_t amount;
+            char** feature = strspl(argument, " ", &amount);
+            
+            if(amount >= 2)
+            {
+                activate_features(feature[1]);
+            }
+            
+            for(int k = 0; k < amount; k++)
+            {
+                free(feature[k]);
+            }
+            
+            free(feature);
+        }
+    }
+}
+
+void activate_features(char* feature_arg)
+{
+    size_t length = strlen(feature_arg);
+    
+    for(size_t i = 0; i < length; i++)
+    {
+        switch(feature_arg[i])
+        {
+            case 'd':
+            {
+                features->isDebugBuild == TRUE;
+                
+                break;
+            }
+            case 'g':
+            {
+                features->current_graphic_mode = VGA_GRAPHICS;
+                
+                break;
+            }
+        }
+    }
+    
 }
 
 BOOL kfSupportGraphics()

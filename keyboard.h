@@ -173,7 +173,7 @@ typedef struct
 } keyevent_info;
 
 typedef void (*hookfn)(keyevent_info*);
-vector* keyboard_hooks;
+struct vector* keyboard_hooks;
 
 
 // Driver internal methods

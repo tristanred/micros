@@ -20,7 +20,7 @@ int strncmp( const char *lhs, const char *rhs, size_t count );
 // My functions
 
 // Split a string into multiple strings separated by 'separator'
-char** strspl(char* buffer, char* separator, size_t amount);
+char** strspl(char* buffer, char* separator, size_t* amount);
 
 // Reverse a string
 char* strrev(char* str);
