@@ -19,7 +19,7 @@ struct commandline_parser make_commandline_parser(char* commandline)
     return newParser;
 }
 
-char** process_commandline(char* cmdstring, int* count)
+char** parse_commandline(char* cmdstring, int* count)
 {
     (void)count;
     
@@ -49,8 +49,7 @@ void process_commandline_states(struct commandline_parser* parser)
         }
         case CMDP_SCAN:
         {
-            // Check if out of bounds
-            if(parser->currentIndex >= strlen(parser->commandlineString))
+            if(commandline_out_of_bounds(parser))
             {
                 parser->current_state = CMDP_DONE;
                 break;
@@ -84,12 +83,9 @@ void process_commandline_states(struct commandline_parser* parser)
         }
         case CMDP_SWITCH_SCAN_NAME:
         {
-            parser->arglist[parser->arglistIndex][parser->currentArgIndex] = parser->commandlineString[parser->currentIndex];
-            parser->currentIndex++;
-            parser->currentArgIndex++;
+            commandline_append_next_char(parser);
             
-            // Check if out of bounds
-            if(parser->currentIndex >= strlen(parser->commandlineString))
+            if(commandline_out_of_bounds(parser))
             {
                 parser->current_state = CMDP_DONE;
                 break;
@@ -105,12 +101,9 @@ void process_commandline_states(struct commandline_parser* parser)
         }
         case CMDP_SWITCH_SCAN_VALUE:
         {
-            parser->arglist[parser->arglistIndex][parser->currentArgIndex] = parser->commandlineString[parser->currentIndex];
-            parser->currentIndex++;
-            parser->currentArgIndex++;
+            commandline_append_next_char(parser);
             
-            // Check if out of bounds            
-            if(parser->currentIndex >= strlen(parser->commandlineString))
+            if(commandline_out_of_bounds(parser))
             {
                 parser->current_state = CMDP_DONE;
                 break;
@@ -149,12 +142,9 @@ void process_commandline_states(struct commandline_parser* parser)
         }
         case CMDP_PLAIN_SCAN:
         {
-            parser->arglist[parser->arglistIndex][parser->currentArgIndex] = parser->commandlineString[parser->currentIndex];
-            parser->currentIndex++;
-            parser->currentArgIndex++;
+            commandline_append_next_char(parser);
             
-            // Check if out of bounds            
-            if(parser->currentIndex >= strlen(parser->commandlineString))
+            if(commandline_out_of_bounds(parser))
             {
                 parser->current_state = CMDP_DONE;
                 break;
@@ -187,4 +177,16 @@ void process_commandline_states(struct commandline_parser* parser)
             break;
         }
     }
+}
+
+BOOL commandline_out_of_bounds(struct commandline_parser* parser)
+{
+    return parser->currentIndex >= strlen(parser->commandlineString);
+}
+
+void commandline_append_next_char(struct commandline_parser* parser)
+{
+    parser->arglist[parser->arglistIndex][parser->currentArgIndex] = parser->commandlineString[parser->currentIndex];
+    parser->currentIndex++;
+    parser->currentArgIndex++;
 }

@@ -37,8 +37,12 @@ struct commandline_parser {
 
 struct commandline_parser make_commandline_parser(char* commandline);
 
-char** process_commandline(char* cmdstring, int* count);
+char** parse_commandline(char* cmdstring, int* count);
 
 void process_commandline_states(struct commandline_parser* parser);
+
+BOOL commandline_out_of_bounds(struct commandline_parser* parser);
+
+void commandline_append_next_char(struct commandline_parser* parser);
 
 #endif
