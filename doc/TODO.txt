@@ -1,36 +1,19 @@
-Demo Milestone :
+I. Memory
+  1. Paging
+    a. Create the paging data structure in memory. Load it into the proc. 
+    b. Setup identity paging for kernel pages. Maybe for everything for a start.
+    c. Create pagefault handler
+    d. Integrate paging management into the MM module.
+  2. Dynamic allocation
+    a. Store the current block preallocation with other names so we can switch
+       allocation schemes.
+    b. Create data structre for the allocation table. Table must be resizable
+       so it must disable interrupts and do some kernel stuff to maintain 
+       consistency.
+    c. Replace malloc/free funtions with methods that maintains the allocation
+       structure.
+  
+II. Disk IO
+  1. Find out how the hell it works.
 
-* Bootmem should detect the correct size of RAM
-
-* Animated boot sequence
-
-* Fake-Terminal to run simple commands
-  - Framebuffer text editing
-  - User press enter to enter a new line
-  - Show realtime ms ticks.
-
-* Better logging of the boot sequence
-
-* Catch General Protection faults and show an alert on screen then HALT
-
-
-Polish
-
-* Remove the keyboard handler registration from timer.c
-
-* Folder reorganization
-
-* Memory Manager dynamic allocation
-    - By storing the size of the allocation right before the allocated block
-      and keeping the allocations in a dynamic array we can avoid going through
-      the memory pools of the current implementation.
-      
-* Correct 1ms or less timer tick.
-
-* Fullscreen lines swirl-like animation
-
-
-Files needing organization
-
-* Cleanup GDT and IDT files + comment & document
-
+III. Build system
