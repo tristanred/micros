@@ -35,7 +35,7 @@ void kfDetectFeatures(multiboot_info_t* info)
         
         if(validate_commandline(CommandlineText))
         {
-            features->kernel_options = parse_commandline(CommandlineText, features->kernel_options_size);
+            features->kernel_options = parse_commandline(CommandlineText, &features->kernel_options_size);
             
             activate_options(features->kernel_options, features->kernel_options_size);
         }
@@ -78,7 +78,7 @@ void activate_options(unsigned char** cmdline, int size)
     {
         char* argument = cmdline[i];
         
-        if(strncmp(argument, "-f", 2))
+        if(strncmp(argument, "-f", 2) == 0)
         {
             size_t amount;
             char** feature = strspl(argument, " ", &amount);

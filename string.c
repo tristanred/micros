@@ -134,7 +134,7 @@ int strcmp( const char *lhs, const char *rhs )
 
 int strncmp( const char *lhs, const char *rhs, size_t count )
 {
-    size_t i;
+    size_t i = 0;
     while(lhs[i] && i < count)
     {
         if(lhs[i] != rhs[i])

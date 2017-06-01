@@ -30,7 +30,7 @@ char** parse_commandline(char* cmdstring, int* count)
         process_commandline_states(&parser);
     }
     
-    *count = parser.arglistIndex;
+    *count = parser.arglistIndex + 1;
     
     return parser.arglist;
 }
