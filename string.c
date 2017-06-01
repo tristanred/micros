@@ -167,7 +167,7 @@ char** strspl(char* buffer, char* separator, size_t* amount)
     char* accumulator = malloc(sizeof(char) * 256);
     while(index < buflen)
     {
-        if(strcmp(buffer[index], separator))
+        if(strcmp(buffer[index], separator) == 0)
         {
             // Finish the current element
             vector_add(elements, accumulator);
