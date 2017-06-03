@@ -24,7 +24,7 @@ struct kernel_features {
     
     // Build options
     int kernel_options_size;
-    unsigned char** kernel_options;
+    char** kernel_options;
     
     enum graphical_modes current_graphic_mode;
     
@@ -35,9 +35,9 @@ struct kernel_features* features;
 
 void init_module_kernel_features(struct kernel_info_block* kinfo);
 
-BOOL validate_commandline(unsigned char* cmdline);
+BOOL validate_commandline(char* cmdline);
 
-void activate_options(unsigned char** cmdline, int size);
+void activate_options(char** cmdline, int size);
 
 void activate_features(char* feature_arg);
 

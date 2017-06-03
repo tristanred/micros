@@ -31,7 +31,7 @@ void kfDetectFeatures(multiboot_info_t* info)
     if(info->flags & 4)
     {
         //CmdLine = TRUE;
-        unsigned char* CommandlineText = (unsigned char*)info->cmdline;
+        char* CommandlineText = (char*)info->cmdline;
         
         if(validate_commandline(CommandlineText))
         {
@@ -65,15 +65,16 @@ void kfDetectFeatures(multiboot_info_t* info)
  * Currently only checking for string length under 256 because commandline
  * parser is restricted for arguments under 256 chars.
  */
-BOOL validate_commandline(unsigned char* cmdline)
+BOOL validate_commandline(char* cmdline)
 {
     size_t length = strlen(cmdline);
     
     return length < 256;
 }
 
-void activate_options(unsigned char** cmdline, int size)
+void activate_options(char** cmdline, int size)
 {
+    Debugger();
     for(int i = 0; i < size; i++)
     {
         char* argument = cmdline[i];
@@ -88,7 +89,7 @@ void activate_options(unsigned char** cmdline, int size)
                 activate_features(feature[1]);
             }
             
-            for(int k = 0; k < amount; k++)
+            for(size_t k = 0; k < amount; k++)
             {
                 free(feature[k]);
             }
@@ -108,7 +109,7 @@ void activate_features(char* feature_arg)
         {
             case 'd':
             {
-                features->isDebugBuild == TRUE;
+                features->isDebugBuild = TRUE;
                 
                 break;
             }

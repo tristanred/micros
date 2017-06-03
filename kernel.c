@@ -64,16 +64,20 @@ void kernel_main(multiboot_info_t* arg1)
 {    
     panic = FALSE;
     
+    setupGdt();
+    setupIdt();
+
+    kSetupLog(SERIAL_COM1_BASE);    
+    kmInitManager();
+    
     setup_kernel_block();
     init_module_kernel_features(kernel_info);
     
-    kSetupLog(SERIAL_COM1_BASE);
-
-    kmInitManager();
-
     kWriteLog("***** Kernel Init *****");
     
     kWriteLog_format1d("WASD %d egugugug", 1234);
+    
+    kfDetectFeatures(arg1);
     
     /*
      * The kernel_main method currently receives the Multiboot info structure
@@ -83,8 +87,6 @@ void kernel_main(multiboot_info_t* arg1)
      */
     btmConfigureMemoryRanges(arg1);
 
-    setupGdt();
-    setupIdt();
     
     // asm volatile ("int $0x3");
     // asm volatile ("int $0x4");
