@@ -111,7 +111,7 @@ char* strncpy(char* dest, const char* src, size_t count)
 
 int strcmp( const char *lhs, const char *rhs )
 {
-    size_t i;
+    size_t i = 0;
     while(lhs[i])
     {
         if(lhs[i] != rhs[i])
@@ -167,9 +167,10 @@ char** strspl(char* buffer, char* separator, size_t* amount)
     char* accumulator = malloc(sizeof(char) * 256);
     while(index < buflen)
     {
-        if(strcmp(buffer[index], separator) == 0)
+        if(strncmp(&buffer[index], separator, 1) == 0)
         {
             // Finish the current element
+            // TODO : null terminate the accumulator ?            
             vector_add(elements, accumulator);
             accumulator = malloc(sizeof(char) * 256);
             accumulatorIndex = 0;
@@ -183,6 +184,12 @@ char** strspl(char* buffer, char* separator, size_t* amount)
         index++;
     }
     
+    if(accumulatorIndex > 0)
+    {
+        // TODO : null terminate the accumulator ?
+        vector_add(elements, accumulator);
+    }
+    
     *amount = elements->count;
     
     char** result = malloc(elements->count * sizeof(char*));
@@ -191,6 +198,8 @@ char** strspl(char* buffer, char* separator, size_t* amount)
     {
         result[i] = (char*)vector_get_at(elements, i);
     }
+    
+    free(elements);
     
     return result;
 }
