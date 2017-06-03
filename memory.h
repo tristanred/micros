@@ -20,6 +20,41 @@ struct AllocationUnit
 };
 typedef struct AllocationUnit alloc_unit_t;
 
+struct memstats
+{
+    size_t small_pool_count;
+    size_t small_pool_used;
+    size_t small_pool_free;
+    
+    size_t small_pool_mem_unit;
+    size_t small_pool_mem_used;
+    size_t small_pool_mem_free;
+    
+    size_t page_pool_count;
+    size_t page_pool_used;
+    size_t page_pool_free;
+    
+    size_t page_pool_mem_unit;
+    size_t page_pool_mem_used;
+    size_t page_pool_mem_free;
+    
+    size_t large_pool_count;
+    size_t large_pool_used;
+    size_t large_pool_free;
+    
+    size_t large_pool_mem_unit;
+    size_t large_pool_mem_used;
+    size_t large_pool_mem_free;
+
+    size_t total_alloc_amount;
+    size_t total_alloc_used;
+    size_t total_alloc_free;
+
+    size_t total_memory_amount;
+    size_t total_memory_used;
+    size_t total_memory_free;
+};
+
 #define small_pool_unit 256
 #define page_pool_unit 1024 * 4
 #define large_pool_unit 1024 * 32
@@ -48,10 +83,13 @@ void kmKernelZero(void* ptrFrom);
 
 
 // Pool management method
-
 size_t kmCountFreeSmallPoolUnits();
 size_t kmCountFreePagePoolUnits();
 size_t kmCountFreeLargePoolUnits();
+
+// Memory statistics methods
+struct memstats* kmGetMemoryStats();
+char** kmGetMemoryStatsText(int* linesCount);
 
 // User mode memory methods
 // Currently define'd while userspace implementation is created

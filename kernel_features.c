@@ -74,7 +74,6 @@ BOOL validate_commandline(char* cmdline)
 
 void activate_options(char** cmdline, int size)
 {
-    Debugger();
     for(int i = 0; i < size; i++)
     {
         char* argument = cmdline[i];

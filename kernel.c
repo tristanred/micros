@@ -78,7 +78,16 @@ void kernel_main(multiboot_info_t* arg1)
     kWriteLog_format1d("WASD %d egugugug", 1234);
     
     kfDetectFeatures(arg1);
+
+    kWriteLog("***** KERNEL MEMORY STATS *****");        
+    int total = 0;
+    char** x = kmGetMemoryStatsText(&total);
     
+    for(int i = 0; i < total; i++)
+    {
+        kWriteLog(x[i]);
+    }
+
     /*
      * The kernel_main method currently receives the Multiboot info structure
      * from the boot.s code, contained in register EBX with the help of
