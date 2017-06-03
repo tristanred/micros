@@ -19,6 +19,9 @@ int strncmp( const char *lhs, const char *rhs, size_t count );
 
 // My functions
 
+// Self allocating sprintf function
+char* alloc_sprintf_1d(char* buffer, const char* format, uint64_t number, int* nbWritten);
+
 // Split a string into multiple strings separated by 'separator'
 char** strspl(char* buffer, char* separator, size_t* amount);
 

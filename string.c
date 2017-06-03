@@ -155,6 +155,22 @@ int strncmp( const char *lhs, const char *rhs, size_t count )
     return 0;
 }
 
+char* alloc_sprintf_1d(char* buffer, const char* format, uint64_t number, int* nbWritten)
+{
+    //ASSERT(buffer == NULL, "alloc_sprintf_1d BUFFER IS NOT NULL");
+    
+    // Hacky calculation. 64 bit max number is 20 digits.
+    int bufMaxLength = strlen(format) + 20; 
+    
+    buffer = malloc(sizeof(char) * bufMaxLength);
+    
+    int bytesWritten = sprintf_1d(buffer, format, number);
+    
+    if(nbWritten != NULL)
+        *nbWritten = bytesWritten;
+    
+    return buffer;
+}
 
 char** strspl(char* buffer, char* separator, size_t* amount)
 {
@@ -170,7 +186,7 @@ char** strspl(char* buffer, char* separator, size_t* amount)
         if(strncmp(&buffer[index], separator, 1) == 0)
         {
             // Finish the current element
-            // TODO : null terminate the accumulator ?            
+            accumulator[accumulatorIndex] = '\0';
             vector_add(elements, accumulator);
             accumulator = malloc(sizeof(char) * 256);
             accumulatorIndex = 0;
@@ -186,7 +202,7 @@ char** strspl(char* buffer, char* separator, size_t* amount)
     
     if(accumulatorIndex > 0)
     {
-        // TODO : null terminate the accumulator ?
+        accumulator[accumulatorIndex] = '\0';
         vector_add(elements, accumulator);
     }
     
