@@ -71,11 +71,9 @@ alloc_unit_t largePool[large_pool_size];
 
 // Paging Stuff
 #define PAGE_ALL_PRESENT
-//uint32_t page_directory[1024] __attribute__((aligned(4096)));
+
 uint32_t page_directory[1024] __attribute__((aligned(4096)));
 uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
-
-uint32_t first_page_table[1024] __attribute__((aligned(4096)));
 
 void setup_paging();
 
