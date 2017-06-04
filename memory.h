@@ -76,6 +76,7 @@ uint32_t page_directory[1024] __attribute__((aligned(4096)));
 uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
 
 void setup_paging();
+void switch_phys_address(uint32_t addressFrom, uint32_t addressTo);
 
 void kmInitManager();
 

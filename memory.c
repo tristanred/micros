@@ -53,6 +53,17 @@ void setup_paging()
     enablePaging();
 }
 
+void switch_phys_address(uint32_t addressFrom, uint32_t addressTo)
+{
+    uint32_t upper10 = addressFrom & 0xFFC00000;
+    uint32_t pdeIndex = upper10 >> 22;
+    
+    uint32_t lower10 = addressFrom & 0x3FF000;
+    uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
+    
+    page_tables[pte] = (addressTo & 0xFFFFF000) | 3;
+}
+
 void kmInitManager()
 {
     basePoolsAddress = 1024 * 1024 * 5; // 1MB

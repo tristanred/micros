@@ -69,7 +69,30 @@ void kernel_main(multiboot_info_t* arg1)
 
     kSetupLog(SERIAL_COM1_BASE);    
     kmInitManager();
+
     setup_paging();
+    
+    char* far_address = (char*)0x3C00000; // 60 MB
+    char* close_address = (char*)0xF00000;
+    
+    strcpy(far_address, "far_address\0");
+    strcpy(close_address, "close_address\0");
+    
+    Debugger();
+    switch_phys_address(0x3C00000, 0xF00000); // Map 60 MB to 15 MB
+    //switch_phys_address(0xF00000, 0x3C00000);
+    strcpy(far_address, "xx_far_address_after_mapping\0");
+    
+    
+    // char* result = (char*)0xF00000;
+    // //strcpy(result, "after_mapping\0");
+    // result[0] = 66;
+    // result[1] = 77;
+    // result[2] = 88;
+    // result[3] = 99;
+    // result[4] = 22;
+    // result[5] = 33;
+    // result[6] = 44;
     
     setup_kernel_block();
     init_module_kernel_features(kernel_info);
@@ -95,7 +118,7 @@ void kernel_main(multiboot_info_t* arg1)
      * the boot loader. The other arguments are to test the presence of
      * other parameters pushed into the method, helpful for debugging.
      */
-    btmConfigureMemoryRanges(arg1);
+    //btmConfigureMemoryRanges(arg1);
 
     char* x = *(char*)0x06400000; // Generates a page fault.
 
