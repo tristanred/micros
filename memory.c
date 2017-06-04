@@ -4,6 +4,55 @@
 #include "common.h"
 #include "string.h"
 
+extern void set_paging();
+extern void enablePaging();
+
+void setup_paging()
+{
+    int a = 0;
+    int addr = 0;
+    for(int k = 0; k < 1024; k++)
+    {
+        for(int i = 0; i < 1024; i++)
+        {
+            // As the address is page aligned, it will always leave 12 bits zeroed.
+            // Those bits are used by the attributes ;)
+            page_tables[a++] = addr | 3; // attributes: supervisor level, read/write, present.
+            
+            addr += 0x1000; // Target the next 4KB page.
+        }
+        
+        #ifdef PAGE_ALL_PRESENT
+        // Currently for debugging, we'll identity map all the pages to the 
+        // physical address.
+        
+        // attributes: supervisor level, read/write, present
+        page_directory[k] = ((uint32_t)&page_tables[k * 1024]) | 3;
+        
+        #else
+        
+        // If not, we must map the first 8MB (first 2 page directories) to
+        // be present because most of the OS currently lives under the 8 first
+        // MB's. Rest of the pages are marked not-present to allow testing
+        // page faults.
+        
+        if(k == 0 || k == 1)
+        {
+            page_directory[k] = ((uint32_t)&page_tables[k * 1024]) | 3;
+        }
+        else
+        {
+            page_directory[k] = ((uint32_t)&page_tables[k * 1024]) | 2;
+        }
+
+        #endif
+        
+    }
+    
+    set_paging(page_directory);
+    enablePaging();
+}
+
 void kmInitManager()
 {
     basePoolsAddress = 1024 * 1024 * 5; // 1MB

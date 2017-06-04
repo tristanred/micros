@@ -123,6 +123,14 @@ void isr_handler(registers_t regs)
    {
        GeneralProtectionFault();
    }
+   else if(regs.int_no == 14) // PAGE FAULT
+   {
+       // TODO : HANDLE PAGE FAULT
+       
+       // If page fault was handled. The faulting instruction will be replayed.
+       // Right now, we'll just skip the instruction.
+       regs.eip++;
+   }
 }
 
 // This gets called from our ASM interrupt handler stub.

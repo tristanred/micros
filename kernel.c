@@ -69,6 +69,7 @@ void kernel_main(multiboot_info_t* arg1)
 
     kSetupLog(SERIAL_COM1_BASE);    
     kmInitManager();
+    setup_paging();
     
     setup_kernel_block();
     init_module_kernel_features(kernel_info);
@@ -79,14 +80,14 @@ void kernel_main(multiboot_info_t* arg1)
     
     kfDetectFeatures(arg1);
 
-    kWriteLog("***** KERNEL MEMORY STATS *****");        
-    int total = 0;
-    char** x = kmGetMemoryStatsText(&total);
+    // kWriteLog("***** KERNEL MEMORY STATS *****");        
+    // int total = 0;
+    // char** x = kmGetMemoryStatsText(&total);
     
-    for(int i = 0; i < total; i++)
-    {
-        kWriteLog(x[i]);
-    }
+    // for(int i = 0; i < total; i++)
+    // {
+    //     kWriteLog(x[i]);
+    // }
 
     /*
      * The kernel_main method currently receives the Multiboot info structure
@@ -96,7 +97,8 @@ void kernel_main(multiboot_info_t* arg1)
      */
     btmConfigureMemoryRanges(arg1);
 
-    
+    char* x = *(char*)0x06400000; // Generates a page fault.
+
     // asm volatile ("int $0x3");
     // asm volatile ("int $0x4");
 
