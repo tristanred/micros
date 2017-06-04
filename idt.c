@@ -126,7 +126,7 @@ void isr_handler(registers_t regs)
    else if(regs.int_no == 14) // PAGE FAULT
    {
        // TODO : HANDLE PAGE FAULT
-       
+       Debugger();
        // If page fault was handled. The faulting instruction will be replayed.
        // Right now, we'll just skip the instruction.
        regs.eip++;

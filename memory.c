@@ -6,6 +6,7 @@
 
 extern void set_paging();
 extern void enablePaging();
+// extern void invalidateEntry(uint32_t address);
 
 void setup_paging()
 {
@@ -23,7 +24,7 @@ void setup_paging()
         }
         
         #ifdef PAGE_ALL_PRESENT
-        // Currently for debugging, we'll identity map all the pages to the 
+        // Currently for debugging, we'll identity-map all the pages to the 
         // physical address.
         
         // attributes: supervisor level, read/write, present
@@ -36,7 +37,7 @@ void setup_paging()
         // MB's. Rest of the pages are marked not-present to allow testing
         // page faults.
         
-        if(k == 0 || k == 1)
+        if(k <= 1)
         {
             page_directory[k] = ((uint32_t)&page_tables[k * 1024]) | 3;
         }
@@ -53,15 +54,22 @@ void setup_paging()
     enablePaging();
 }
 
-void switch_phys_address(uint32_t addressFrom, uint32_t addressTo)
+void map_phys_address(uint32_t addressFrom, uint32_t addressTo)
 {
+    // Take top 10 bits to identify the page directory
     uint32_t upper10 = addressFrom & 0xFFC00000;
     uint32_t pdeIndex = upper10 >> 22;
     
+    // Take the middle 10 bits to identify the page table (of the directory above)
     uint32_t lower10 = addressFrom & 0x3FF000;
     uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
     
+    // Assign the 12 low bits from the target with the flags Present and R/W.
     page_tables[pte] = (addressTo & 0xFFFFF000) | 3;
+    
+    // I'm invalidating both addresses just in case, will test for validity.
+    asm volatile("invlpg (%0)" ::"r" (addressFrom) : "memory");
+    asm volatile("invlpg (%0)" ::"r" (addressTo) : "memory");
 }
 
 void kmInitManager()
