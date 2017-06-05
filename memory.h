@@ -72,8 +72,14 @@ alloc_unit_t largePool[large_pool_size];
 // Paging Stuff
 #define PAGE_ALL_PRESENT
 
-uint32_t page_directory[1024] __attribute__((aligned(4096)));
-uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
+struct page_table_info
+{
+    uint32_t page_directory[1024] __attribute__((aligned(4096)));
+    uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
+} __attribute__((aligned(4096)));
+ 
+// Storing a default page table before I start getting multiple address mappings
+struct page_table_info defaultPageTable;
 
 void setup_paging();
 void map_phys_address(uint32_t addressFrom, uint32_t addressTo);

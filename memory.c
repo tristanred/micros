@@ -18,7 +18,7 @@ void setup_paging()
         {
             // As the address is page aligned, it will always leave 12 bits zeroed.
             // Those bits are used by the attributes ;)
-            page_tables[a++] = addr | 3; // attributes: supervisor level, read/write, present.
+            defaultPageTable.page_tables[a++] = addr | 3; // attributes: supervisor level, read/write, present.
             
             addr += 0x1000; // Target the next 4KB page.
         }
@@ -28,7 +28,7 @@ void setup_paging()
         // physical address.
         
         // attributes: supervisor level, read/write, present
-        page_directory[k] = ((uint32_t)&page_tables[k * 1024]) | 3;
+        defaultPageTable.page_directory[k] = ((uint32_t)&defaultPageTable.page_tables[k * 1024]) | 3;
         
         #else
         
@@ -39,18 +39,18 @@ void setup_paging()
         
         if(k <= 1)
         {
-            page_directory[k] = ((uint32_t)&page_tables[k * 1024]) | 3;
+            page_directory[k] = ((uint32_t)&defaultPageTable.page_tables[k * 1024]) | 3;
         }
         else
         {
-            page_directory[k] = ((uint32_t)&page_tables[k * 1024]) | 2;
+            page_directory[k] = ((uint32_t)&defaultPageTable.page_tables[k * 1024]) | 2;
         }
 
         #endif
         
     }
     
-    set_paging(page_directory);
+    set_paging(defaultPageTable.page_directory);
     enablePaging();
 }
 
@@ -65,7 +65,7 @@ void map_phys_address(uint32_t addressFrom, uint32_t addressTo)
     uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
     
     // Assign the 12 low bits from the target with the flags Present and R/W.
-    page_tables[pte] = (addressTo & 0xFFFFF000) | 3;
+    defaultPageTable.page_tables[pte] = (addressTo & 0xFFFFF000) | 3;
     
     // I'm invalidating both addresses just in case, will test for validity.
     asm volatile("invlpg (%0)" ::"r" (addressFrom) : "memory");
