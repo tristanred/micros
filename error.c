@@ -1,8 +1,26 @@
 #include "error.h"
 
 #include "kernel_log.h"
+#include "framebuffer.h"
 
 extern void error();
+
+void PanicQuit(char* message)
+{
+    fbClear();
+    fbMoveCursor(0, 0);
+    fbPutString("PANIC : ");
+    fbPutString(message);
+    
+    panic = TRUE;
+    
+    error();
+}
+
+void Debugger()
+{
+    
+}
 
 void TemplateFault(char* msg)
 {
