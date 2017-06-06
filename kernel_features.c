@@ -8,7 +8,11 @@
 
 void init_module_kernel_features(struct kernel_info_block* kinfo)
 {
-    features = &kinfo->m_kernel_features;
+    // INFO : Template module initialization
+    // 1. use alloc_kernel_module to place the structure at the correct memory location
+    // 2. Link the structure in the kernel info block.
+    features = alloc_kernel_module(sizeof(struct kernel_features));
+    kinfo->m_kernel_features = features;
     
     features->current_graphic_mode = TEXT;
     features->isDebugBuild = FALSE;

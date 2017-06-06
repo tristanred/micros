@@ -27,6 +27,8 @@
 
 #include "kernel.h"
 
+#include "kernel_features.h"
+
 #include "multiboot.h"
 
 #include "bootmem.h"
@@ -91,6 +93,7 @@ void kernel_main(multiboot_info_t* arg1)
     
     setup_kernel_block();
     init_module_kernel_features(kernel_info);
+    init_module_memory_manager(kernel_info);
     
     kWriteLog("***** Kernel Init *****");
     
@@ -163,18 +166,18 @@ void setup_kernel_block()
     kernel_info->modules_current_offset = kernel_info->modules_start_address;
 }
 
-// void* alloc_kernel_module(size_t size)
-// {
-//     if(!has_free_modules_space())
-//         return NULL;
+void* alloc_kernel_module(size_t size)
+{
+    if(!has_free_modules_space())
+        return NULL;
     
-//     uint32_t nextModuleAddress = kernel_info->modules_current_offset + size;
-//     kernel_info->modules_current_offset += size;
+    uint32_t nextModuleAddress = kernel_info->modules_current_offset + size;
+    kernel_info->modules_current_offset += size;
     
-//     return (void*)nextModuleAddress;
-// }
+    return (void*)nextModuleAddress;
+}
 
-// BOOL has_free_modules_space()
-// {
-//     return kernel_info->modules_start_address + kernel_info->modules_current_offset < kernel_info->modules_end_address;
-// }
+BOOL has_free_modules_space()
+{
+    return kernel_info->modules_start_address + kernel_info->modules_current_offset < kernel_info->modules_end_address;
+}

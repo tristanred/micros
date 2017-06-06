@@ -1,5 +1,6 @@
 #include "memory.h"
 
+#include "kernel.h"
 #include "kernel_log.h"
 #include "common.h"
 #include "string.h"
@@ -70,6 +71,34 @@ void map_phys_address(uint32_t addressFrom, uint32_t addressTo)
     // I'm invalidating both addresses just in case, will test for validity.
     asm volatile("invlpg (%0)" ::"r" (addressFrom) : "memory");
     asm volatile("invlpg (%0)" ::"r" (addressTo) : "memory");
+}
+
+int count_pages(enum page_frame_flags findFlags)
+{
+    int totalCount = 0;
+    for(int i = 0; i < 1024*1024; i++)
+    {
+        if(kMemoryManager->currentPageTable->page_tables[i] & findFlags)
+            totalCount++;
+    }
+    
+    return totalCount;
+}
+
+uint32_t* find_pages(enum page_frame_flags findFlags, int* count)
+{
+    (void)findFlags;
+    (void)count;
+    
+    return NULL;
+}
+
+void init_module_memory_manager(struct kernel_info_block* kinfo)
+{
+    kMemoryManager = alloc_kernel_module(sizeof(struct memory_manager));
+    kinfo->m_memory_manager = kMemoryManager;
+    
+    
 }
 
 void kmInitManager()

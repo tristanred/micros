@@ -1,6 +1,8 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+struct kernel_info_block;
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -83,6 +85,31 @@ struct page_table_info defaultPageTable;
 
 void setup_paging();
 void map_phys_address(uint32_t addressFrom, uint32_t addressTo);
+
+// TODO : Find prefix for paging methods
+
+enum page_frame_flags {
+    PG_PRESENT = 1,
+    PG_WRITABLE = 2,
+    PG_ACCESSED = 32,
+    PG_DIRTY = 64
+};
+
+int count_pages(enum page_frame_flags findFlags);
+uint32_t* find_pages(enum page_frame_flags findFlags, int* count);
+
+// Memory Manager stuff
+
+struct memory_manager {
+    struct page_table_info* currentPageTable;
+    
+    int managed_pagetables_amount;
+    struct page_table_info* managed_pagetables;
+};
+
+struct memory_manager* kMemoryManager;
+
+void init_module_memory_manager(struct kernel_info_block* kinfo);
 
 void kmInitManager();
 

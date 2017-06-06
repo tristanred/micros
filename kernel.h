@@ -2,8 +2,10 @@
 #define KERNEL_H
 
 #include <stddef.h>
+#include "types.h"
 
-#include "kernel_features.h"
+struct kernel_features;
+struct memory_manager;
 
 /**
  * The Kernel Info Block is the root structure of the kernel. This structure
@@ -18,14 +20,15 @@ struct kernel_info_block {
     size_t modules_current_offset;
     
     // Kernel module structsS
-    struct kernel_features m_kernel_features;
+    struct kernel_features* m_kernel_features;
+    struct memory_manager* m_memory_manager;
 };
 struct kernel_info_block* kernel_info;
 
 void setup_kernel_block();
 
-// void* alloc_kernel_module(size_t size);
+void* alloc_kernel_module(size_t size);
 
-// BOOL has_free_modules_space();
+BOOL has_free_modules_space();
 
 #endif
