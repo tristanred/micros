@@ -45,6 +45,8 @@
 #include "vector.h"
 #include "error.h"
 #include "terminal.h"
+#include "disk.h"
+#include "pci.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -71,7 +73,7 @@ void kernel_main(multiboot_info_t* arg1)
 
     kSetupLog(SERIAL_COM1_BASE);    
     kmInitManager();
-
+        
     setup_paging();
     
     char* far_address = (char*)0x3C00000; // 60 MB
@@ -96,8 +98,6 @@ void kernel_main(multiboot_info_t* arg1)
     init_module_memory_manager(kernel_info);
     
     kWriteLog("***** Kernel Init *****");
-    
-    kWriteLog_format1d("WASD %d egugugug", 1234);
     
     kfDetectFeatures(arg1);
 
@@ -124,6 +124,9 @@ void kernel_main(multiboot_info_t* arg1)
     // asm volatile ("int $0x4");
 
     fbInitialize();
+    
+    struct pci_device result = get_device(0, 1, 1);
+    print_pci_device_info(&result);
     
     asm volatile("sti");
     init_timer(1000);

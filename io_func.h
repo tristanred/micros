@@ -12,7 +12,12 @@
 // END FRAMEBUFFER IO
 
 void outb(unsigned short port, unsigned char data);
-
 unsigned char inb(unsigned short port);
+
+void outw(unsigned short port, unsigned short data);
+unsigned short inw(unsigned short port);
+
+void outdw(unsigned short port, unsigned int data);
+unsigned int indw(unsigned short port);
 
 #endif

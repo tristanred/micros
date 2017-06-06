@@ -29,6 +29,7 @@ kernel: prepare agdt.asm
 	$(AS) aidt.asm -o $(BUILDDIR)aidt.o $(ASFLAGS)
 	$(AS) interrupts.asm -o $(BUILDDIR)interrupts.o $(ASFLAGS)
 	$(AS) memory.asm -o $(BUILDDIR)amemory.o $(ASFLAGS)
+	$(AS) disk.asm -o $(BUILDDIR)adisk.o $(ASFLAGS)
 	$(CC) -c *.c $(CFLAGS)
 	mv *.o $(BUILDDIR)
 
@@ -45,16 +46,16 @@ verify: $(OUTDIR)myos.bin
 
 .PHONY: run
 run: build
-	qemu-system-i386 -m 128M -append "-f d" -serial file:$(OUTDIR)serial.log -kernel $(OUTDIR)myos.bin -curses
+	qemu-system-i386 -m 128M -append "-f d" -hda disk.img -serial file:$(OUTDIR)serial.log -kernel $(OUTDIR)myos.bin -curses
 
 runiso: makeiso
-	qemu-system-i386 -m 128M -append "-f d" -serial file:$(OUTDIR)serial.log $(OUTDIR)myos.iso
+	qemu-system-i386 -m 128M -append "-f d" -hda disk.img -serial file:$(OUTDIR)serial.log $(OUTDIR)myos.iso
 
 debugiso: makeiso
-	qemu-system-i386 -m 128M -append "-f gd" -serial file:$(OUTDIR)serial.log -s -S $(OUTDIR)myos.iso
+	qemu-system-i386 -m 128M -append "-f gd" -hda disk.img -serial file:$(OUTDIR)serial.log -s -S $(OUTDIR)myos.iso
 
 debug: build
-	qemu-system-i386 -m 128M -append "-f gd" -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
+	qemu-system-i386 -m 128M -append "-f gd" -hda disk.img -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
 
 .PHONY: clean
 clean:
