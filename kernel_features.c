@@ -5,6 +5,7 @@
 #include "multiboot.h"
 #include "kernel.h"
 #include "cmd_parser.h"
+#include "kernel_log.h"
 
 void init_module_kernel_features(struct kernel_info_block* kinfo)
 {
@@ -22,20 +23,38 @@ void init_module_kernel_features(struct kernel_info_block* kinfo)
 
 void kfDetectFeatures(multiboot_info_t* info)
 {
-    if(info->flags & 1)
+    kWriteLog("PRINTING MULTIBOOT OPTIONS\n");
+    
+    kWriteLog_format1d("Multiboot flags = %d\n", info->flags);
+
+    if(info->flags & 0)
     {
         //MemoryInfo = TRUE;
         features->availableLowerMemory = info->mem_lower;
         features->availableUpperMemory = info->mem_upper;
+        
+        kWriteLog_format1d("Available lower memory %d\n", info->mem_lower);
+        kWriteLog_format1d("Available upper memory %d\n", info->mem_upper);
+    }
+    if(info->flags & 1)
+    {
+        //BootDevice = TRUE;
+        uint8_t* parts = (uint8_t*)info->boot_device;
+        
+        kWriteLog_format1d("Boot Device drive %d\n", parts[0]);
+        kWriteLog_format1d("Boot Device part1 %d\n", parts[1]);
+        kWriteLog_format1d("Boot Device part2 %d\n", parts[2]);
+        kWriteLog_format1d("Boot Device part3 %d\n", parts[3]);
+        
     }
     if(info->flags & 2)
     {
-        //BootDevice = TRUE;
-    }
-    if(info->flags & 4)
-    {
         //CmdLine = TRUE;
         char* CommandlineText = (char*)info->cmdline;
+        
+        kWriteLog("CommandLine : ");
+        kWriteLog(CommandlineText);
+        kWriteLog("");
         
         if(validate_commandline(CommandlineText))
         {
@@ -47,6 +66,47 @@ void kfDetectFeatures(multiboot_info_t* info)
         {
             
         }
+        
+    }
+    if(info->flags & 3)
+    {
+        kWriteLog("Multiboot modules\n");
+        
+        struct multiboot_mod_list* mods = (struct multiboot_mod_list*)info->mods_addr;
+        
+        for(multiboot_uint32_t i; i < info->mods_count; i++)
+        {
+            kWriteLog_format1d("Module %d : ", i);
+            kWriteLog_format1d("Module Start = %d", mods[i].mod_start);
+            kWriteLog_format1d("Module End = %d", mods[i].mod_end);
+            kWriteLog("Module Commandline : ");
+            
+            char* x = (char*)mods[i].cmdline;
+            kWriteLog(x);
+        }
+    }
+    if(info->flags & 6)
+    {
+        // mem map
+    }
+    if(info->flags & 7)
+    {
+        // drives
+    }
+    if(info->flags & 8)
+    {
+        // config table
+    }
+    if(info->flags & 9)
+    {
+        // boot loader name
+    }
+    if(info->flags & 10)
+    {
+        
+    }
+    if(info->flags & 11)
+    {
         
     }
 }
