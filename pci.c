@@ -120,7 +120,7 @@ struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
 
 struct pci_device** get_devices_list(int* count)
 {
-    struct vector* vec = vector_create_size(15);
+    struct vector* vec = vector_create();
     
     int busCount = 256;
     int deviceCount = 32;
@@ -140,7 +140,7 @@ struct pci_device** get_devices_list(int* count)
                     struct pci_device* heapDevice = malloc(sizeof(struct pci_device));
                     memcpy(heapDevice, &dev, sizeof(struct pci_device));
                     
-                    vector_add(vec, heapDevice); // TODO : Place dev on heap.
+                    vector_add(vec, heapDevice);
                 }
             }
         }

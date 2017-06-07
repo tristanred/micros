@@ -117,13 +117,7 @@ void vector_resize(struct vector* vec, size_t newSize)
         // TODO : Implement realloc
         void* newData = kmKernelAlloc(newSize);
         
-        // TODO : How to resize array if we don't know elements size ?
-        for(size_t i = 0; i < vec->count; i++)
-        {
-            //kmKernelCopy((void*)vec->dataElements[i], newData[i]);
-        }
-        
-        //kmKernelCopy(vec->dataElements, newData);
+        memcpy(newData, vec->dataElements, vec->count * sizeof(uint32_t));
         kmKernelFree(vec->dataElements);
         vec->dataElements = newData;
     }

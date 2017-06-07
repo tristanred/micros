@@ -5,9 +5,9 @@
 #include <stddef.h>
 
 struct vector {
-    size_t size;
+    size_t size; // Size of the array's memory
     
-    size_t count;
+    size_t count; // Count of the elements in the array
     uint32_t* dataElements;
 };
 
