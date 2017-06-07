@@ -24,6 +24,8 @@ void vector_remove_at(struct vector* vec, size_t index);
 
 void* vector_get_at(struct vector* vec,size_t index);
 
+void** vector_get_array(struct vector* vec, int* count);
+
 // Vector management methods
 void vector_resize(struct vector* vec, size_t newSize);
 void vector_shift_left(struct vector* vec, size_t startIndex);

@@ -91,6 +91,14 @@ void* vector_get_at(struct vector* vec, size_t index)
     return (void*)vec->dataElements[index];
 }
 
+void** vector_get_array(struct vector* vec, int* count)
+{
+    *count = vec->count;
+    
+    return (void**)vec->dataElements;
+    
+}
+
 // Vector management methods
 void vector_resize(struct vector* vec, size_t newSize)
 {
@@ -108,8 +116,14 @@ void vector_resize(struct vector* vec, size_t newSize)
     {
         // TODO : Implement realloc
         void* newData = kmKernelAlloc(newSize);
-        kmKernelCopy(vec->dataElements, newData);
         
+        // TODO : How to resize array if we don't know elements size ?
+        for(size_t i = 0; i < vec->count; i++)
+        {
+            //kmKernelCopy((void*)vec->dataElements[i], newData[i]);
+        }
+        
+        //kmKernelCopy(vec->dataElements, newData);
         kmKernelFree(vec->dataElements);
         vec->dataElements = newData;
     }
