@@ -121,10 +121,14 @@ void kmKernelFree(void* ptr);
 // or create a copy method with amount of mem copied.
 void kmKernelCopy(void* ptrFrom, void* ptrTo);
 
+void* memcpy( void *dest, const void *src, size_t count );
+
 void kmKernelZero(void* ptrFrom);
 
 
 // Pool management method
+BOOL kmFindInPools(void* ptr, alloc_unit_t* alloc);
+
 size_t kmCountFreeSmallPoolUnits();
 size_t kmCountFreePagePoolUnits();
 size_t kmCountFreeLargePoolUnits();

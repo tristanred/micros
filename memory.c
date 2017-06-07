@@ -146,6 +146,7 @@ void* kmKernelAlloc(size_t size)
             if(smallPool[i].isFree)
             {
                 smallPool[i].isFree = FALSE;
+                smallPool[i].size = size;
                 
                 return smallPool[i].p;
             }
@@ -161,6 +162,7 @@ void* kmKernelAlloc(size_t size)
             if(pagePool[i].isFree)
             {
                 pagePool[i].isFree = FALSE;
+                pagePool[i].size = size;
                 
                 return pagePool[i].p;
             }
@@ -176,6 +178,7 @@ void* kmKernelAlloc(size_t size)
             if(largePool[i].isFree)
             {
                 largePool[i].isFree = FALSE;
+                largePool[i].size = size;
                 
                 return largePool[i].p;
             }
@@ -192,10 +195,7 @@ void* kmKernelAlloc(size_t size)
         Debugger();
     }
     
-    
     return (void*)0;
-    // kmNextAvailableMemoryAddress += size;
-    // return (void*)kmNextAvailableMemoryAddress;
 }
 
 void kmKernelFree(void* ptr)
@@ -207,6 +207,7 @@ void kmKernelFree(void* ptr)
         if(largePool[i].p == ptr)
         {
             largePool[i].isFree = TRUE;
+            largePool[i].size = 0;
             
             return;
             // Maybe zero out the memory or something.
@@ -218,6 +219,7 @@ void kmKernelFree(void* ptr)
         if(pagePool[i].p == ptr)
         {
             pagePool[i].isFree = TRUE;
+            pagePool[i].size = 0;
             
             return;
         }
@@ -228,6 +230,7 @@ void kmKernelFree(void* ptr)
         if(smallPool[i].p == ptr)
         {
             smallPool[i].isFree = TRUE;
+            smallPool[i].size = 0;
             
             return;
         }
@@ -238,15 +241,36 @@ void kmKernelFree(void* ptr)
 
 void kmKernelCopy(void* ptrFrom, void* ptrTo)
 {
-    char* ptrFromChar = (char*)ptrFrom;
-    char* ptrToChar = (char*)ptrTo;
+    uint8_t* ptrFromChar = (uint8_t*)ptrFrom;
+    uint8_t* ptrToChar = (uint8_t*)ptrTo;
     
-    size_t fromSize = sizeof(*ptrFrom);
+    alloc_unit_t alloc;
+    BOOL ptrFound = kmFindInPools(ptrFrom, &alloc);
     
-    for(size_t i = 0; i < fromSize; i++)
+    if(ptrFound)
     {
-        ptrToChar[i] = ptrFromChar[i];
+        for(size_t i = 0; i < alloc.size; i++)
+        {
+            ptrToChar[i] = ptrFromChar[i];
+        }
     }
+    else
+    {
+        ASSERT(FALSE, "kmKernelCopy ptrFrom not found in the pools.");
+    }
+}
+
+void* memcpy( void *dest, const void *src, size_t count )
+{
+    uint8_t* ptrSrc = (uint8_t*)src;
+    uint8_t* ptrDest = (uint8_t*)dest;
+    
+    for(size_t i = 0; i < count; i++)
+    {
+        ptrDest[i] = ptrSrc[i];
+    }
+    
+    return dest;
 }
 
 void kmKernelZero(void* ptrFrom)
@@ -261,6 +285,42 @@ void kmKernelZero(void* ptrFrom)
     }
 }
 
+BOOL kmFindInPools(void* ptr, alloc_unit_t* alloc)
+{
+    for(int i = 0; i < small_pool_size; i++)
+    {
+        if(smallPool[i].p == ptr)
+        {
+            *alloc = smallPool[i];
+            
+            return TRUE;
+        }
+    }
+    
+    for(int i = 0; i < page_pool_size; i++)
+    {
+        if(pagePool[i].p == ptr)
+        {
+            *alloc = pagePool[i];
+            
+            return TRUE;
+        }
+    }
+    
+    for(int i = 0; i < large_pool_size; i++)
+    {
+        if(largePool[i].p == ptr)
+        {
+            *alloc = largePool[i];
+            
+            return TRUE;
+        }
+    }
+    
+    alloc = NULL;
+    
+    return FALSE;
+}
 
 size_t kmCountFreeSmallPoolUnits()
 {
