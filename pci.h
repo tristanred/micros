@@ -17,6 +17,9 @@
 
 struct pci_device 
 {
+    BOOL valid_device;
+    
+    // Location information
     uint8_t bus;
     uint8_t device;
     uint8_t function;
@@ -67,7 +70,6 @@ struct pci_device
     uint8_t minGrant;
     uint8_t intPin;
     uint8_t intLine;
-    
 };
 
 struct pci_request
@@ -78,6 +80,8 @@ struct pci_request
 };
 
 struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function);
+
+struct pci_device** get_devices_list();
 
 uint32_t build_request(uint8_t bus, uint8_t device, uint8_t function, uint8_t reg);
 

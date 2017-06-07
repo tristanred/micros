@@ -2,10 +2,11 @@
 
 #include "io_func.h"
 #include "kernel_log.h"
+#include "memory.h"
+#include "vector.h"
 
 struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
 {
-    Debugger();
     struct pci_device dev;
     dev.bus = bus;
     dev.device = device;
@@ -18,7 +19,16 @@ struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
     dev.deviceID = result >> 16;
     dev.vendorID = result & 0xFFFF;
     
-    ASSERT(dev.vendorID != 0xFFFF, "PCI DEVICE INVALID");
+    if(dev.vendorID == 0xFFFF)
+    {
+        dev.valid_device = FALSE;
+        
+        return dev;
+    }
+    else
+    {
+        dev.valid_device = TRUE;
+    }
     
     request = build_request(bus, device, function, 0x04);
     result = indw(PCI_DATA_PORT);
@@ -106,6 +116,41 @@ struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
     dev.intLine = (result & 0xFF);
     
     return dev;
+}
+
+struct pci_device** get_devices_list(int* count)
+{
+    struct vector* vec = vector_create_size(15);
+    
+    int busCount = 256;
+    int deviceCount = 32;
+    int functionCount = 8;
+    
+    Debugger();
+    
+    for(int b = 0; b < busCount; b++)
+    {
+        for(int d = 0; d < deviceCount; d++)
+        {
+            for(int f = 0; f < functionCount; f++)
+            {
+                struct pci_device dev = get_device(b, d, f);
+                if(dev.valid_device)
+                {
+                    struct pci_device* heapDevice = malloc(sizeof(struct pci_device));
+                    memcpy(heapDevice, &dev, sizeof(struct pci_device));
+                    
+                    vector_add(vec, heapDevice); // TODO : Place dev on heap.
+                }
+            }
+        }
+    }
+    
+    struct pci_device** array = (struct pci_device**)vector_get_array(vec, count);
+    
+    free(vec);
+    
+    return array;
 }
 
 uint32_t build_request(uint8_t bus, uint8_t device, uint8_t function, uint8_t reg)

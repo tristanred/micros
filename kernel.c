@@ -73,7 +73,7 @@ void kernel_main(multiboot_info_t* arg1)
 
     kSetupLog(SERIAL_COM1_BASE);    
     kmInitManager();
-        
+    
     setup_paging();
     
     char* far_address = (char*)0x3C00000; // 60 MB
@@ -118,15 +118,26 @@ void kernel_main(multiboot_info_t* arg1)
      */
     //btmConfigureMemoryRanges(arg1);
 
-    char* x = *(char*)0x06400000; // Generates a page fault.
+    //char* x = *(char*)0x06400000; // Generates a page fault.
 
     // asm volatile ("int $0x3");
     // asm volatile ("int $0x4");
 
     fbInitialize();
     
-    struct pci_device result = get_device(0, 1, 1);
-    print_pci_device_info(&result);
+    // struct pci_device result = get_device(0, 1, 1);
+    // print_pci_device_info(&result);
+    
+    Debugger();
+    int total = 0;
+    struct pci_device** list = get_devices_list(&total);
+    
+    for(int i = 0; i < total; i++)
+    {
+        kWriteLog("");
+        kWriteLog_format1d("Device #%d", i);
+        print_pci_device_info(list[i]);
+    }
     
     asm volatile("sti");
     init_timer(1000);
