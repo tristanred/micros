@@ -1,0 +1,39 @@
+ +--------------------------------------------------------------------------------+
+0|         STATES                      DRIVER STATUS                 STS.COUNTER  |0
+1|+--------------------------------+  +------------+               +-------------+|1
+2||  IDLE   WAIT    WRIT    OTHER  |  | [X] Auto   |               | IDLE 999999 ||2
+3||                                |  | [ ] Step   |               | WAIT 999999 ||3
+4||  READ   OTHER   OTHER   OTHER  |  | [ ] Pause  |               | WRIT 999999 ||4
+5||                                |  | [ ] Reset  |               | READ 999999 ||5
+6||  OTHER  OTHER   OTHER   OTHER  |  +------------+               | LOOP 999999 ||6
+7|+--------------------------------+                               |  ER  999999 ||7
+8|                                                                 +-------------+|8
+9|                                                                     LOOPS      |9
+0|                                                                 +-------------+|0
+1|                                                                 | 99999999999 ||1
+2|                                                                 +-------------+|2
+3|                                                                                |3
+4|                                                                                |4
+5|                                                                                |5
+6|                                                                                |6
+7|                                                                                |7
+8|                                                                                |8
+9|                                                                                |9
+ +--------------------------------------------------------------------------------+
+
+STATES :
+IDLE
+WAIT
+WRIT
+READ
+
+STATES area contains the names of the states and the current state is highlighted
+
+DRIVER STATUS is the current process method of the driver.
+Auto for unrestricted processing
+Step for a step by step processing where we need to press space to advance
+Pause prevents the driver from advancing
+
+STS.Counter box can contain numbers up to 1,000,000
+STS.Counter box contain the top 6 states that the ATA driver went through
+Loops boo contain the number of loops of the driver, max 100,000,000,000
