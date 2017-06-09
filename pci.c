@@ -31,12 +31,14 @@ struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
     }
     
     request = build_request(bus, device, function, 0x04);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.status = result >> 16;
     dev.command = result & 0xFFFF;
     
     request = build_request(bus, device, function, 0x08);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.classCode = result >> 24;
@@ -45,6 +47,7 @@ struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
     dev.revID = (result & 0xFF);
     
     request = build_request(bus, device, function, 0x0C);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.BIST = result >> 24;
@@ -53,52 +56,62 @@ struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
     dev.cacheLineSize = (result & 0xFF);
     
     request = build_request(bus, device, function, 0x10);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.barAddress0 = result;
     
     request = build_request(bus, device, function, 0x14);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.barAddress1 = result;
     
     request = build_request(bus, device, function, 0x18);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.barAddress2 = result;
     
     request = build_request(bus, device, function, 0x1C);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.barAddress3 = result;
     
     request = build_request(bus, device, function, 0x20);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.barAddress4 = result;
     
     request = build_request(bus, device, function, 0x24);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.barAddress5 = result;
     
     request = build_request(bus, device, function, 0x28);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.cardbusCISPointer = result;
     
     request = build_request(bus, device, function, 0x2C);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.subsystemID = result >> 16;
     dev.subsystemVendorID = result & 0xFFFF;
     
     request = build_request(bus, device, function, 0x30);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.expansionROMBaseAddress = result;
     
     request = build_request(bus, device, function, 0x34);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.reservedOne = 0;
@@ -108,6 +121,7 @@ struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
     dev.reservedThree = 0;
     
     request = build_request(bus, device, function, 0x3C);
+    outdw(PCI_INDEX_PORT, request);
     result = indw(PCI_DATA_PORT);
     
     dev.maxLatency = result >> 24;
@@ -125,8 +139,6 @@ struct pci_device** get_devices_list(int* count)
     int busCount = 256;
     int deviceCount = 32;
     int functionCount = 8;
-    
-    Debugger();
     
     for(int b = 0; b < busCount; b++)
     {
@@ -158,10 +170,10 @@ uint32_t build_request(uint8_t bus, uint8_t device, uint8_t function, uint8_t re
     uint32_t result = 0;
     uint32_t dwBus = (uint32_t)bus;
     uint32_t dwDevice = (uint32_t)device & 0x1F;
-    uint32_t dwFunction = (uint32_t)function & 0x3;
-    uint32_t dwReg = (uint32_t)reg & 0x7;
+    uint32_t dwFunction = (uint32_t)function & 0x7;
+    uint32_t dwReg = (uint32_t)reg & 0xFC;
     
-    result = 0x80000000 | (dwBus << 16) | (dwDevice << 11) | (dwFunction << 8) | (dwReg << 2);
+    result = 0x80000000 | (dwBus << 16) | (dwDevice << 11) | (dwFunction << 8) | (dwReg);
     
     return result;
 }
