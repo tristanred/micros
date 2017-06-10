@@ -47,6 +47,7 @@
 #include "terminal.h"
 #include "disk.h"
 #include "pci.h"
+#include "ata_monitor.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -125,10 +126,11 @@ void kernel_main(multiboot_info_t* arg1)
 
     fbInitialize();
     
-    // struct pci_device result = get_device(0, 1, 1);
-    // print_pci_device_info(&result);
+    struct pci_device result = get_device(0, 1, 1);
+    print_pci_device_info(&result);
     
-    Debugger();
+    test_io_port();
+    
     int total = 0;
     struct pci_device** list = get_devices_list(&total);
     
@@ -149,9 +151,13 @@ void kernel_main(multiboot_info_t* arg1)
     asm volatile ("int $0x3");
     asm volatile ("int $0x4");
     
-    term_init();
+    //term_init();
     
-    term_showSplashScreen();
+    //term_deactivate();
+    
+    //term_showSplashScreen();
+    
+    fbPutString("AAA");
     
     uint32_t cycles = 0;
     

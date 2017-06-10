@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "common.h"
 #include "keyboard.h"
 
 #define MAX_TERMINALS 4
@@ -13,6 +14,8 @@
 typedef struct
 {
     unsigned char* fbcontent;
+    
+    BOOL isActive;
     
     int cursorX;
     int cursorY;
@@ -38,6 +41,9 @@ void term_update();
 void term_draw(terminal* term);
 
 // PUBLIC INTERFACE
+
+void term_activate();
+void term_deactivate();
 
 void term_move_right();
 void term_move_left();

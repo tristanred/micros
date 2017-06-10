@@ -39,6 +39,9 @@ void term_update()
 
 void term_draw(terminal* term)
 {
+    if(currentTerminal->isActive == FALSE)
+        return;
+
     int baseX = term->fbOriginX;
     int baseY = term->fbOriginY;
     
@@ -68,6 +71,9 @@ void term_draw(terminal* term)
 
 void term_kb_hook(keyevent_info* info)
 {
+    if(currentTerminal->isActive == FALSE)
+        return;
+    
     uint32_t t = getmscount();
     
     if(info->key_state == KEYDOWN)
@@ -104,8 +110,21 @@ void term_kb_hook(keyevent_info* info)
     }
 }
 
+void term_activate()
+{
+    currentTerminal->isActive = TRUE;
+}
+
+void term_deactivate()
+{
+    currentTerminal->isActive = FALSE;
+}
+
 void term_move_right()
 {
+    if(currentTerminal->isActive == FALSE)
+        return;
+
     currentTerminal->cursorX++;
     
     if(currentTerminal->cursorX >= currentTerminal->nCols)
@@ -124,6 +143,9 @@ void term_move_right()
 
 void term_move_left()
 {
+    if(currentTerminal->isActive == FALSE)
+        return;
+
     currentTerminal->cursorX--;
     
     if(currentTerminal->cursorX < 0)
@@ -142,6 +164,9 @@ void term_move_left()
 
 void term_move_up()
 {
+    if(currentTerminal->isActive == FALSE)
+        return;
+
     currentTerminal->cursorY--;
     
     if(currentTerminal->cursorY < 0)
@@ -154,6 +179,9 @@ void term_move_up()
 
 void term_move_down()
 {
+    if(currentTerminal->isActive == FALSE)
+        return;
+
     currentTerminal->cursorY++;
     
     if(currentTerminal->cursorY >= currentTerminal->nRows)
@@ -166,6 +194,9 @@ void term_move_down()
 
 void term_set_cursor(int col, int row)
 {
+    if(currentTerminal->isActive == FALSE)
+        return;
+
     int tCol = col;
     if(col >= currentTerminal->nCols)
         tCol = currentTerminal->nCols;
