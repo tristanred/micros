@@ -172,13 +172,20 @@ struct ata_driver_info
 };
 struct ata_driver_info* ata_driver;
 
+enum ata_driver_status
+{
+    ATA_OK,
+    ATA_ERROR
+};
+
 void init_module_ata_driver(struct kernel_info_block* kinfo);
 
 void test_io_port();
 
 unsigned char get_status();
 
-// ATA Driver section, will be migrated to its own file
+
+enum ata_driver_status driver_ata_get_status();
 
 void driver_ata_wait_for_clear_bit(unsigned char statusBits);
 void driver_ata_wait_for_set_bit(unsigned char statusBits);
@@ -194,10 +201,10 @@ void driver_ata_identify(struct ata_identify_device* drive_info);
 
 void driver_ata_flush_cache();
 
-uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint32_t startingSector);
+uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector);
 
-void driver_ata_verify_sectors(uint8_t sectorCount, uint32_t startingSector);
+void driver_ata_verify_sectors(uint8_t sectorCount, uint64_t startingSector);
 
-void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint32_t startingSector);
+void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint64_t startingSector);
 
 #endif

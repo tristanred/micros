@@ -62,6 +62,20 @@ unsigned char get_status()
     return res;
 }
 
+enum ata_driver_status driver_ata_get_status()
+{
+    unsigned char result = get_status();
+    
+    if((result & STATUS_READY) && (result & STATUS_BUSY) == 0)
+    {
+        return ATA_OK;
+    }
+    else
+    {
+        return ATA_ERROR;
+    }
+}
+
 void driver_ata_wait_for_clear_bit(unsigned char statusBits)
 {
     while(TRUE)
@@ -223,7 +237,7 @@ void driver_ata_flush_cache()
     driver_ata_wait_for_clear_bit(STATUS_BUSY);
 }
 
-uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint32_t startingSector)
+uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
 {
     driver_ata_select_drive_with_lba_bits(ata_driver->currentDisk, ((startingSector >> 24) & 0xF));
     
@@ -247,7 +261,7 @@ uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint32_t startingSector)
     return buf;
 }
 
-void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint32_t startingSector)
+void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint64_t startingSector)
 {
     driver_ata_select_drive_with_lba_bits(ata_driver->currentDisk, ((startingSector >> 24) & 0xF));
     
