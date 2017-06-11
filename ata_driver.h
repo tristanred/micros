@@ -174,7 +174,6 @@ struct ata_driver_info* ata_driver;
 
 void init_module_ata_driver(struct kernel_info_block* kinfo);
 
-
 void test_io_port();
 
 unsigned char get_status();
@@ -184,8 +183,6 @@ unsigned char get_status();
 void driver_ata_wait_for_clear_bit(unsigned char statusBits);
 void driver_ata_wait_for_set_bit(unsigned char statusBits);
 void driver_ata_wait_for_only_set_bit(unsigned char statusBits);
-
-void driver_ata_update();
 
 void driver_ata_select_drive(enum ata_disk_select disk);
 

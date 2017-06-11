@@ -47,7 +47,7 @@
 #include "terminal.h"
 #include "disk.h"
 #include "pci.h"
-#include "ata_monitor.h"
+#include "ata_driver.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
