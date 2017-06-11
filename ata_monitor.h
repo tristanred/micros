@@ -13,8 +13,11 @@
 #define FEAT_ERRO DRIVE_PORT + 0x1
 #define SEC_COUNT DRIVE_PORT + 0x2
 #define SEC_NUM DRIVE_PORT + 0x3
+#define LBA_LOW DRIVE_PORT + 0x3
 #define CYL_LOW DRIVE_PORT + 0x4
+#define LBA_MID DRIVE_PORT + 0x4
 #define CYL_HIGH DRIVE_PORT + 0x5
+#define LBA_HIGH DRIVE_PORT + 0x5
 #define DRIVE_HEAD DRIVE_PORT + 0x6
 #define COMMAND_REG_STATUS DRIVE_PORT + 0x7
 
@@ -149,7 +152,6 @@ void wait_for_ready();
 
 unsigned char get_status();
 
-
 // ATA Driver section, will be migrated to its own file
 
 void driver_ata_wait_for_clear_bit(unsigned char statusBits);
@@ -166,7 +168,7 @@ void driver_ata_identify(struct ata_identify_device* drive_info);
 
 void driver_ata_flush_cache();
 
-uint8_t* driver_ata_read_sectors(uint8_t sectorCount, uint32_t startingSector);
+uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint32_t startingSector);
 
 void driver_ata_verify_sectors(uint8_t sectorCount, uint32_t startingSector);
 

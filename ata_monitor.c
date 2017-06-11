@@ -4,7 +4,6 @@
 #include "framebuffer.h"
 #include "memory.h"
 
-
 // Send 0xE0 for the "master" or 0xF0 for the "slave", ORed with the highest 4 bits of the LBA to port 0x1F6: outb(0x1F6, 0xE0 | (slavebit << 4) | ((LBA >> 24) & 0x0F))
 // Send a NULL byte to port 0x1F1, if you like (it is ignored and wastes lots of CPU time): outb(0x1F1, 0x00)
 // Send the sectorcount to port 0x1F2: outb(0x1F2, (unsigned char) count)
@@ -26,16 +25,26 @@ void test_io_port()
     driver_ata_identify(res);
     
     uint16_t* data = malloc(sizeof(uint16_t) * 256);
-    data[0] = 1;
-    data[1] = 2;
-    data[2] = 3;
-    data[3] = 4;
-    data[4] = 5;
-    driver_ata_write_sectors(data, 0, 1);
+    
+    for(int i = 0; i < 256; i++)
+    {
+        data[i] = i;
+    }
+    
+    driver_ata_write_sectors(data, 1, 4);
     
     driver_ata_flush_cache();
     
-    uint16_t* dataBack = driver_ata_read_sectors(0, 1);
+    uint16_t* dataBack = driver_ata_read_sectors(1, 4);
+    
+    for(int k = 0; k < 256; k++)
+    {
+        if(data[k] != dataBack[k])
+        {
+            ASSERT(FALSE, "DATA INCORRECT");
+        }
+    }
+    
 }
 
 unsigned char get_status()
@@ -153,25 +162,20 @@ void driver_ata_flush_cache()
     }
 }
 
-uint8_t* driver_ata_read_sectors(uint8_t sectorCount, uint32_t startingSector)
+uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint32_t startingSector)
 {
-    (void)sectorCount;
-    (void)startingSector;
-    
     unsigned char res;
     
-    outb(DRIVE_HEAD, 0xE0);
+    outb(DRIVE_HEAD, 0xE0 | ((startingSector >> 24) & 0xF));
     res  = get_status();
-
-    // TODO : use the parameters
+    
     uint16_t* buf = malloc(sizeof(uint16_t) * 256);
     
-    outb(DRIVE_HEAD, 0xE0);
     outb(FEAT_ERRO, 0x0);
-    outb(SEC_COUNT, 1);
-    outb(SEC_NUM, 0);
-    outb(CYL_LOW, 0);
-    outb(CYL_HIGH, 0);
+    outb(SEC_COUNT, sectorCount);
+    outb(LBA_LOW, (startingSector) & 0xF);
+    outb(LBA_MID, (startingSector >> 8) & 0xF);
+    outb(LBA_HIGH, (startingSector >> 16) & 0xF);
     outb(COMMAND_REG_STATUS, 0x20);
     
     while(TRUE)
@@ -194,25 +198,21 @@ uint8_t* driver_ata_read_sectors(uint8_t sectorCount, uint32_t startingSector)
     
     res  = get_status();
 
-    return (uint8_t*)buf;
+    return buf;
 }
 
 void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint32_t startingSector)
 {
-    (void)sectorCount;
-    (void)startingSector;
-
     unsigned char res;
     
-    outb(DRIVE_HEAD, 0xE0);
+    outb(DRIVE_HEAD, 0xE0 | ((startingSector >> 24) & 0xF));
     res  = get_status();
     
-    outb(DRIVE_HEAD, 0xE0);
     outb(FEAT_ERRO, 0x0);
-    outb(SEC_COUNT, 1);
-    outb(SEC_NUM, 0);
-    outb(CYL_LOW, 0);
-    outb(CYL_HIGH, 0);
+    outb(SEC_COUNT, sectorCount);
+    outb(LBA_LOW, (startingSector) & 0xF);
+    outb(LBA_MID, (startingSector >> 8) & 0xF);
+    outb(LBA_HIGH, (startingSector >> 16) & 0xF);
     outb(COMMAND_REG_STATUS, 0x30);
     
     while(TRUE)
@@ -224,7 +224,25 @@ void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint32_t star
             break;
         }
     }
-
+    
+    // This is the code for a 'read bytes until DRQ is off' type of read.
+    // int i = 0;
+    // while(TRUE)
+    // {
+    //     res  = get_status();
+        
+    //     outw(DATA_PORT, data[i]);
+        
+    //     res  = get_status();
+        
+    //     if((res & STATUS_DATA_REQUEST) == 0)
+    //     {
+    //         break;
+    //     }
+        
+    //     i++;
+    // }
+    
     for(int i = 0; i < 256; i++)
     {
         outw(DATA_PORT, data[i]);
