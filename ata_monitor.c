@@ -2,27 +2,7 @@
 
 #include "io_func.h"
 #include "framebuffer.h"
-
-// Temporary, need to get the port from PCI info
-#define DRIVE_PORT 0x1F0//0xC040
-
-// Registers offset
-#define DATA_PORT 0x0
-#define FEAT_ERRO 0x1
-#define SEC_COUNT 0x2
-#define SEC_NUM 0x3
-#define CYL_LOW 0x4
-#define CYL_HIGH 0x5
-#define DRIVE_HEAD 0x6
-#define COMMAND_REG_STATUS 0x7
-
-// Status flags
-#define STATUS_ERR 0x1
-#define STATUS_DRQ 0x8
-#define STATUS_SRV 0x10
-#define STATUS_DF  0x20
-#define STATUS_RDY 0x40
-#define STATUS_BSY 0x80
+#include "memory.h"
 
 
 // Send 0xE0 for the "master" or 0xF0 for the "slave", ORed with the highest 4 bits of the LBA to port 0x1F6: outb(0x1F6, 0xE0 | (slavebit << 4) | ((LBA >> 24) & 0x0F))
@@ -40,103 +20,217 @@ uint32_t cycleWaiting;
 
 void test_io_port()
 {
-    cycleWaiting = 0;
-    
-    //Debugger();
-    
-    unsigned char res = get_status();
-        
-    outb(DRIVE_PORT + DATA_PORT, 0x47);
-    outb(DRIVE_PORT + DRIVE_HEAD, 0xE0);
-    outb(DRIVE_PORT + FEAT_ERRO, 0x0);
-    outb(DRIVE_PORT + SEC_COUNT, 1);
-    outb(DRIVE_PORT + SEC_NUM, 0);
-    outb(DRIVE_PORT + CYL_LOW, 0);
-    outb(DRIVE_PORT + CYL_HIGH, 0);
-    outb(DRIVE_PORT + COMMAND_REG_STATUS, 0x30);
-    outb(DRIVE_PORT + COMMAND_REG_STATUS, 0x30);
-    
-    res = get_status();
-    
-    Debugger();    
-    
-    for(int i = 0; i < 257; i++)
-    {
-        outw(DRIVE_PORT + DATA_PORT, (0x47 | (0x48 << 8)));
-        outb(DRIVE_PORT + COMMAND_REG_STATUS, 0xE7);
-    }
-    
-    wait_for_ready();
-    
-    outb(DRIVE_PORT + DRIVE_HEAD, 0xE0);
-    outb(DRIVE_PORT + FEAT_ERRO, 0x0);
-    outb(DRIVE_PORT + SEC_COUNT, 1);
-    outb(DRIVE_PORT + SEC_NUM, 0);
-    outb(DRIVE_PORT + CYL_LOW, 0);
-    outb(DRIVE_PORT + CYL_HIGH, 0);
-    outb(DRIVE_PORT + COMMAND_REG_STATUS, 0x20);
-    
-    uint16_t buf[257];
-    
-    for(int j = 0; j < 257; j++)
-        buf[j] = 0;
-    
-    for(int k = 0; k < 257; k++)
-        buf[k] = inw(DRIVE_PORT + DATA_PORT);
-    
-    wait_for_ready();
-    
-    fbMoveCursor(0, 0);
-    fbPutString("Done ?");
-    
     Debugger();
-}
-
-void read_bytes(int count, unsigned char* buffer)
-{
-    unsigned short port = 0xC040;
     
-    for(int i = 0; i < count; i++)
-    {
-        buffer[i] = inb(port);
-    }
+    struct ata_identify_device* res = malloc(sizeof(struct ata_identify_device));
+    driver_ata_identify(res);
+    
+    uint16_t* data = malloc(sizeof(uint16_t) * 256);
+    data[0] = 1;
+    data[1] = 2;
+    data[2] = 3;
+    data[3] = 4;
+    data[4] = 5;
+    driver_ata_write_sectors(data, 0, 1);
+    
+    driver_ata_flush_cache();
+    
+    uint16_t* dataBack = driver_ata_read_sectors(0, 1);
 }
 
-void wait_for_ready()
+unsigned char get_status()
+{
+    unsigned char res = inb(COMMAND_REG_STATUS);
+    res = inb(COMMAND_REG_STATUS);
+    res = inb(COMMAND_REG_STATUS);
+    res = inb(COMMAND_REG_STATUS);
+    res = inb(COMMAND_REG_STATUS);
+
+    return res;
+}
+
+void driver_ata_wait_for_clear_bit(unsigned char statusBits)
 {
     while(TRUE)
     {
         unsigned char status = get_status();
         
-        if((status & STATUS_BSY) == 0 && (status & STATUS_DRQ) != 0)
+        if(~(status & ~(statusBits)) == 0)
         {
             return;
         }
-        else if((status & STATUS_ERR) != 0 && (status & STATUS_DF) != 0)
-        {
-            ASSERT(FALSE, "ERROR OR DRIVE FAULT");
-            
-            return;
-        }
-        
-        cycleWaiting++;
     }
 }
 
-unsigned char get_status()
-{
-    unsigned char res = inb(DRIVE_PORT + COMMAND_REG_STATUS);
-    res = inb(DRIVE_PORT + COMMAND_REG_STATUS);
-    res = inb(DRIVE_PORT + COMMAND_REG_STATUS);
-    res = inb(DRIVE_PORT + COMMAND_REG_STATUS);
-    res = inb(DRIVE_PORT + COMMAND_REG_STATUS);
-
-    return res;
-}
-
-void io_wait()
+void driver_ata_wait_for_set_bit(unsigned char statusBits)
 {
     while(TRUE)
     {
+        unsigned char status = get_status();
+        
+        if((statusBits & status) == statusBits)
+        {
+            return;
+        }
     }
+}
+
+void driver_ata_wait_for_only_set_bit(unsigned char statusBits)
+{
+    while(TRUE)
+    {
+        unsigned char status = get_status();
+        
+        if((statusBits & status) == statusBits)
+        {
+            return;
+        }
+    }
+}
+
+
+void driver_ata_resetdisk()
+{
+    
+}
+
+void driver_ata_identify(struct ata_identify_device* drive_info)
+{
+    unsigned char res;
+    
+    // Select the drive
+    outb(DRIVE_HEAD, 0xE0);
+
+    res  = get_status();
+    
+    // Send the command
+    outb(COMMAND_REG_STATUS, 0xEC);
+    
+    // Wait for DRQ to be up
+    while(TRUE)
+    {
+        res  = get_status();
+        
+        if((res & STATUS_DATA_REQUEST) == STATUS_DATA_REQUEST)
+        {
+            break;
+        }
+    }
+    
+    // Read 512 bytes from the device
+    uint16_t buf[256];
+    
+    for(int i = 0; i < 256; i++)
+    {
+        buf[i] = 0;
+        buf[i] = inw(DATA_PORT);
+        
+        res  = get_status();
+    }
+    
+    res  = get_status();
+    
+    memcpy(drive_info, buf, sizeof(struct ata_identify_device));
+}
+
+void driver_ata_flush_cache()
+{
+    unsigned char res;
+    
+    outb(DRIVE_HEAD, 0xE0);
+    res  = get_status();
+    
+    outb(COMMAND_REG_STATUS, 0xE7);
+    
+    while(TRUE)
+    {
+        res = get_status();
+        
+        if((res & STATUS_BUSY) == 0)
+        {
+            break;
+        }
+    }
+}
+
+uint8_t* driver_ata_read_sectors(uint8_t sectorCount, uint32_t startingSector)
+{
+    (void)sectorCount;
+    (void)startingSector;
+    
+    unsigned char res;
+    
+    outb(DRIVE_HEAD, 0xE0);
+    res  = get_status();
+
+    // TODO : use the parameters
+    uint16_t* buf = malloc(sizeof(uint16_t) * 256);
+    
+    outb(DRIVE_HEAD, 0xE0);
+    outb(FEAT_ERRO, 0x0);
+    outb(SEC_COUNT, 1);
+    outb(SEC_NUM, 0);
+    outb(CYL_LOW, 0);
+    outb(CYL_HIGH, 0);
+    outb(COMMAND_REG_STATUS, 0x20);
+    
+    while(TRUE)
+    {
+        res  = get_status();
+        
+        if((res & STATUS_DATA_REQUEST) == STATUS_DATA_REQUEST)
+        {
+            break;
+        }
+    }
+    
+    for(int i = 0; i < 256; i++)
+    {
+        buf[i] = 0;
+        buf[i] = inw(DATA_PORT);
+        
+        res  = get_status();
+    }
+    
+    res  = get_status();
+
+    return (uint8_t*)buf;
+}
+
+void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint32_t startingSector)
+{
+    (void)sectorCount;
+    (void)startingSector;
+
+    unsigned char res;
+    
+    outb(DRIVE_HEAD, 0xE0);
+    res  = get_status();
+    
+    outb(DRIVE_HEAD, 0xE0);
+    outb(FEAT_ERRO, 0x0);
+    outb(SEC_COUNT, 1);
+    outb(SEC_NUM, 0);
+    outb(CYL_LOW, 0);
+    outb(CYL_HIGH, 0);
+    outb(COMMAND_REG_STATUS, 0x30);
+    
+    while(TRUE)
+    {
+        res  = get_status();
+        
+        if((res & STATUS_DATA_REQUEST) == STATUS_DATA_REQUEST)
+        {
+            break;
+        }
+    }
+
+    for(int i = 0; i < 256; i++)
+    {
+        outw(DATA_PORT, data[i]);
+        
+        res  = get_status();
+    }
+
+    res  = get_status();
 }
