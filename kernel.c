@@ -45,7 +45,6 @@
 #include "vector.h"
 #include "error.h"
 #include "terminal.h"
-#include "disk.h"
 #include "pci.h"
 #include "ata_driver.h"
 
