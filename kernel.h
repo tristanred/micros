@@ -6,6 +6,7 @@
 
 struct kernel_features;
 struct memory_manager;
+struct ata_driver_info;
 
 /**
  * The Kernel Info Block is the root structure of the kernel. This structure
@@ -22,6 +23,7 @@ struct kernel_info_block {
     // Kernel module structsS
     struct kernel_features* m_kernel_features;
     struct memory_manager* m_memory_manager;
+    struct ata_driver_info* m_ata_driver; // ATA Driver is temporarily a kernel module
 };
 struct kernel_info_block* kernel_info;
 

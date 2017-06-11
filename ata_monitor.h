@@ -4,22 +4,24 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct kernel_info_block;
+
 #include "common.h"
 
 #define DRIVE_PORT 0x1F0
 
 // Registers offset
-#define DATA_PORT DRIVE_PORT + 0x0
-#define FEAT_ERRO DRIVE_PORT + 0x1
-#define SEC_COUNT DRIVE_PORT + 0x2
-#define SEC_NUM DRIVE_PORT + 0x3
-#define LBA_LOW DRIVE_PORT + 0x3
-#define CYL_LOW DRIVE_PORT + 0x4
-#define LBA_MID DRIVE_PORT + 0x4
-#define CYL_HIGH DRIVE_PORT + 0x5
-#define LBA_HIGH DRIVE_PORT + 0x5
-#define DRIVE_HEAD DRIVE_PORT + 0x6
-#define COMMAND_REG_STATUS DRIVE_PORT + 0x7
+#define DATA_PORT 0x0
+#define FEAT_ERRO 0x1
+#define SEC_COUNT 0x2
+#define SEC_NUM 0x3
+#define LBA_LOW 0x3
+#define CYL_LOW 0x4
+#define LBA_MID 0x4
+#define CYL_HIGH 0x5
+#define LBA_HIGH 0x5
+#define DRIVE_HEAD 0x6
+#define COMMAND_REG_STATUS 0x7
 
 // Status flags
 #define STATUS_BUSY 0x80
@@ -31,6 +33,25 @@
 #define STATUS_ALIGN_ERROR 0x4
 #define STATUS_SENSE_DATA 0x2
 #define STATUS_ERROR 0x1
+
+
+#define PRIMARY_PORT 0x1F0
+#define SECONDARY_PORT 0x170
+
+#define MASTER_PORT_SELECTOR 0xE0
+#define SLAVE_PORT_SELECTOR 0xF0
+
+#define PRIMARY_ALTERNATE_PORT 0x3F6
+#define SECEONDARY_ALTERNATE_PORT 0x376
+
+enum ata_disk_select
+{
+    ATA_NONE,
+    ATA_MASTER_0,
+    ATA_SLAVE_0,
+    ATA_MASTER_1,
+    ATA_SLAVE_1
+};
 
 struct ata_identify_device
 {
@@ -140,27 +161,35 @@ struct ata_identify_device
     uint16_t integrity;
 };
 
+struct ata_driver_info
+{
+    uint16_t currentDiskPort;
+    enum ata_disk_select currentDisk;
+    
+    struct ata_identify_device* device_info;
+    
+    BOOL driverError;
+};
+struct ata_driver_info* ata_driver;
+
+void init_module_ata_driver(struct kernel_info_block* kinfo);
+
+
 void test_io_port();
-
-void read_bytes(int count, unsigned char* buffer);
-
-void io_wait();
-
-void identify();
-
-void wait_for_ready();
 
 unsigned char get_status();
 
 // ATA Driver section, will be migrated to its own file
 
 void driver_ata_wait_for_clear_bit(unsigned char statusBits);
-
 void driver_ata_wait_for_set_bit(unsigned char statusBits);
-
 void driver_ata_wait_for_only_set_bit(unsigned char statusBits);
 
 void driver_ata_update();
+
+void driver_ata_select_drive(enum ata_disk_select disk);
+
+void driver_ata_select_drive_with_lba_bits(enum ata_disk_select disk, uint8_t top_lba_bits);
 
 void driver_ata_resetdisk();
 
