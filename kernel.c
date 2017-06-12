@@ -47,6 +47,7 @@
 #include "terminal.h"
 #include "pci.h"
 #include "ata_driver.h"
+#include "filesystem.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -128,7 +129,21 @@ void kernel_main(multiboot_info_t* arg1)
     struct pci_device result = get_device(0, 1, 1);
     print_pci_device_info(&result);
     
-    test_io_port();
+    uint16_t* writingData = kmKernelAlloc(sizeof(uint16_t) * 2048);
+    
+    for(int k = 0; k < 2048; k++)
+    {
+        writingData[k] = k;
+    }
+    // uint8_t* data = kmKernelAlloc(sizeof(uint8_t) * 256);
+    
+    // for(int k = 0; k < 256; k++)
+    // {
+    //     writingData[k] = k;
+    // }
+    
+    setup_filesystem(); 
+    write_data((uint8_t*)writingData, 4096, 0);
     
     int total = 0;
     struct pci_device** list = get_devices_list(&total);
