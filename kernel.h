@@ -2,6 +2,8 @@
 #define KERNEL_H
 
 #include <stddef.h>
+#include <stdint.h>
+
 #include "types.h"
 
 struct kernel_features;
