@@ -407,24 +407,6 @@ void driver_ata_write_test_sectors()
     driver_ata_write_sectors(dat, 0, 0);
     res = get_status();
     
-    driver_ata_write_sectors(dat, 0, 1);
-    res = get_status();
-    
-    driver_ata_write_sectors(dat, 0, 2);
-    res = get_status();
-    
-    driver_ata_write_sectors(dat, 0, 3);
-    res = get_status();
-    
-    driver_ata_write_sectors(dat, 0, 4);
-    res = get_status();
-    
-    driver_ata_write_sectors(dat, 0, 5);
-    res = get_status();
-    
-    driver_ata_write_sectors(dat, 0, 6);
-    res = get_status();
-    
     if((res & STATUS_DATA_REQUEST) == STATUS_DATA_REQUEST || (res & STATUS_ERROR) == STATUS_ERROR)
     {
         ASSERT(FALSE, "TEST SECTORS FAILED.");
