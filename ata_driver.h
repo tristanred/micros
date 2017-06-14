@@ -1,12 +1,24 @@
 #ifndef ATA_MONITOR_H
 #define ATA_MONITOR_H
 
+#include "micros.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
 struct kernel_info_block;
 
 #include "common.h"
+
+#ifdef _DEBUG
+
+#define REPORT_STUCK_IO
+
+// Amount of loop the io wait functions will wait until reporting a STUCK IO
+#define STUCK_IO_LOOP_TRESH 10000
+
+#endif
+
 
 #define DRIVE_PORT 0x1F0
 
@@ -206,5 +218,7 @@ uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector);
 void driver_ata_verify_sectors(uint8_t sectorCount, uint64_t startingSector);
 
 void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint64_t startingSector);
+
+void driver_ata_write_test_sectors();
 
 #endif

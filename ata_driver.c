@@ -1,9 +1,11 @@
 #include "ata_driver.h"
 
+
 #include "io_func.h"
 #include "framebuffer.h"
 #include "kernel.h"
 #include "memory.h"
+#include "string.h"
 
 void init_module_ata_driver(struct kernel_info_block* kinfo)
 {
@@ -11,6 +13,7 @@ void init_module_ata_driver(struct kernel_info_block* kinfo)
     kinfo->m_ata_driver = ata_driver;
     
     ata_driver->currentDisk = ATA_NONE;
+    ata_driver->driverError = FALSE;
 }
 
 // Send 0xE0 for the "master" or 0xF0 for the "slave", ORed with the highest 4 bits of the LBA to port 0x1F6: outb(0x1F6, 0xE0 | (slavebit << 4) | ((LBA >> 24) & 0x0F))
@@ -78,6 +81,8 @@ enum ata_driver_status driver_ata_get_status()
 
 void driver_ata_wait_for_clear_bit(unsigned char statusBits)
 {
+    uint64_t _debug_loopCount = 0;
+    
     while(TRUE)
     {
         unsigned char status = get_status();
@@ -86,11 +91,28 @@ void driver_ata_wait_for_clear_bit(unsigned char statusBits)
         {
             return;
         }
+        
+        #ifdef REPORT_STUCK_IO
+        
+        _debug_loopCount++;
+        
+        if(_debug_loopCount > STUCK_IO_LOOP_TRESH)
+        {
+            char msg[256];
+            
+            sprintf_1d(msg, "IO STUCK WAITING FOR STATUS %d TO CLEAR.", statusBits);
+            
+            fbPutString(msg);
+        }
+        
+        #endif
     }
 }
 
 void driver_ata_wait_for_set_bit(unsigned char statusBits)
 {
+    uint64_t _debug_loopCount = 0;
+    
     while(TRUE)
     {
         unsigned char status = get_status();
@@ -99,11 +121,28 @@ void driver_ata_wait_for_set_bit(unsigned char statusBits)
         {
             return;
         }
+        
+        #ifdef REPORT_STUCK_IO
+        
+        _debug_loopCount++;
+        
+        if(_debug_loopCount > STUCK_IO_LOOP_TRESH)
+        {
+            char msg[256];
+            
+            sprintf_1d(msg, "IO STUCK WAITING FOR STATUS %d TO SET.", statusBits);
+            
+            fbPutString(msg);
+        }
+        
+        #endif
     }
 }
 
 void driver_ata_wait_for_only_set_bit(unsigned char statusBits)
 {
+    uint64_t _debug_loopCount = 0;
+    
     // TODO
     while(TRUE)
     {
@@ -113,6 +152,22 @@ void driver_ata_wait_for_only_set_bit(unsigned char statusBits)
         {
             return;
         }
+        
+        #ifdef REPORT_STUCK_IO
+        
+        _debug_loopCount++;
+        
+        if(_debug_loopCount > STUCK_IO_LOOP_TRESH)
+        {
+            char msg[256];
+            
+            sprintf_1d(msg, "IO STUCK WAITING FOR STATUS %d TO ONLY SET.", statusBits);
+            
+            fbPutString(msg);
+        }
+        
+        #endif
+
     }
 }
 
@@ -239,6 +294,8 @@ void driver_ata_flush_cache()
 
 uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
 {
+    unsigned char res = get_status();
+    
     driver_ata_select_drive_with_lba_bits(ata_driver->currentDisk, ((startingSector >> 24) & 0xF));
     
     uint16_t* buf = malloc(sizeof(uint16_t) * 256);
@@ -252,17 +309,34 @@ uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
     
     driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST);
     
-    for(int i = 0; i < 256; i++)
+    int readCount = sectorCount * 256;
+    if(sectorCount == 0)
+        readCount = 256 * 256;
+        
+    for(int i = 0; i < readCount; i++)
     {
         buf[i] = 0;
         buf[i] = inw(ata_driver->currentDiskPort + DATA_PORT);
+        
+        driver_ata_wait_for_clear_bit(STATUS_BUSY);
+        
+        res = get_status();
     }
-
+    
+    res = get_status();
+    
+    if((res & STATUS_DATA_REQUEST) == STATUS_DATA_REQUEST || (res & STATUS_ERROR) == STATUS_ERROR)
+    {
+        ASSERT(FALSE, "ATA READ STILL PENDING.");
+    }
+    
     return buf;
 }
 
 void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint64_t startingSector)
 {
+    unsigned char res = get_status();
+    
     driver_ata_select_drive_with_lba_bits(ata_driver->currentDisk, ((startingSector >> 24) & 0xF));
     
     outb(ata_driver->currentDiskPort + FEAT_ERRO, 0x0);
@@ -274,15 +348,19 @@ void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint64_t star
     
     driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST);
     
-    // This is the code for a 'read bytes until DRQ is off' type of read.
+    // This is the code for a 'write bytes until DRQ is off' type of write.
     // int i = 0;
     // while(TRUE)
     // {
     //     res  = get_status();
         
-    //     outw(DATA_PORT, data[i]);
+    //     driver_ata_wait_for_clear_bit(STATUS_BUSY);
+        
+    //     outw(ata_driver->currentDiskPort + DATA_PORT, data[i]);
         
     //     res  = get_status();
+        
+    //     driver_ata_wait_for_clear_bit(STATUS_BUSY);
         
     //     if((res & STATUS_DATA_REQUEST) == 0)
     //     {
@@ -292,8 +370,63 @@ void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint64_t star
     //     i++;
     // }
     
-    for(int i = 0; i < 256; i++)
+    int writeCount = sectorCount * 256;
+    if(sectorCount == 0)
+        writeCount = 256 * 256;
+    
+    for(int i = 0; i < writeCount; i++)
     {
         outw(ata_driver->currentDiskPort + DATA_PORT, data[i]);
+        
+        // Wasting a bit of time here since the disk only seems to get busy every
+        // 255 writes so he can write his buffer.
+        driver_ata_wait_for_clear_bit(STATUS_BUSY);
+        
+        res = get_status();
+    }
+    
+    res = get_status();
+    
+    if((res & STATUS_DATA_REQUEST) == STATUS_DATA_REQUEST || (res & STATUS_ERROR) == STATUS_ERROR)
+    {
+        ASSERT(FALSE, "ATA WRITE STILL PENDING.");
+    }
+}
+
+void driver_ata_write_test_sectors()
+{
+    unsigned char res = get_status();
+    
+    uint16_t* dat = malloc(sizeof(uint16_t) * (128*512));
+    
+    for(int i = 0; i < 128*512; i++)
+    {
+        dat[i] = 0xF2F2;
+    }
+    
+    driver_ata_write_sectors(dat, 0, 0);
+    res = get_status();
+    
+    driver_ata_write_sectors(dat, 0, 1);
+    res = get_status();
+    
+    driver_ata_write_sectors(dat, 0, 2);
+    res = get_status();
+    
+    driver_ata_write_sectors(dat, 0, 3);
+    res = get_status();
+    
+    driver_ata_write_sectors(dat, 0, 4);
+    res = get_status();
+    
+    driver_ata_write_sectors(dat, 0, 5);
+    res = get_status();
+    
+    driver_ata_write_sectors(dat, 0, 6);
+    res = get_status();
+    
+    if((res & STATUS_DATA_REQUEST) == STATUS_DATA_REQUEST || (res & STATUS_ERROR) == STATUS_ERROR)
+    {
+        ASSERT(FALSE, "TEST SECTORS FAILED.");
     }
 }
