@@ -59,7 +59,7 @@ struct memstats
 
 #define small_pool_unit 256
 #define page_pool_unit 1024 * 4
-#define large_pool_unit 1024 * 32
+#define large_pool_unit 1024 * 512
 
 #define small_pool_size 10 * 1024
 #define page_pool_size 610
@@ -84,6 +84,8 @@ struct page_table_info
 struct page_table_info defaultPageTable;
 
 void setup_paging();
+void test_paging();
+
 void map_phys_address(uint32_t addressFrom, uint32_t addressTo);
 
 // TODO : Find prefix for paging methods

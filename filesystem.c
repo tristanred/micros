@@ -1,6 +1,9 @@
 #include "filesystem.h"
 
 #include "ata_driver.h"
+#include "math.h"
+#include "memory.h"
+#include "array_utils.h"
 
 void setup_filesystem()
 {
@@ -21,20 +24,40 @@ void setup_filesystem()
 
 uint8_t* read_data(uint64_t startAddress, uint64_t length)
 {
-    uint8_t offset = 0;
-    uint64_t sectorTarget = get_sector_from_address(startAddress, &offset);
-    uint64_t neededSectors = length / 512;
+    uint8_t sectorStartOffset = 0;
+    uint64_t sectorToStartReading = get_sector_from_address(startAddress,&sectorStartOffset);
+    uint64_t countSectorsToRead = (length / 512) + 1;
     
-    if(neededSectors > 255)
+    uint64_t currentOutputLength = 0;
+    uint8_t* output = malloc(sizeof(uint8_t) * length);
+    
+    while(countSectorsToRead > 0)
     {
-        // TODO Need to do multiple reads
+        uint64_t currentSectorCount = ulmin(countSectorsToRead, 255);
+        
+        uint64_t bytesToRead = currentSectorCount * 512;
+        
+        uint16_t* readBytes = driver_ata_read_sectors(currentSectorCount, sectorToStartReading);
+        
+        // Add the read bytes to the returned output array
+        uint32_t bytesCopied = 0;
+        bytesCopied = array_emplace(output, (uint8_t*)readBytes, currentOutputLength, bytesToRead);
+        free(readBytes);
+        
+        ASSERT(bytesCopied == bytesToRead, "WRONG AMOUNT OF BYTES WAS READ");
+        
+        currentOutputLength += bytesToRead;
+        
+        // Advance the sector to read by the amount we have read
+        sectorToStartReading += currentSectorCount;
+        
+        // Decrease the amount of sectors left to read.
+        countSectorsToRead -= currentSectorCount;
     }
     
-    uint8_t neededSectors_b = (uint8_t)neededSectors & 0xFF;
+    // Next, need to select only the bytes required by the read operation.
     
-    uint8_t* data = (uint8_t*)driver_ata_read_sectors(neededSectors_b, sectorTarget);
-    
-    return data;
+    return output;
 }
 
 void write_data(uint8_t* data, uint64_t length, uint64_t startAddress)

@@ -72,78 +72,41 @@ void kernel_main(multiboot_info_t* arg1)
     setupGdt();
     setupIdt();
 
-    kSetupLog(SERIAL_COM1_BASE);    
+    setup_kernel_block();
+
+    fbInitialize();
+
+    kSetupLog(SERIAL_COM1_BASE);
     kmInitManager();
     
     setup_paging();
     
-    char* far_address = (char*)0x3C00000; // 60 MB
-    char* close_address = (char*)0xF00000; // 15 MB
+    test_paging();
     
-    strcpy(far_address, "far_address\0");
-    strcpy(close_address, "close_address\0");
-    
-    map_phys_address(0x3C00000, 0xF00000); // Map 60 MB mark to 15 MB mark.
-    
-    // Write the string to the address 0x3C00000, which goes over to 0xF00000
-    // So far_address still have the old 'far_address' string.
-    strcpy(far_address, "xx_far_address_after_mapping\0");
-    
-    // Both addresses should have the same content since they are mapped to the 
-    // same page.
-    int res = strcmp(close_address, far_address) == 0;
-    ASSERT(res == TRUE, "PAGING IS FUCKED UP");
-    
-    setup_kernel_block();
     init_module_kernel_features(kernel_info);
     init_module_memory_manager(kernel_info);
-    
-    kWriteLog("***** Kernel Init *****");
-    
+    init_module_ata_driver(kernel_info);
+
     kfDetectFeatures(arg1);
-
-    // kWriteLog("***** KERNEL MEMORY STATS *****");        
-    // int total = 0;
-    // char** x = kmGetMemoryStatsText(&total);
-    
-    // for(int i = 0; i < total; i++)
-    // {
-    //     kWriteLog(x[i]);
-    // }
-
-    /*
-     * The kernel_main method currently receives the Multiboot info structure
-     * from the boot.s code, contained in register EBX with the help of
-     * the boot loader. The other arguments are to test the presence of
-     * other parameters pushed into the method, helpful for debugging.
-     */
-    //btmConfigureMemoryRanges(arg1);
-
-    //char* x = *(char*)0x06400000; // Generates a page fault.
 
     // asm volatile ("int $0x3");
     // asm volatile ("int $0x4");
-
-    fbInitialize();
     
     struct pci_device result = get_device(0, 1, 1);
     print_pci_device_info(&result);
     
-    uint16_t* writingData = kmKernelAlloc(sizeof(uint16_t) * 2048);
-    
-    for(int k = 0; k < 2048; k++)
-    {
-        writingData[k] = k;
-    }
-    // uint8_t* data = kmKernelAlloc(sizeof(uint8_t) * 256);
-    
-    // for(int k = 0; k < 256; k++)
-    // {
-    //     writingData[k] = k;
-    // }
+    Debugger();
     
     setup_filesystem(); 
-    write_data((uint8_t*)writingData, 4096, 0);
+    //test_io_port();
+    
+    driver_ata_write_test_sectors();
+    
+    // uint16_t* datas = driver_ata_read_sectors(1, 0);
+    
+    // uint8_t* dat = read_data(0, 65535);
+    
+    //write_data((uint8_t*)writingData, 4096, 0);
     
     int total = 0;
     struct pci_device** list = get_devices_list(&total);

@@ -55,6 +55,27 @@ void setup_paging()
     enablePaging();
 }
 
+void test_paging()
+{
+    char* far_address = (char*)0x3C00000; // 60 MB
+    char* close_address = (char*)0xF00000; // 15 MB
+    
+    strcpy(far_address, "far_address\0");
+    strcpy(close_address, "close_address\0");
+    
+    map_phys_address(0x3C00000, 0xF00000); // Map 60 MB mark to 15 MB mark.
+    
+    // Write the string to the address 0x3C00000, which goes over to 0xF00000
+    // So far_address still have the old 'far_address' string.
+    strcpy(far_address, "xx_far_address_after_mapping\0");
+    
+    // Both addresses should have the same content since they are mapped to the 
+    // same page.
+    int res = strcmp(close_address, far_address) == 0;
+    ASSERT(res == TRUE, "PAGING IS FUCKED UP");
+
+}
+
 void map_phys_address(uint32_t addressFrom, uint32_t addressTo)
 {
     // Take top 10 bits to identify the page directory
