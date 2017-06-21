@@ -124,7 +124,7 @@ void init_module_memory_manager(struct kernel_info_block* kinfo)
 
 void kmInitManager()
 {
-    basePoolsAddress = 1024 * 1024 * 5; // 1MB
+    basePoolsAddress = 1024 * 1024 * 5; // 5MB
     
     uint32_t smallPoolStartAddress = basePoolsAddress;
     uint32_t pagePoolStartAddress = smallPoolStartAddress + small_pool_size * small_pool_unit;
@@ -132,34 +132,28 @@ void kmInitManager()
     
     for(int i = 0; i < small_pool_size; i++)
     {
-        smallPool[i].size = 256;
+        smallPool[i].size = small_pool_unit;
         smallPool[i].isFree = TRUE;
-        smallPool[i].p = (void*)(basePoolsAddress + 256 * i);
+        smallPool[i].p = (void*)(basePoolsAddress + small_pool_unit * i);
     }
     
     for(int i = 0; i < page_pool_size; i++)
     {
-        pagePool[i].size = 4096;
+        pagePool[i].size = page_pool_unit;
         pagePool[i].isFree = TRUE;
-        pagePool[i].p = (void*)(pagePoolStartAddress + 4096*i);
+        pagePool[i].p = (void*)(pagePoolStartAddress + page_pool_unit *i);
     }
     
     for(int i = 0; i < large_pool_size; i++)
     {
-        largePool[i].size = 32 * 1024;
+        largePool[i].size = large_pool_unit;
         largePool[i].isFree = TRUE;
-        largePool[i].p = (void*)(largePoolStartAddress + 32 * 1024 * i);
+        largePool[i].p = (void*)(largePoolStartAddress + large_pool_unit * i);
     }
-    
-    // Start the allocations at the 45MB mark
-    kmNextAvailableMemoryAddress = 45 * (1024 * 1024);
 }
 
 void* kmKernelAlloc(size_t size)
 {
-    // kmNextAvailableMemoryAddress += size;
-    // return (void*)kmNextAvailableMemoryAddress;
-    //
     if(size <= small_pool_unit)
     {
         for(int i = 0; i < small_pool_size; i++)
