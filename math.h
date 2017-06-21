@@ -28,7 +28,8 @@ unsigned long int ulmax(unsigned long int x, unsigned long int y);
 float fmin(float x, float y);
 float fmax(float x, float y);
 
-
+double ceil(double x);
+double floor(double x);
 
 
 #endif
