@@ -128,7 +128,7 @@ void kmInitManager()
     
     uint32_t smallPoolStartAddress = basePoolsAddress;
     uint32_t pagePoolStartAddress = smallPoolStartAddress + small_pool_size * small_pool_unit;
-    uint32_t largePoolStartAddress = pagePoolStartAddress + page_pool_size + page_pool_unit;
+    uint32_t largePoolStartAddress = pagePoolStartAddress + page_pool_size * page_pool_unit;
     
     for(int i = 0; i < small_pool_size; i++)
     {
