@@ -302,9 +302,9 @@ uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
     
     outb(ata_driver->currentDiskPort + FEAT_ERRO, 0x0);
     outb(ata_driver->currentDiskPort + SEC_COUNT, sectorCount);
-    outb(ata_driver->currentDiskPort + LBA_LOW, (startingSector) & 0xF);
-    outb(ata_driver->currentDiskPort + LBA_MID, (startingSector >> 8) & 0xF);
-    outb(ata_driver->currentDiskPort + LBA_HIGH, (startingSector >> 16) & 0xF);
+    outb(ata_driver->currentDiskPort + LBA_LOW, (startingSector) & 0xFF);
+    outb(ata_driver->currentDiskPort + LBA_MID, (startingSector >> 8) & 0xFF);
+    outb(ata_driver->currentDiskPort + LBA_HIGH, (startingSector >> 16) & 0xFF);
     outb(ata_driver->currentDiskPort + COMMAND_REG_STATUS, 0x20);
     
     driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST);
@@ -341,9 +341,9 @@ void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint64_t star
     
     outb(ata_driver->currentDiskPort + FEAT_ERRO, 0x0);
     outb(ata_driver->currentDiskPort + SEC_COUNT, sectorCount);
-    outb(ata_driver->currentDiskPort + LBA_LOW, (startingSector) & 0xF);
-    outb(ata_driver->currentDiskPort + LBA_MID, (startingSector >> 8) & 0xF);
-    outb(ata_driver->currentDiskPort + LBA_HIGH, (startingSector >> 16) & 0xF);
+    outb(ata_driver->currentDiskPort + LBA_LOW, (startingSector) & 0xFF);
+    outb(ata_driver->currentDiskPort + LBA_MID, (startingSector >> 8) & 0xFF);
+    outb(ata_driver->currentDiskPort + LBA_HIGH, (startingSector >> 16) & 0xFF);
     outb(ata_driver->currentDiskPort + COMMAND_REG_STATUS, 0x30);
     
     driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST);
