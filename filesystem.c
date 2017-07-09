@@ -24,8 +24,8 @@ void setup_filesystem()
 
 uint8_t* read_data(uint64_t startAddress, uint64_t length)
 {
-    uint8_t sectorStartOffset = 0;
-    uint64_t sectorToStartReading = get_sector_from_address(startAddress,&sectorStartOffset);
+    uint16_t sectorStartOffset = 0;
+    uint64_t sectorToStartReading = get_sector_from_address(startAddress, &sectorStartOffset);
     uint64_t countSectorsToRead = (length / 512) + 1;
     
     uint64_t currentOutputLength = 0;
@@ -56,33 +56,51 @@ uint8_t* read_data(uint64_t startAddress, uint64_t length)
     }
     
     // Next, need to select only the bytes required by the read operation.
+    uint8_t* returnBuffer = malloc(sizeof(uint8_t) * length);
     
-    return output;
+    uint8_t* bufferOffset = output + sectorStartOffset;
+    
+    memcpy(returnBuffer, bufferOffset, length);
+    
+    free(output);
+    
+    return returnBuffer;
 }
 
 void write_data(uint8_t* data, uint64_t length, uint64_t startAddress)
 {
-    uint8_t offset = 0;
-    uint64_t sectorTarget = get_sector_from_address(startAddress, &offset);
-    uint64_t neededSectors = length / 512;
+    uint16_t sectorStartOffset = 0;
+    uint64_t sectorToStartWriting = get_sector_from_address(startAddress, &sectorStartOffset);
+    uint64_t countSectorsToWrite = (length / 512) + 1;
     
-    if(neededSectors > 255)
+    uint64_t currentDataWrittenLength = 0;
+    
+    while(countSectorsToWrite > 0)
     {
-        // TODO Need to do multiple reads
+        uint64_t currentSectorCount = ulmin(countSectorsToWrite, 255);
+        
+        uint64_t bytesToWrite = currentSectorCount * 512;
+        
+        driver_ata_write_sectors((uint16_t*)(data + currentDataWrittenLength), currentSectorCount, sectorToStartWriting);
+        
+        currentDataWrittenLength += bytesToWrite;
+        
+        // Advance the sector to read by the amount we have read
+        sectorToStartWriting += currentSectorCount;
+        
+        // Decrease the amount of sectors left to read.
+        countSectorsToWrite -= currentSectorCount;
     }
-    
-    uint8_t neededSectors_b = (uint8_t)neededSectors & 0xFF;
-    
-    driver_ata_write_sectors((uint16_t*)data, neededSectors_b, sectorTarget);
 }
 
-uint64_t get_sector_from_address(uint64_t address, uint8_t* sectorOffset)
+uint64_t get_sector_from_address(uint64_t address, uint16_t* sectorOffset)
 {
-    uint64_t lba = address & 0xFFFFFFFFFFFFFF00;
-    uint8_t offset = address & 0xFF;
+    int sector = (int)ceil(address / 512);
+    
+    uint16_t offset = (uint16_t)((address - (sector * 512)) & 0xFFFF);
     
     *sectorOffset = offset;
     
-    return lba;
+    return sector;
 }
 

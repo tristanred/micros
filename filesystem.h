@@ -24,7 +24,7 @@ void write_data(uint8_t* data, uint64_t length, uint64_t startAddress);
 
 // Private methods
 
-uint64_t get_sector_from_address(uint64_t address, uint8_t* sectorOffset);
+uint64_t get_sector_from_address(uint64_t address, uint16_t* sectorOffset);
 
 // TODO : I/O api using the FILE* c std
 
