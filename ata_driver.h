@@ -196,6 +196,11 @@ void test_io_port();
 
 unsigned char get_status();
 
+uint8_t* read_data(uint64_t startAddress, uint64_t length);
+void write_data(uint8_t* data, uint64_t length, uint64_t startAddress);
+uint64_t get_sector_from_address(uint64_t address, uint16_t* sectorOffset);
+
+
 
 enum ata_driver_status driver_ata_get_status();
 

@@ -14,4 +14,6 @@ void array_set(uint8_t* destination, uint8_t value, int length);
 
 void array_set_pattern(uint8_t* destination, uint8_t* pattern, int destinationLength, int patternLength);
 
+size_t array_verify_length(uint8_t* source);
+
 #endif

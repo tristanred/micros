@@ -22,7 +22,7 @@ struct kernel_info_block {
     uint32_t modules_end_address;
     size_t modules_current_offset;
     
-    // Kernel module structsS
+    // Kernel module structs
     struct kernel_features* m_kernel_features;
     struct memory_manager* m_memory_manager;
     struct ata_driver_info* m_ata_driver; // ATA Driver is temporarily a kernel module

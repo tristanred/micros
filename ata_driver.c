@@ -6,6 +6,9 @@
 #include "kernel.h"
 #include "memory.h"
 #include "string.h"
+#include "math.h"
+#include "array_utils.h"
+
 
 void init_module_ata_driver(struct kernel_info_block* kinfo)
 {
@@ -64,6 +67,112 @@ unsigned char get_status()
 
     return res;
 }
+
+/**
+ * Read bytes from the disk, starting at the specified address.
+ * A buffer of bytes is returned of the read data.
+ * The currently selected disk is used for the operation.
+ * @param startAddress  Starting logical address of the read operation.
+ * @param length        Length, in bytes, of the read operation.
+ * @return              Byte buffer containing the read bytes.
+ */
+uint8_t* read_data(uint64_t startAddress, uint64_t length)
+{
+    uint16_t sectorStartOffset = 0;
+    uint64_t sectorToStartReading = get_sector_from_address(startAddress, &sectorStartOffset);
+    uint64_t sectorsLeft = (length / 512) + 1;
+    
+    uint64_t currentOutputLength = 0;
+    uint8_t* output = malloc(sizeof(uint8_t) * length);
+    
+    while(sectorsLeft > 0)
+    {
+        uint64_t currentSectorCount = ulmin(sectorsLeft, 255);
+        
+        uint64_t bytesToRead = currentSectorCount * 512;
+        
+        uint16_t* readBytes = driver_ata_read_sectors(currentSectorCount, sectorToStartReading);
+        
+        // Add the read bytes to the returned output array
+        uint32_t bytesCopied = 0;
+        bytesCopied = array_emplace(output, (uint8_t*)readBytes, currentOutputLength, bytesToRead);
+        free(readBytes);
+        
+        ASSERT(bytesCopied == bytesToRead, "WRONG AMOUNT OF BYTES WAS READ");
+        
+        currentOutputLength += bytesToRead;
+        
+        // Advance the sector to read by the amount we have read
+        sectorToStartReading += currentSectorCount;
+        
+        // Decrease the amount of sectors left to read.
+        sectorsLeft -= currentSectorCount;
+    }
+    
+    // Next, need to select only the bytes required by the read operation.
+    uint8_t* returnBuffer = malloc(sizeof(uint8_t) * length);
+    
+    uint8_t* bufferOffset = output + sectorStartOffset;
+    
+    memcpy(returnBuffer, bufferOffset, length);
+    
+    free(output);
+    
+    return returnBuffer;
+}
+
+/**
+ * Write data to the disk, starting at the specified address.
+ * @param data          Buffer of bytes to write.
+ * @param length        Length of the buffer.
+ * @param startAddress  Logical address to write the bytes to.
+ */
+void write_data(uint8_t* data, uint64_t length, uint64_t startAddress)
+{
+    uint16_t sectorStartOffset = 0;
+    uint64_t sectorToStartWriting = get_sector_from_address(startAddress, &sectorStartOffset);
+    uint64_t sectorsLeft = (length / 512) + 1;
+    
+    uint64_t currentDataWrittenLength = 0;
+    
+    while(sectorsLeft > 0)
+    {
+        uint64_t currentSectorCount = ulmin(sectorsLeft, 255);
+        
+        uint64_t bytesToWrite = currentSectorCount * 512;
+        
+        driver_ata_write_sectors((uint16_t*)(data + currentDataWrittenLength), currentSectorCount, sectorToStartWriting);
+        
+        currentDataWrittenLength += bytesToWrite;
+        
+        // Advance the sector to read by the amount we have read
+        sectorToStartWriting += currentSectorCount;
+        
+        // Decrease the amount of sectors left to read.
+        sectorsLeft -= currentSectorCount;
+    }
+    
+    driver_ata_flush_cache();
+}
+
+/**
+ * Return a sector index and an offset within that sector from a logical address.
+ * @private
+ * @param address LBA address
+ * @param[out] sectorOffset Byte offset within a sector of the target address.
+ * @return Sector index of the target address.
+ */
+uint64_t get_sector_from_address(uint64_t address, uint16_t* sectorOffset)
+{
+    int sector = (int)ceil(address / 512);
+    
+    uint16_t offset = (uint16_t)((address - (sector * 512)) & 0xFFFF);
+    
+    *sectorOffset = offset;
+    
+    return sector;
+}
+
 
 enum ata_driver_status driver_ata_get_status()
 {

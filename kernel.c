@@ -48,6 +48,7 @@
 #include "pci.h"
 #include "ata_driver.h"
 #include "filesystem.h"
+#include "array_utils.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -95,16 +96,19 @@ void kernel_main(multiboot_info_t* arg1)
     struct pci_device result = get_device(0, 1, 1);
     print_pci_device_info(&result);
     
-    Debugger();
     
     setup_filesystem(); 
     //test_io_port();
     
-    driver_ata_write_test_sectors();
+    //driver_ata_write_test_sectors();
     
-    // uint16_t* datas = driver_ata_read_sectors(1, 0);
+    Debugger();
     
-    // uint8_t* dat = read_data(0, 65535);
+    format_disk();
+    
+    return;
+    
+    Debugger();
     
     //write_data((uint8_t*)writingData, 4096, 0);
     

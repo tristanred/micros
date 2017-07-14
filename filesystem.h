@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "common.h"
+#include "ext4.h"
 
 // ***** EASY API *****
 // The easy API is a bunch of functions designed to get the basic functionality
@@ -16,15 +17,10 @@ struct filesystem_info
 };
 struct filesystem_info* filesystem;
 
+
 void setup_filesystem();
 
-uint8_t* read_data(uint64_t startAddress, uint64_t length);
-
-void write_data(uint8_t* data, uint64_t length, uint64_t startAddress);
-
-// Private methods
-
-uint64_t get_sector_from_address(uint64_t address, uint16_t* sectorOffset);
+void create_test_file();
 
 // TODO : I/O api using the FILE* c std
 
