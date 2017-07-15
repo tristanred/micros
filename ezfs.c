@@ -5,7 +5,51 @@
 #include "array_utils.h"
 #include "string.h"
 
-void ez_format_disk()
+file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum FS_FILE_FLAGS flags)
+{
+    (void)dir;
+    (void)access;
+    (void)flags;
+    
+    uint32_t allocationIndex = loaded_metablock->files_amount;
+    uint64_t locatedAddress = ezfs_find_free_space(DEFAULT_FILE_SIZE);
+    
+    struct file_allocation* alloc = &allocated_files[allocationIndex];
+    alloc->allocated = TRUE;
+    strcpy(alloc->name, name);
+    alloc->fileNumber = allocationIndex;
+    alloc->id = allocationIndex + FS_COUNT_SPECIAL_FILES;
+    alloc->dataBlockDiskAddress = locatedAddress;
+    alloc->dataSize = 0;
+    alloc->diskSize = DEFAULT_FILE_SIZE;
+    alloc->type = 0;
+    
+    ezfs_write_allocation_to_disk(alloc);
+    
+    return alloc->id;
+}
+
+/**
+ * Initial function to call in order to work with an EZFS drive.
+ * The function will load the existing metablock to check if it is formatted 
+ * before loading it.
+ */
+void ezfs_prepare_disk()
+{
+    struct filesystem_metablock* ondisk_metablock = (struct filesystem_metablock*)read_data(METABLOCK_ADDRESS, sizeof(struct filesystem_metablock));
+    
+    if(strcmp(ondisk_metablock->magic, "ezfs") == 0)
+    {
+        loaded_metablock = ondisk_metablock;
+        ezfs_load_disk_allocation_area();
+    }
+    else
+    {
+        ezfs_format_disk();
+    }
+}
+
+void ezfs_format_disk()
 {
     struct filesystem_metablock* block = ezfs_create_metablock();
     
@@ -62,20 +106,70 @@ void ezfs_format_allocation_area()
     void* allocArea = malloc(areaLength);
     
     array_zero((uint8_t*)allocArea, areaLength);
+
+    allocated_files = (struct file_allocation*)&allocArea;
+    
+    for(int i = 0; i < MAX_FILES_NUM; i++)
+    {
+        (allocated_files + i)->allocated = FALSE;
+    }
     
     write_data((uint8_t*)allocArea, areaLength, loaded_metablock->allocation_area_start);
+    
 }
 
 void ezfs_load_disk_allocation_area()
 {
     uint8_t* allocData = read_data(loaded_metablock->allocation_area_start, loaded_metablock->allocation_area_length);
     
-    allocated_files = (struct file_allocation*)allocData;
+    allocated_files = (struct file_allocation*)&allocData;
 }
 
 void ezfs_write_allocation_area()
 {
     write_data((uint8_t*)allocated_files, loaded_metablock->allocation_area_start, sizeof(struct file_allocation) * MAX_FILES_NUM);
+}
+
+
+uint64_t ezfs_find_free_space(size_t size)
+{
+    for(int i = 0; i < MAX_FILES_NUM; i++)
+    {
+        struct file_allocation* alloc = &allocated_files[i];
+        struct file_allocation* next_alloc = &allocated_files[i+1];
+        
+        if(alloc->allocated == TRUE && next_alloc->allocated == TRUE)
+        {
+            if(ezfs_get_free_space_between_files(alloc, next_alloc) >= size)
+            {
+                return alloc->dataBlockDiskAddress + alloc->diskSize;
+            }
+        }
+        else if(alloc->allocated == TRUE && next_alloc->allocated == FALSE)
+        {
+            // TODO : Check if end of disk, CanAllocate(size)
+            return alloc->dataBlockDiskAddress + alloc->diskSize;
+        }
+        else
+        {
+            return loaded_metablock->data_area_start;
+        }
+    }
+    
+    return loaded_metablock->data_area_start;
+}
+
+size_t ezfs_get_free_space_between_files(struct file_allocation* one, struct file_allocation* two)
+{
+    return two->dataBlockDiskAddress - (one->dataBlockDiskAddress + one->diskSize);
+}
+
+void ezfs_write_allocation_to_disk(struct file_allocation* file)
+{
+    uint64_t disk_alloc_address = loaded_metablock->allocation_area_start
+        + (sizeof(struct file_allocation) * file->fileNumber);
+        
+    write_data((uint8_t*)file, disk_alloc_address, sizeof(struct file_allocation));
 }
 
 

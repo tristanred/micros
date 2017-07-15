@@ -16,6 +16,7 @@
 #define BLOCK_SIZE 1024
 #define METABLOCK_ADDRESS 512
 
+#define DEFAULT_FILE_SIZE 1024
 
 struct filesystem_metablock
 {
@@ -36,10 +37,13 @@ struct filesystem_metablock
 
 struct file_allocation
 {
+    BOOL allocated;
     char name[MAX_FILE_NAME];
     uint64_t dataBlockDiskAddress;
     uint32_t fileNumber;
-    uint32_t size;
+    file_h id;
+    uint32_t dataSize;
+    uint32_t diskSize;
     int32_t type;
 };
 
@@ -56,16 +60,22 @@ void ezfs_protect_file(file_h file, enum FS_FILE_ACCESS access);
 void ezfs_delete_file(file_h file);
 
 // EZ-FS Functions
+void ezfs_prepare_disk();
+void ezfs_format_disk();
+void ezfs_format_allocation_area();
+void ezfs_load_disk_allocation_area();
+void ezfs_write_allocation_area();
 
-void ez_format_disk();
+uint64_t ezfs_find_free_space(size_t size);
+size_t ezfs_get_free_space_between_files(struct file_allocation* one, struct file_allocation* two);
+void ezfs_write_allocation_to_disk(struct file_allocation* file);
 
 struct filesystem_metablock* ezfs_create_metablock();
 struct filesystem_metablock* ezfs_load_disk_metablock();
 void ezfs_write_metablock(struct filesystem_metablock* block);
 
-void ezfs_format_allocation_area();
-void ezfs_load_disk_allocation_area();
-void ezfs_write_allocation_area();
+
+
 
 // void load_super_block();
 
