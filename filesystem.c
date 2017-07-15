@@ -4,7 +4,7 @@
 #include "math.h"
 #include "memory.h"
 #include "array_utils.h"
-#include "ext4.h"
+#include "ezfs.h"
 
 /** 
  * Prepares the disk for IO. This selects the first disk on the master bus.

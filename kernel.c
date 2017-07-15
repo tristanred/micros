@@ -49,6 +49,7 @@
 #include "ata_driver.h"
 #include "filesystem.h"
 #include "array_utils.h"
+#include "ezfs.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -104,7 +105,7 @@ void kernel_main(multiboot_info_t* arg1)
     
     Debugger();
     
-    format_disk();
+    //format_disk();
     
     return;
     
