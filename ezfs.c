@@ -8,10 +8,6 @@
 
 file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum FS_FILE_FLAGS flags)
 {
-    (void)dir;
-    (void)access;
-    (void)flags;
-    
     uint32_t allocationIndex = loaded_metablock->files_amount;
     uint64_t locatedAddress = ezfs_find_free_space(DEFAULT_FILE_SIZE);
     
@@ -47,8 +43,6 @@ file_h ezfs_find_file(char* name)
 
 size_t ezfs_read_file(file_h file, uint8_t** buf)
 {
-    (void)buf;
-    
     struct file_allocation* found = ezfs_find_file_info(file);
 
     if(found == FALSE)
