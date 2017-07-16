@@ -23,6 +23,9 @@ file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum
     
     ezfs_write_allocation_to_disk(alloc);
     
+    loaded_metablock->files_amount++;
+    ezfs_write_metablock(loaded_metablock);
+    
     return alloc->id;
 }
 
@@ -189,7 +192,7 @@ struct filesystem_metablock* ezfs_load_disk_metablock()
 
 void ezfs_write_metablock(struct filesystem_metablock* block)
 {
-    write_data((uint8_t*)block, BLOCK_SIZE, METABLOCK_ADDRESS);    
+    write_data((uint8_t*)block, BLOCK_SIZE, METABLOCK_ADDRESS);
 }
 
 void ezfs_format_allocation_area()
@@ -264,6 +267,8 @@ BOOL ezfs_data_can_grow(struct file_allocation* file, size_t required)
 
 BOOL ezfs_data_relocate(struct file_allocation* file, size_t required)
 {
+    // TODO : Need to keep the allocated_files ordered by start address.
+    // TODO : Implement a Compact() algorithm ?
     uint64_t oldAddress = file->dataBlockDiskAddress;
     uint64_t oldSize = file->dataSize;
     
@@ -329,6 +334,10 @@ void ezfs_deallocate(struct file_allocation* file)
     file->type = 0;
     
     ezfs_write_allocation_to_disk(file);
+    
+    loaded_metablock->files_amount--;
+    
+    ezfs_write_metablock(loaded_metablock);
 }
 
 void ezfs_zero_file(struct file_allocation* file)
