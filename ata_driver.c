@@ -129,6 +129,8 @@ uint8_t* read_data(uint64_t startAddress, uint64_t length)
  */
 void write_data(uint8_t* data, uint64_t length, uint64_t startAddress)
 {
+    // TODO : Read existing data on the sectors to write
+    // Copy the data buffer at the correct offset in that buffer
     uint16_t sectorStartOffset = 0;
     uint64_t sectorToStartWriting = get_sector_from_address(startAddress, &sectorStartOffset);
     uint64_t sectorsLeft = (length / 512) + 1;

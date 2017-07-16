@@ -135,7 +135,7 @@ int strcmp( const char *lhs, const char *rhs )
 int strncmp( const char *lhs, const char *rhs, size_t count )
 {
     size_t i = 0;
-    while(lhs[i] && i < count)
+    while(i < count)
     {
         if(lhs[i] != rhs[i])
         {
@@ -170,6 +170,29 @@ char* alloc_sprintf_1d(char* buffer, const char* format, uint64_t number, int* n
         *nbWritten = bytesWritten;
     
     return buffer;
+}
+
+BOOL mcmp(uint8_t* lhs, uint8_t* rhs, size_t count)
+{
+    size_t i = 0;
+    while(i < count)
+    {
+        if(lhs[i] != rhs[i])
+        {
+            if(lhs[i] > rhs[i])
+            {
+                return 1;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        
+        i++;
+    }
+    
+    return 0;
 }
 
 char** strspl(char* buffer, char* separator, size_t* amount)

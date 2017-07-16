@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "types.h"
 
 // C LIBRARY FUNCTIONS
 size_t strlen(const char* str);
@@ -21,6 +22,8 @@ int strncmp( const char *lhs, const char *rhs, size_t count );
 
 // Self allocating sprintf function
 char* alloc_sprintf_1d(char* buffer, const char* format, uint64_t number, int* nbWritten);
+
+BOOL mcmp(uint8_t* lhs, uint8_t* rhs, size_t count);
 
 // Split a string into multiple strings separated by 'separator'
 char** strspl(char* buffer, char* separator, size_t* amount);

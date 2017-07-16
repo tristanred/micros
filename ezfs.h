@@ -8,7 +8,7 @@
 #include "fs_types.h"
 
 // File amounts
-#define MAX_FILES_NUM 10000
+#define MAX_FILES_NUM 10
 #define ROOT_LIST_AMOUNT 12
 
 #define MAX_FILE_NAME 256
@@ -60,19 +60,26 @@ void ezfs_protect_file(file_h file, enum FS_FILE_ACCESS access);
 void ezfs_delete_file(file_h file);
 
 // EZ-FS Functions
+// Disk formatting functions
 void ezfs_prepare_disk();
 void ezfs_format_disk();
 void ezfs_format_allocation_area();
 void ezfs_load_disk_allocation_area();
 void ezfs_write_allocation_area();
-
-uint64_t ezfs_find_free_space(size_t size);
-size_t ezfs_get_free_space_between_files(struct file_allocation* one, struct file_allocation* two);
-void ezfs_write_allocation_to_disk(struct file_allocation* file);
-
 struct filesystem_metablock* ezfs_create_metablock();
 struct filesystem_metablock* ezfs_load_disk_metablock();
 void ezfs_write_metablock(struct filesystem_metablock* block);
+
+// Files data layout function
+uint64_t ezfs_find_free_space(size_t size);
+size_t ezfs_get_free_space_between_files(struct file_allocation* one, struct file_allocation* two);
+BOOL ezfs_data_can_grow(struct file_allocation* file, size_t required);
+BOOL ezfs_data_relocate(struct file_allocation* file, size_t required);
+
+// Allocations management functions
+void ezfs_write_allocation_to_disk(struct file_allocation* file);
+struct file_allocation* ezfs_find_file_info(file_h file);
+
 
 
 

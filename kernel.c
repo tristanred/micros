@@ -105,6 +105,20 @@ void kernel_main(multiboot_info_t* arg1)
     
     Debugger();
     
+    ezfs_prepare_disk();
+    
+    file_h file = ezfs_create_file(ROOT_DIR, "test.txt", FS_READ_WRITE, FS_FLAGS_NONE);
+    
+    char filebuf[4];
+    strcpy(filebuf, "abcd");
+    
+    size_t bytesWritten = ezfs_write_file(file, (uint8_t*)filebuf, 4);
+    
+    uint8_t* outBuf = NULL;
+    size_t readBytes = ezfs_read_file(file, outBuf);
+    
+    ASSERT(bytesWritten == readBytes, "WRONG SIZE WRITTEN.");
+    
     //format_disk();
     
     return;

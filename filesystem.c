@@ -27,8 +27,3 @@ void setup_filesystem()
         filesystem->FilesystemReady = TRUE;
     }
 }
-
-void create_test_file()
-{
-    
-}
