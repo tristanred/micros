@@ -1,10 +1,11 @@
 #ifndef FS_TYPES
 #define FS_TYPES
 
-typedef uint32_t file_h;
+typedef int file_h;
 
 enum FS_SPECIAL_FILES
 {
+    FILE_NOT_FOUND = -1,
     ROOT_DIR = 0,
     CURRENT_DIR,
     PARENT_DIR,

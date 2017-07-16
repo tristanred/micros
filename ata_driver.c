@@ -145,6 +145,8 @@ void write_data(uint8_t* data, uint64_t length, uint64_t startAddress)
     
     uint32_t res = array_emplace(combinedData, data, sectorStartOffset, length);
     
+    ASSERT(res == length, "WRONG AMNT. BYTES WRITTEN.");
+    
     uint64_t currentDataWrittenLength = 0;
     while(sectorsLeft > 0)
     {

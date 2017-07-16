@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "array_utils.h"
 #include "string.h"
+#include "math.h"
 
 file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum FS_FILE_FLAGS flags)
 {
@@ -27,6 +28,21 @@ file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum
     ezfs_write_allocation_to_disk(alloc);
     
     return alloc->id;
+}
+
+file_h ezfs_find_file(char* name)
+{
+    for(int i = 0; i < MAX_FILES_NUM; i++)
+    {
+        struct file_allocation* alloc = (allocated_files + i);
+        
+        if(strcmp(alloc->name, name) == 0)
+        {
+            return alloc->id;
+        }
+    }
+    
+    return FILE_NOT_FOUND;
 }
 
 size_t ezfs_read_file(file_h file, uint8_t** buf)
@@ -72,7 +88,38 @@ size_t ezfs_write_file(file_h file, uint8_t* buf, size_t bufLen)
     
     found->dataSize = bufLen;
     
+    ezfs_write_allocation_to_disk(found);
+    
     return bufLen;
+}
+
+void ezfs_rename_file(file_h file, char* toName)
+{
+    struct file_allocation* alloc = ezfs_find_file_info(file);
+    
+    if(alloc != NULL)
+    {
+        strcpy(alloc->name, toName);
+        
+        ezfs_write_allocation_to_disk(alloc);
+    }
+}
+
+void ezfs_protect_file(file_h file, enum FS_FILE_ACCESS access)
+{
+    (void)file;
+    (void)access;
+    // File permissions not implemented yet.
+}
+
+void ezfs_delete_file(file_h file)
+{
+    struct file_allocation* alloc = ezfs_find_file_info(file);
+    
+    if(alloc != NULL)
+    {
+        ezfs_deallocate(alloc);
+    }
 }
 
 /**
@@ -115,11 +162,17 @@ struct filesystem_metablock* ezfs_create_metablock()
     block->allocation_area_start = METABLOCK_ADDRESS + sizeof(struct filesystem_metablock);
     block->allocation_area_length = sizeof(struct file_allocation) * MAX_FILES_NUM;
     
+    // TODO : Call ata_driver to get the disk size.
+    struct ata_identify_device* deviceInfo = malloc(sizeof(struct ata_identify_device));
+    driver_ata_identify(deviceInfo);
+
     block->data_area_start = block->allocation_area_start + block->allocation_area_length;
-    block->data_area_length = UINT64_MAX;
+    block->data_area_length = deviceInfo->addressable_sectors_lba28 * 512;
     
     block->version_fs_major = 0;
     block->version_fs_minor = 1;
+    
+    free(deviceInfo);
     
     return block;
 }
@@ -217,9 +270,32 @@ BOOL ezfs_data_can_grow(struct file_allocation* file, size_t required)
 
 BOOL ezfs_data_relocate(struct file_allocation* file, size_t required)
 {
-    (void)file;
-    (void)required;
-    return FALSE;
+    uint64_t oldAddress = file->dataBlockDiskAddress;
+    uint64_t oldSize = file->dataSize;
+    
+    uint64_t newSizePaddedToBlockSize = ezfs_calculate_new_padded_size(required);
+    uint64_t newAddress = ezfs_find_free_space(newSizePaddedToBlockSize);
+    // TODO : Check if free space is available
+    ezfs_copy_data(file, newAddress);
+    
+    file->dataBlockDiskAddress = newAddress;
+    file->diskSize = newSizePaddedToBlockSize;
+    
+    ezfs_write_allocation_to_disk(file);
+    
+    #ifdef ZERO_ON_RELOCATE
+    uint8_t* zeros = malloc(oldSize);
+    write_data(zeros, oldSize, oldAddress); 
+    
+    free(zeros);
+    #endif
+    
+    return TRUE;
+}
+
+uint64_t ezfs_calculate_new_padded_size(uint64_t minSize)
+{
+    return ceil(minSize / BLOCK_SIZE) * BLOCK_SIZE;
 }
 
 void ezfs_write_allocation_to_disk(struct file_allocation* file)
@@ -243,90 +319,43 @@ struct file_allocation* ezfs_find_file_info(file_h file)
     return NULL;
 }
 
+void ezfs_deallocate(struct file_allocation* file)
+{
+    #ifdef ZERO_ON_DELETE
+    ezfs_zero_file(file);
+    #endif
+    
+    file->allocated = FALSE;
+    array_set((uint8_t*)&file->name, 0, MAX_FILE_NAME);
+    file->dataBlockDiskAddress = 0;
+    file->fileNumber = 0;
+    file->id = 0;
+    file->dataSize = 0;
+    file->diskSize = 0;
+    file->type = 0;
+    
+    ezfs_write_allocation_to_disk(file);
+}
 
-// void format_disk()
-// {
-//     uint64_t start_superblock_address = boot_record_length;
-//     uint8_t blankData[super_block_length];
-//     array_set(blankData, 0, super_block_length);
+void ezfs_zero_file(struct file_allocation* file)
+{
+    uint8_t* zeros = malloc(file->diskSize);
+    array_set(zeros, 0, file->diskSize);
+    size_t zeroCount = ezfs_write_file(file->id, zeros, file->diskSize);
     
-//     write_data(blankData, super_block_length, start_superblock_address);
-    
-//     struct super_block* superblock = malloc(sizeof(struct super_block));
-//     sprintf_1d(superblock->format_magic, "ext44\0", 0);
-//     superblock->inodesEntriesAmount = 0;
-//     superblock->inodes_map_disk_addr = start_superblock_address + super_block_length;
-//     superblock->inodes_data_area_start = superblock->inodes_map_disk_addr + (sizeof(struct inode_map_entry) * MAX_FILES_NUM);
-    
-//     memcpy(blankData, (uint8_t*)superblock, sizeof(struct super_block));
-    
-//     write_data(blankData, super_block_length, start_superblock_address);
-    
-//     disk_super_block = superblock;
-// }
+    free(zeros);
+    ASSERT(zeroCount == file->diskSize, "ezfs_zero_file wrong length.");
+}
 
-// void load_super_block()
-// {
-//     struct super_block* superblockBytes = (struct super_block*)read_data(boot_record_length, BLOCK_LENGTH);
+void ezfs_copy_data(struct file_allocation* file, uint64_t diskAddr)
+{
+    uint8_t* currentData = read_data(file->dataBlockDiskAddress, file->dataSize);
     
-//     if(strncmp(superblockBytes->format_magic, "ext4", 4) != 0)
-//     {
-//         ASSERT(FALSE, "DISK NOT FORMATTED.");
-//         return;
-//     }
-    
-//     disk_super_block = superblockBytes;
-// }
+    if(currentData != NULL)
+    {
+        write_data(currentData, file->dataSize, diskAddr);
+        
+        free(currentData);
+    }
+}
 
-// void save_super_block()
-// {
-//     uint8_t* superblockBytes = (uint8_t*)disk_super_block;
-    
-//     write_data(superblockBytes, BLOCK_LENGTH, SUPERBLOCK_START);
-// }
-
-// void load_inodes_map()
-// {
-//     uint8_t* bytes = read_data(INODE_MAP_START, sizeof(struct inode_map_entry) * MAX_FILES_NUM);
-    
-//     fs_inodes_map = (struct inode_map_entry*)bytes;
-// }
-
-// void save_inodes_map()
-// {
-//     uint8_t* bytes = (uint8_t*)fs_inodes_map;
-    
-//     write_data(bytes, INODE_MAP_START, sizeof(struct inode_map_entry) * MAX_FILES_NUM);
-// }
-
-// inode_num create_inode(char* name)
-// {
-//     struct inode* node = malloc(sizeof(struct inode));
-//     node->inode_number = ++disk_super_block->inodesEntriesAmount;
-//     node->file_type = 1;
-//     node->size = 0;
-//     node->flags = 0;
-    
-    
-// }
-
-// void map_inode(struct inode* node, char* name)
-// {
-//     *(fs_inodes_map + node->inode_number).fname = name;
-//     *(fs_inodes_map + node->inode_number).inode_number = node->inode_number;    
-// }
-
-// void get_inode_available_address(inode* node)
-// {
-//     *(fs_inodes_map + node->inode_number).inode_disk_address = 0;
-// }
-
-// void write_inode(inode_num inode_number, uint8_t* data, uint32_t length)
-// {
-    
-// }
-
-// uint8_t* read_inode(inode_num inode_number, uint32_t* length)
-// {
-    
-// }

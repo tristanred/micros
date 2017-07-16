@@ -18,6 +18,10 @@
 
 #define DEFAULT_FILE_SIZE 1024
 
+// Options
+#define ZERO_ON_DELETE
+#define ZERO_ON_RELOCATE
+
 struct filesystem_metablock
 {
     char magic[4];
@@ -52,7 +56,7 @@ struct file_allocation* allocated_files;
 
 // EZ-FS Filesystem api
 file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum FS_FILE_FLAGS flags);
-file_h ezfs_find_file(file_h file, char* name);
+file_h ezfs_find_file(char* name);
 size_t ezfs_read_file(file_h file, uint8_t** buf);
 size_t ezfs_write_file(file_h file, uint8_t* buf, size_t bufLen);
 void ezfs_rename_file(file_h file, char* toName);
@@ -75,31 +79,15 @@ uint64_t ezfs_find_free_space(size_t size);
 size_t ezfs_get_free_space_between_files(struct file_allocation* one, struct file_allocation* two);
 BOOL ezfs_data_can_grow(struct file_allocation* file, size_t required);
 BOOL ezfs_data_relocate(struct file_allocation* file, size_t required);
+uint64_t ezfs_calculate_new_padded_size(uint64_t minSize);
 
 // Allocations management functions
 void ezfs_write_allocation_to_disk(struct file_allocation* file);
 struct file_allocation* ezfs_find_file_info(file_h file);
+void ezfs_deallocate(struct file_allocation* file);
 
-
-
-
-
-// void load_super_block();
-
-// void save_super_block();
-
-// void load_inodes_map();
-
-// void save_inodes_map();
-
-// inode_num create_inode(char* name[4];;
-
-// void map_inode(struct inode* node);
-
-// void get_inode_available_address(struct inode* node);
-
-// void write_inode(inode_num inode_number, uint8_t* data, uint32_t length);
-
-// uint8_t* read_inode(inode_num inode_number, uint32_t* length);
+// Data management functions
+void ezfs_zero_file(struct file_allocation* file);
+void ezfs_copy_data(struct file_allocation* file, uint64_t diskAddr);
 
 #endif
