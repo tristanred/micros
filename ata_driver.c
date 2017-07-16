@@ -129,21 +129,30 @@ uint8_t* read_data(uint64_t startAddress, uint64_t length)
  */
 void write_data(uint8_t* data, uint64_t length, uint64_t startAddress)
 {
-    // TODO : Read existing data on the sectors to write
-    // Copy the data buffer at the correct offset in that buffer
     uint16_t sectorStartOffset = 0;
     uint64_t sectorToStartWriting = get_sector_from_address(startAddress, &sectorStartOffset);
-    uint64_t sectorsLeft = (length / 512) + 1;
+    
+    // Since disk writing will overwrite current data, we need to read the current
+    // data, copy our buffer onto it at the correct offset and write that 
+    // combined array on disk.
+    uint64_t endOfWriteAddress = startAddress + length;
+    uint64_t startOfWriteAddress = sectorToStartWriting * 512;
+    uint64_t sectorBytesToRead = endOfWriteAddress - startOfWriteAddress;
+
+    uint64_t sectorsLeft = (sectorBytesToRead / 512) + 1;
+    
+    uint8_t* combinedData = read_data(startOfWriteAddress, sectorBytesToRead);
+    
+    uint32_t res = array_emplace(combinedData, data, sectorStartOffset, length);
     
     uint64_t currentDataWrittenLength = 0;
-    
     while(sectorsLeft > 0)
     {
         uint64_t currentSectorCount = ulmin(sectorsLeft, 255);
         
         uint64_t bytesToWrite = currentSectorCount * 512;
         
-        driver_ata_write_sectors((uint16_t*)(data + currentDataWrittenLength), currentSectorCount, sectorToStartWriting);
+        driver_ata_write_sectors((uint16_t*)(combinedData + currentDataWrittenLength), currentSectorCount, sectorToStartWriting);
         
         currentDataWrittenLength += bytesToWrite;
         

@@ -101,8 +101,6 @@ void kernel_main(multiboot_info_t* arg1)
     setup_filesystem(); 
     //test_io_port();
     
-    //driver_ata_write_test_sectors();
-    
     Debugger();
     
     ezfs_prepare_disk();
@@ -115,8 +113,9 @@ void kernel_main(multiboot_info_t* arg1)
     size_t bytesWritten = ezfs_write_file(file, (uint8_t*)filebuf, 4);
     
     uint8_t* outBuf = NULL;
-    size_t readBytes = ezfs_read_file(file, outBuf);
+    size_t readBytes = ezfs_read_file(file, &outBuf);
     
+    fbPutString((char*)outBuf);
     ASSERT(bytesWritten == readBytes, "WRONG SIZE WRITTEN.");
     
     //format_disk();

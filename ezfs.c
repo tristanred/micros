@@ -29,7 +29,7 @@ file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum
     return alloc->id;
 }
 
-size_t ezfs_read_file(file_h file, uint8_t* buf)
+size_t ezfs_read_file(file_h file, uint8_t** buf)
 {
     (void)buf;
     
@@ -45,7 +45,7 @@ size_t ezfs_read_file(file_h file, uint8_t* buf)
     uint64_t diskAddr = found->dataBlockDiskAddress;
     uint32_t diskSize = found->dataSize;
     
-    buf = read_data(diskAddr, diskSize);
+    *buf = read_data(diskAddr, diskSize);
     
     return diskSize;
 }

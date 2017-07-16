@@ -53,7 +53,7 @@ struct file_allocation* allocated_files;
 // EZ-FS Filesystem api
 file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum FS_FILE_FLAGS flags);
 file_h ezfs_find_file(file_h file, char* name);
-size_t ezfs_read_file(file_h file, uint8_t* buf);
+size_t ezfs_read_file(file_h file, uint8_t** buf);
 size_t ezfs_write_file(file_h file, uint8_t* buf, size_t bufLen);
 void ezfs_rename_file(file_h file, char* toName);
 void ezfs_protect_file(file_h file, enum FS_FILE_ACCESS access);
