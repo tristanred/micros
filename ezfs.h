@@ -63,7 +63,8 @@ void ezfs_rename_file(file_h file, char* toName);
 void ezfs_protect_file(file_h file, enum FS_FILE_ACCESS access);
 void ezfs_delete_file(file_h file);
 
-// EZ-FS Functions
+// EZ-FS Internal Functions
+
 // Disk formatting functions
 void ezfs_prepare_disk();
 void ezfs_format_disk();
@@ -85,6 +86,7 @@ uint64_t ezfs_calculate_new_padded_size(uint64_t minSize);
 void ezfs_write_allocation_to_disk(struct file_allocation* file);
 struct file_allocation* ezfs_find_file_info(file_h file);
 void ezfs_deallocate(struct file_allocation* file);
+void ezfs_sort_allocations();
 
 // Data management functions
 void ezfs_zero_file(struct file_allocation* file);

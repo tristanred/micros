@@ -1,9 +1,6 @@
 I. Memory
   1. Paging
-    a. Create the paging data structure in memory. Load it into the proc. 
-    b. Setup identity paging for kernel pages. Maybe for everything for a start.
-    c. Create pagefault handler
-    d. Integrate paging management into the MM module.
+    a. Integrate paging management into the MM module.
   2. Dynamic allocation
     a. Store the current block preallocation with other names so we can switch
        allocation schemes.
@@ -14,6 +11,9 @@ I. Memory
        structure.
   
 II. Disk IO
-  1. Find out how the hell it works.
-
-III. Build system
+  1. Create helper methods for zeroing blocks of bytes. Or patterns.
+  
+III. Filesystem
+  1. Reorder files in the allocation table to have them sorter by disk address.
+  2. Return error values when FS operations fail.
+  
