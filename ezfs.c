@@ -16,6 +16,10 @@
  */
 file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum FS_FILE_FLAGS flags)
 {
+    (void)dir;
+    (void)access;
+    (void)flags;
+    
     uint32_t allocationIndex = loaded_metablock->files_amount;
     uint64_t locatedAddress = ezfs_find_free_space(DEFAULT_FILE_SIZE);
     
@@ -44,7 +48,7 @@ file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum
  */
 file_h ezfs_find_file(char* name)
 {
-    for(int i = 0; i < loaded_metablock->files_amount; i++)
+    for(uint32_t i = 0; i < loaded_metablock->files_amount; i++)
     {
         struct file_allocation* alloc = (allocated_files + i);
         
@@ -166,6 +170,8 @@ void ezfs_prepare_disk()
 {
     struct filesystem_metablock* ondisk_metablock = (struct filesystem_metablock*)read_data(METABLOCK_ADDRESS, sizeof(struct filesystem_metablock));
     
+    allocation_pointers = NULL;
+    
     if(strncmp(ondisk_metablock->magic, "ezfs", 4) == 0)
     {
         loaded_metablock = ondisk_metablock;
@@ -175,6 +181,8 @@ void ezfs_prepare_disk()
     {
         ezfs_format_disk();
     }
+    
+    ezfs_init_allocation_pointers();
 }
 
 /* Format the disk to prepare it for usage.
@@ -293,10 +301,12 @@ void ezfs_write_allocation_area()
  */
 uint64_t ezfs_find_free_space(size_t size)
 {
+    ezfs_sort_allocations();
+    
     for(int i = 0; i < MAX_FILES_NUM; i++)
     {
-        struct file_allocation* alloc = (allocated_files + i);
-        struct file_allocation* next_alloc = (allocated_files + i + 1);
+        struct file_allocation* alloc = allocation_pointers[i];
+        struct file_allocation* next_alloc = allocation_pointers[i + 1];
         
         if(alloc->allocated == TRUE && next_alloc->allocated == TRUE)
         {
@@ -312,7 +322,8 @@ uint64_t ezfs_find_free_space(size_t size)
         }
         else
         {
-            return loaded_metablock->data_area_start;
+            // Means no files have been allocated yet. Gotta start somewhere.
+            return alloc->dataBlockDiskAddress;
         }
     }
     
@@ -337,7 +348,7 @@ size_t ezfs_get_free_space_between_files(struct file_allocation* one, struct fil
  */
 BOOL ezfs_data_can_grow(struct file_allocation* file, size_t required)
 {
-    struct file_allocation* nextFile = allocated_files + file->fileNumber;
+    struct file_allocation* nextFile = allocation_pointers[file->fileNumber];
     
     return ezfs_get_free_space_between_files(file, nextFile) >= required;
 }
@@ -440,7 +451,40 @@ void ezfs_deallocate(struct file_allocation* file)
 
 void ezfs_sort_allocations()
 {
-    // TODO
+    struct file_allocation** newList = malloc(sizeof(struct file_allocation*) * MAX_FILES_NUM);
+    
+    for(int i = 0; i < MAX_FILES_NUM; i++)
+    {
+        struct file_allocation* current = allocated_files + i;
+        
+        for(int k = i + 1; k < MAX_FILES_NUM; k++)
+        {
+            struct file_allocation* next = allocated_files + k;
+            
+            if(next->allocated == TRUE && next->dataBlockDiskAddress < current->dataBlockDiskAddress)
+            {
+                struct file_allocation* temp = current;
+                current = next;
+                next = temp;
+            }
+        }
+        
+        newList[i] = current;
+    }
+    
+    free(allocation_pointers);
+    
+    allocation_pointers = newList;
+}
+
+void ezfs_init_allocation_pointers()
+{
+    for(int i = 0; i < MAX_FILES_NUM; i++)
+    {
+        struct file_allocation* ptr = allocated_files + i;
+        
+        allocation_pointers[i] = ptr;
+    }
 }
 
 /* Writes 0's to a file's disk area.

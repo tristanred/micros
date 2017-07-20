@@ -53,6 +53,7 @@ struct file_allocation
 
 struct filesystem_metablock* loaded_metablock;
 struct file_allocation* allocated_files;
+struct file_allocation** allocation_pointers;
 
 // EZ-FS Filesystem api
 file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum FS_FILE_FLAGS flags);
@@ -87,6 +88,7 @@ void ezfs_write_allocation_to_disk(struct file_allocation* file);
 struct file_allocation* ezfs_find_file_info(file_h file);
 void ezfs_deallocate(struct file_allocation* file);
 void ezfs_sort_allocations();
+void ezfs_init_allocation_pointers();
 
 // Data management functions
 void ezfs_zero_file(struct file_allocation* file);
