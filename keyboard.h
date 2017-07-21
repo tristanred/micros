@@ -183,7 +183,7 @@ void SetFlagsFromKey(keyboard_state_t* state, BOOL keyPressed);
 
 // Public methods
 void GetKeyboardState(keyboard_state_t* kb);
-unsigned char GetAscii(keycode k);
+char GetAscii(keycode k);
 BOOL IsKeyDown(keycode k);
 int IsPrintableCharacter(keycode k);
 BOOL IsControlCharacter(keycode code);

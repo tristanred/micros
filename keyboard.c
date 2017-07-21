@@ -134,7 +134,7 @@ void GetKeyboardState(keyboard_state_t* kb)
     }
 }
 
-unsigned char GetAscii(keycode k)
+char GetAscii(keycode k)
 {
     return keycode_ascii_map[k];
 }
