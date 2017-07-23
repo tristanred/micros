@@ -50,6 +50,7 @@
 #include "filesystem.h"
 #include "array_utils.h"
 #include "ezfs.h"
+#include "ksh.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -101,24 +102,35 @@ void kernel_main(multiboot_info_t* arg1)
     setup_filesystem(); 
     //test_io_port();
     
-    Debugger();
+    //Debugger();
     
-    ezfs_prepare_disk();
+    // ezfs_prepare_disk();
     
-    file_h file = ezfs_create_file(ROOT_DIR, "test.txt", FS_READ_WRITE, FS_FLAGS_NONE);
+    // file_h file = ezfs_create_file(ROOT_DIR, "test.txt", FS_READ_WRITE, FS_FLAGS_NONE);
     
-    char filebuf[4];
-    strcpy(filebuf, "abcd");
+    // char filebuf[4];
+    // strcpy(filebuf, "abcd");
     
-    size_t bytesWritten = ezfs_write_file(file, (uint8_t*)filebuf, 4);
+    // size_t bytesWritten = ezfs_write_file(file, (uint8_t*)filebuf, 4);
     
-    uint8_t* outBuf = NULL;
-    size_t readBytes = ezfs_read_file(file, &outBuf);
+    // uint8_t* outBuf = NULL;
+    // size_t readBytes = ezfs_read_file(file, &outBuf);
     
-    fbPutString((char*)outBuf);
-    ASSERT(bytesWritten == readBytes, "WRONG SIZE WRITTEN.");
+    // fbPutString((char*)outBuf);
+    // ASSERT(bytesWritten == readBytes, "WRONG SIZE WRITTEN.");
     
     //format_disk();
+    asm volatile("sti");
+    init_timer(1000);
+    SetupKeyboardDriver(SCANCODE_SET1);
+
+    
+    ksh_take_fb_control();
+    
+    while(TRUE)
+    {
+        ksh_update();
+    }
     
     return;
     

@@ -1,14 +1,29 @@
 #include "ksh.h"
 
-#include "framebuffer.h"
 
 BOOL ksh_take_fb_control()
 {
     RegisterKeyboardHook(&ksh_kb_hook);
 
     promptText = "|>\0";
-
-    cursorColumn = strlen(promptText);
+    promptLength = strlen(promptText);
+    
+    cursorColumn = 0;
+    
+    lines = malloc(sizeof(char*) * KSH_LINES_IN_MEMORY);
+    lines[0] = malloc(sizeof(char) * KSH_MAX_LINE_LENGTH);
+    lines[0] = "\0";
+    
+    for(int i = 1; i < KSH_LINES_IN_MEMORY; i++)
+    {
+        lines[i] = NULL;
+    }
+    
+    fbClear();
+    
+    fbMoveCursor(0, 0);
+    
+    ksh_render_line(0);
     
     return TRUE;
 }
@@ -18,27 +33,52 @@ void ksh_fb_release()
     DeregisterKeyboardHook(&ksh_kb_hook);
 }
 
-void ksh_render_line(int nb)
+void ksh_update()
 {
     
 }
 
+void ksh_render_line(int nb)
+{
+    if(nb >= KSH_LINES_IN_MEMORY && lines[nb] == NULL)
+        return;
+    
+    fbMoveCursor(0, nb);
+    
+    if(ksh_is_current_type_line(nb))
+    {
+        // Draw prompt
+        fbPutString(promptText);
+    }
+    
+    fbPutString(lines[nb]);
+}
+
 void ksh_type_character(char value)
 {
+    if(cursorColumn >= KSH_MAX_LINE_LENGTH - promptLength)
+        return;
+    
     char* currentLine = ksh_get_current_type_line();
     
     currentLine[cursorColumn] = value;
     
     cursorColumn++;
+    
+    currentLine[cursorColumn] = '\0';
+    
+    ksh_render_line(ksh_get_current_line_nb());
 }
 
 void ksh_erase_character()
 {
-    cursorColumn--;
-    
     char* currentLine = ksh_get_current_type_line();
+    
+    cursorColumn--;
 
-    currentLine[cursorColumn] = '\0';
+    currentLine[cursorColumn] = ' ';
+    
+    ksh_render_line(ksh_get_current_line_nb());
 }
 
 void ksh_enter_command()
@@ -48,31 +88,54 @@ void ksh_enter_command()
     // Process data
     //DoStuff();
     
-    ksh_push_line();
+    ksh_push_lines();
 }
 
 char* ksh_get_current_type_line()
 {
-    if(linesCount < 1)
-    {
-        linesCount = 0;
-        ksh_push_line();
-    }
-    
-    return lines[linesCount - 1];
+    return lines[ksh_get_current_line_nb()];
 }
 
-void ksh_push_line()
+BOOL ksh_is_current_type_line(int nb)
 {
-    char* newLine = malloc(sizeof(char) * KSH_MAX_LINE_LENGTH);
-    lines[linesCount] = newLine;
-    linesCount++;
+    return nb == 0;
+    //return nb == ksh_get_current_line_nb();
+}
+
+int ksh_get_current_line_nb()
+{
+    return 0;
+}
+
+void ksh_push_lines()
+{
+    fbClear();
+    fbMoveCursor(0, 0);
     
+    for(int i = KSH_LINES_IN_MEMORY; i > 0; i--)
+    {
+        if(lines[i - 1] != NULL)
+        {
+            lines[i] = lines[i - 1];
+            
+            ksh_render_line(i);
+        }
+    }
+    
+    char* result = (char*)malloc(sizeof(char) * KSH_MAX_LINE_LENGTH);
+    lines[0] = result;
+    //lines[0] = "\0";
+    array_set(lines[0], 0, sizeof(char) * KSH_MAX_LINE_LENGTH);
     cursorColumn = 0;
+    ksh_render_line(0);
+    
+    fbMoveCursor(0, 0);
 }
 
 void ksh_kb_hook(keyevent_info* info)
 {
+    Debugger();
+    
     if(info->key_state == KEYDOWN)
     {
         if(IsPrintableCharacter(info->key) == TRUE)

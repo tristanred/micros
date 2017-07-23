@@ -210,6 +210,9 @@ void* kmKernelAlloc(size_t size)
         Debugger();
     }
     
+    Debugger();
+    ASSERT(FALSE, "MEMORY ALLOCATE FAILED. NULL RETURNED.");
+    
     return (void*)0;
 }
 

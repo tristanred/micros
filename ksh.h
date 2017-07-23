@@ -6,17 +6,13 @@
 
 #include "common.h"
 #include "keyboard.h"
+#include "framebuffer.h"
 
 #define KSH_MAX_LINE_LENGTH 80
-
-// struct ksh_line
-// {
-//     char lineText[KSH_MAX_LINE_LENGTH];
-    
-// };
+#define KSH_LINES_IN_MEMORY FBROWS
 
 char** lines;
-int linesCount; // linesCount -1 is the current typing line.
+//int linesCount; // linesCount -1 is the current typing line.
 
 int cursorColumn;
 
@@ -40,10 +36,10 @@ void ksh_erase_character();
 void ksh_enter_command();
 
 char* ksh_get_current_type_line();
+BOOL ksh_is_current_type_line(int nb);
+int ksh_get_current_line_nb();
 
-void ksh_remove_prompt_from_line(char* line);
-
-void ksh_push_line();
+void ksh_push_lines();
 
 void ksh_kb_hook(keyevent_info* info);
 
