@@ -176,20 +176,22 @@ void setup_kernel_block()
 {
     kernel_info = (struct kernel_info_block*)0x100000;
     
-    kernel_info->modules_start_address = (uint32_t)(&kernel_info + sizeof(struct kernel_info_block));
-    kernel_info->modules_end_address = (uint32_t)(&kernel_info + (1024*1024*5)); // 5MB
+    kernel_info->modules_start_address = (uint32_t)(kernel_info + sizeof(struct kernel_info_block));
+    kernel_info->modules_end_address = (uint32_t)(kernel_info + (1024*1024*5)); // 5MB
     kernel_info->modules_current_offset = kernel_info->modules_start_address;
 }
 
 void* alloc_kernel_module(size_t size)
 {
-    if(!has_free_modules_space())
-        return NULL;
+    return kmKernelAlloc(size);
     
-    uint32_t nextModuleAddress = kernel_info->modules_current_offset + size;
-    kernel_info->modules_current_offset += size;
+    // if(!has_free_modules_space())
+    //     return NULL;
     
-    return (void*)nextModuleAddress;
+    // uint32_t nextModuleAddress = kernel_info->modules_current_offset + size;
+    // kernel_info->modules_current_offset += size;
+    
+    // return (void*)nextModuleAddress;
 }
 
 BOOL has_free_modules_space()
