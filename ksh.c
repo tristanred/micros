@@ -37,6 +37,8 @@ void ksh_fb_release()
 
 void ksh_write(const char* characters)
 {
+    ksh_push_lines();
+    
     size_t cLen = strlen(characters);
     
     for(size_t i = 0; i < cLen; i++)
@@ -50,15 +52,19 @@ void ksh_write(const char* characters)
             char* line = ksh_get_current_type_line();
             line[cursorColumn] = characters[i];
             cursorColumn++;
+            
         }
     }
+    
+    char* line = ksh_get_current_type_line();
+    
+    line[cursorColumn] = '\0';
 }
 
 void ksh_write_line(const char* line)
 {
-    ksh_push_lines();
-    
     ksh_write(line);
+    ksh_write("");
 }
 
 void ksh_update()
@@ -105,7 +111,10 @@ void ksh_process_command(char* commandline)
         {
             if(nb > 1)
             {
-                ksh_write_line(parts[1]);
+                for(int i = 1; i < nb; i++)
+                {
+                    ksh_write(parts[i]);
+                }
                 
                 return;
             }
