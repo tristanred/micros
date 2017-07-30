@@ -124,7 +124,6 @@ void kernel_main(multiboot_info_t* arg1)
     init_timer(1000);
     SetupKeyboardDriver(SCANCODE_SET1);
     
-    Debugger();
     ksh_take_fb_control();
     
     ksh_write("Hello output data. \n DoStuff");

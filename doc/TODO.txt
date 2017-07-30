@@ -20,3 +20,6 @@ IV. Disk IO
 V. Filesystem
   1. Return error values when FS operations fail.
   
+VI. String Functions Review
+  1. Some strings functions have problem with null termination. Find them and 
+     fix them.

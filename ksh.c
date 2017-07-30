@@ -23,7 +23,7 @@ BOOL ksh_take_fb_control()
     
     fbClear();
     
-    fbMoveCursor(0, 0);
+    fbMoveCursor(0, ksh_get_line_number_from_bottom(0));
     
     ksh_render_line(0);
     
@@ -58,22 +58,13 @@ void ksh_write(const char* characters)
 
 void ksh_write_line(const char* line)
 {
-    ksh_write(line);
-    
     ksh_push_lines();
+    
+    ksh_write(line);
 }
 
 void ksh_update()
 {
-    int a = 1;
-    int b = 2;
-    int c = 3;
-    int d = 4;
-    int e = 5;
-    int f = 6;
-    int g = 7;
-    int h = 8;
-    const char* lineData = "Test";
     
 }
 
@@ -82,7 +73,12 @@ void ksh_render_line(int nb)
     if(nb >= KSH_LINES_IN_MEMORY && lines[nb] == NULL)
         return;
     
-    fbMoveCursor(0, nb);
+    uint8_t screenRow = ksh_get_line_number_from_bottom(nb);
+    
+    if(screenRow < 0)
+        return;
+    
+    fbMoveCursor(0, screenRow);
     
     if(ksh_is_current_type_line(nb))
     {
@@ -97,12 +93,7 @@ void ksh_process_command(char* commandline)
 {
     if(commandline[0] == 'p')
     {
-        Debugger();
-        
-        int i = 64;
-        
-        const char* lineData = "Test";
-        ksh_write_line(lineData);
+        ksh_write_line("Test");
     }
 }
 
@@ -135,6 +126,8 @@ void ksh_erase_character()
 
 void ksh_enter_command()
 {
+    Debugger();
+    
     char* currentLine = ksh_get_current_type_line();
     
     // Process data
@@ -159,10 +152,15 @@ int ksh_get_current_line_nb()
     return 0;
 }
 
+uint8_t ksh_get_line_number_from_bottom(uint8_t nb)
+{
+    return FBROWS - nb -2;
+}
+
 void ksh_push_lines()
 {
     fbClear();
-    fbMoveCursor(0, 0);
+    fbMoveCursor(0, ksh_get_line_number_from_bottom(0));
     
     for(int i = KSH_LINES_IN_MEMORY; i > 0; i--)
     {
@@ -176,12 +174,13 @@ void ksh_push_lines()
     
     char* result = (char*)malloc(sizeof(char) * KSH_MAX_LINE_LENGTH);
     lines[0] = result;
-    //lines[0] = "\0";
+    
     array_set((uint8_t*)lines[0], 0, sizeof(char) * KSH_MAX_LINE_LENGTH);
+    
     cursorColumn = 0;
     ksh_render_line(0);
     
-    fbMoveCursor(0, 0);
+    fbMoveCursor(0, ksh_get_line_number_from_bottom(0));
 }
 
 void ksh_kb_hook(keyevent_info* info)
