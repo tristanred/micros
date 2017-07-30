@@ -151,7 +151,7 @@ typedef uint16_t keycode;
 
 struct keyboard_state
 {
-    uint8_t currentScancode;
+    uint16_t currentScancode;
     uint16_t currentKeycode;
     
     uint8_t* keyStates;

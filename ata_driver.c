@@ -34,8 +34,6 @@ uint32_t cycleWaiting;
 
 void test_io_port()
 {
-    Debugger();
-    
     driver_ata_select_drive(ATA_MASTER_0);
     
     uint16_t* data = malloc(sizeof(uint16_t) * 256);

@@ -123,9 +123,11 @@ void kernel_main(multiboot_info_t* arg1)
     asm volatile("sti");
     init_timer(1000);
     SetupKeyboardDriver(SCANCODE_SET1);
-
     
+    Debugger();
     ksh_take_fb_control();
+    
+    ksh_write("Hello output data. \n DoStuff");
     
     while(TRUE)
     {
@@ -134,7 +136,6 @@ void kernel_main(multiboot_info_t* arg1)
     
     return;
     
-    Debugger();
     
     //write_data((uint8_t*)writingData, 4096, 0);
     

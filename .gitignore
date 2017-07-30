@@ -5,3 +5,5 @@ isodir
 .ftpconfig
 .tags*
 .vscode
+disk.img
+out/

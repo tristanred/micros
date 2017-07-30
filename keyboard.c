@@ -14,31 +14,53 @@ void keyboard_interrupt_handler(registers_t regs)
     // more popular.
     // See : http://www.osdever.net/papers/view/ibm-pc-keyboard-information-for-software-developers
     unsigned char res = inb(0x60);
-
-    current_keyboard_state.currentScancode = res;
+    
+    uint16_t scancodeValue = 0;
+    
+    if(res == 0xE0)
+    {
+        scancodeValue = (0xE0 << 8);
+        
+        kWriteLog_format1d("First value %d", res);
+        
+        res = inb(0x60);
+        
+        scancodeValue += res;
+        
+        kWriteLog_format1d("Second value %d", res);        
+    }
+    else
+    {
+        scancodeValue = res;
+    }
+    
+    current_keyboard_state.currentScancode = scancodeValue;
     
     // TODO : To avoid doing a table scan each time, the keycodes and scancode
     // should be ordered by value in the list so scancode == keycode index
     for(size_t i = 0; i < scancode_sets_keys; i++)
     {
-        if(current_scancode_set[i] == res)
+        if(current_scancode_set[i] == scancodeValue)
         {
             current_keyboard_state.currentKeycode = i;
+            
+            break;
         }
     }
     
-    BOOL keyDown = !(res >= 0x80);
-    if(!keyDown)
-    {
-        kWriteLog_format1d("KEY RELEASE %d", (uint64_t)current_keyboard_state.currentKeycode);
-        //current_keyboard_state.inputType = KEY_RELEASE;
-        key_states[current_keyboard_state.currentKeycode] = 0;
-    }
-    else
+    // Bit #7 indicate a KEY BREAK
+    BOOL keyDown = res < 0x80;
+    if(keyDown)
     {
         kWriteLog_format1d("KEY PRESS %d", (uint64_t)current_keyboard_state.currentKeycode);
         //current_keyboard_state.inputType = KEY_DOWN;
         key_states[current_keyboard_state.currentKeycode] = 1;
+    }
+    else
+    {
+        kWriteLog_format1d("KEY RELEASE %d", (uint64_t)current_keyboard_state.currentKeycode);
+        //current_keyboard_state.inputType = KEY_RELEASE;
+        key_states[current_keyboard_state.currentKeycode] = 0;
     }
     
     if(IsControlCharacter(current_keyboard_state.currentKeycode))

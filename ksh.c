@@ -1,5 +1,7 @@
 #include "ksh.h"
 
+#include "string.h"
+#include "array_utils.h"
 
 BOOL ksh_take_fb_control()
 {
@@ -10,9 +12,9 @@ BOOL ksh_take_fb_control()
     
     cursorColumn = 0;
     
-    lines = malloc(sizeof(char*) * KSH_LINES_IN_MEMORY);
-    lines[0] = malloc(sizeof(char) * KSH_MAX_LINE_LENGTH);
-    lines[0] = "\0";
+    lines = (char**)malloc(sizeof(char*) * KSH_LINES_IN_MEMORY);
+    lines[0] = (char*)malloc(sizeof(char) * KSH_MAX_LINE_LENGTH);
+    strcpy(lines[0], "");
     
     for(int i = 1; i < KSH_LINES_IN_MEMORY; i++)
     {
@@ -33,8 +35,45 @@ void ksh_fb_release()
     DeregisterKeyboardHook(&ksh_kb_hook);
 }
 
+void ksh_write(const char* characters)
+{
+    size_t cLen = strlen(characters);
+    
+    for(size_t i = 0; i < cLen; i++)
+    {
+        if(characters[i] == '\n')
+        {
+            ksh_push_lines();
+        }
+        else
+        {
+            char* line = ksh_get_current_type_line();
+            line[cursorColumn] = characters[i];
+            cursorColumn++;
+        }
+    }
+    
+    ksh_push_lines();
+}
+
+void ksh_write_line(const char* line)
+{
+    ksh_write(line);
+    
+    ksh_push_lines();
+}
+
 void ksh_update()
 {
+    int a = 1;
+    int b = 2;
+    int c = 3;
+    int d = 4;
+    int e = 5;
+    int f = 6;
+    int g = 7;
+    int h = 8;
+    const char* lineData = "Test";
     
 }
 
@@ -52,6 +91,19 @@ void ksh_render_line(int nb)
     }
     
     fbPutString(lines[nb]);
+}
+
+void ksh_process_command(char* commandline)
+{
+    if(commandline[0] == 'p')
+    {
+        Debugger();
+        
+        int i = 64;
+        
+        const char* lineData = "Test";
+        ksh_write_line(lineData);
+    }
 }
 
 void ksh_type_character(char value)
@@ -86,7 +138,7 @@ void ksh_enter_command()
     char* currentLine = ksh_get_current_type_line();
     
     // Process data
-    //DoStuff();
+    ksh_process_command(currentLine);
     
     ksh_push_lines();
 }
@@ -125,7 +177,7 @@ void ksh_push_lines()
     char* result = (char*)malloc(sizeof(char) * KSH_MAX_LINE_LENGTH);
     lines[0] = result;
     //lines[0] = "\0";
-    array_set(lines[0], 0, sizeof(char) * KSH_MAX_LINE_LENGTH);
+    array_set((uint8_t*)lines[0], 0, sizeof(char) * KSH_MAX_LINE_LENGTH);
     cursorColumn = 0;
     ksh_render_line(0);
     
@@ -134,8 +186,6 @@ void ksh_push_lines()
 
 void ksh_kb_hook(keyevent_info* info)
 {
-    Debugger();
-    
     if(info->key_state == KEYDOWN)
     {
         if(IsPrintableCharacter(info->key) == TRUE)

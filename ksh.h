@@ -19,18 +19,21 @@ int cursorColumn;
 char* promptText;
 int promptLength;
 
+// Kernel Shell api
 BOOL ksh_take_fb_control();
-
 void ksh_fb_release();
 
+void ksh_write(const char* characters);
+void ksh_write_line(const char* line);
+
+// Kernel Shell Internal Functions
 void ksh_update();
-
-//void ksh_write_line(char* line);
-
 void ksh_render_line(int nb);
 
-void ksh_type_character(char value);
+// Temporary command processing function
+void ksh_process_command(char* commandline);
 
+void ksh_type_character(char value);
 void ksh_erase_character();
 
 void ksh_enter_command();
