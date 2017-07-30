@@ -162,7 +162,7 @@ char* alloc_sprintf_1d(char* buffer, const char* format, uint64_t number, int* n
     // Hacky calculation. 64 bit max number is 20 digits.
     int bufMaxLength = strlen(format) + 20; 
     
-    buffer = malloc(sizeof(char) * bufMaxLength);
+    buffer = (char*)malloc(sizeof(char) * bufMaxLength);
     
     int bytesWritten = sprintf_1d(buffer, format, number);
     
@@ -203,7 +203,8 @@ char** strspl(char* buffer, char* separator, size_t* amount)
     size_t index = 0;
     
     size_t accumulatorIndex = 0;
-    char* accumulator = malloc(sizeof(char) * 256);
+    char* accumulator = (char*)malloc(sizeof(char) * 256);
+    
     while(index < buflen)
     {
         if(strncmp(&buffer[index], separator, 1) == 0)
@@ -211,7 +212,7 @@ char** strspl(char* buffer, char* separator, size_t* amount)
             // Finish the current element
             accumulator[accumulatorIndex] = '\0';
             vector_add(elements, accumulator);
-            accumulator = malloc(sizeof(char) * 256);
+            accumulator = (char*)malloc(sizeof(char) * 256);
             accumulatorIndex = 0;
         }
         else
@@ -231,7 +232,7 @@ char** strspl(char* buffer, char* separator, size_t* amount)
     
     *amount = elements->count;
     
-    char** result = malloc(elements->count * sizeof(char*));
+    char** result = (char**)malloc(elements->count * sizeof(char*));
     
     for(size_t i = 0; i < elements->count; i++)
     {
@@ -246,7 +247,7 @@ char** strspl(char* buffer, char* separator, size_t* amount)
 char* strrev(char* str)
 {
     size_t len = strlen(str);
-    char* reverse = kmKernelAlloc(sizeof(char) * len + 1);
+    char* reverse = (char*)kmKernelAlloc(sizeof(char) * len + 1);
     
     for(size_t i = 0; i < len; i++)
     {
@@ -285,7 +286,7 @@ char* strdigits(uint64_t number)
     
     char* reversedResult = strrev(result);
     
-    char* outResult = kmKernelAlloc(sizeof(char) * digitCounter + 1);
+    char* outResult = (char*)kmKernelAlloc(sizeof(char) * digitCounter + 1);
     strcpy(outResult, reversedResult);
     
     kmKernelFree(reversedResult);
