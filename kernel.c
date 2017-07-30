@@ -126,7 +126,7 @@ void kernel_main(multiboot_info_t* arg1)
     
     ksh_take_fb_control();
     
-    ksh_write("Hello output data. \n DoStuff");
+    //ksh_write("Hello output data. \n DoStuff");
     
     while(TRUE)
     {

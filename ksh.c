@@ -89,14 +89,31 @@ void ksh_render_line(int nb)
 
 void ksh_process_command(char* commandline)
 {
-    if(commandline[0] == 'p')
+    Debugger();
+    
+    if(strcmp(commandline, "") == 0)
     {
-        ksh_write_line("Test");
+        return;
     }
-    else if(strncmp(commandline, "dostuff", 7) == 0)
+    
+    size_t nb = 0;
+    char** parts = strspl(commandline, " ", &nb);
+    
+    if(nb > 0)
     {
-        ksh_write_line("Doing stuff !");
+        if(strcmp(parts[0], "echo") == 0)
+        {
+            if(nb > 1)
+            {
+                ksh_write_line(parts[1]);
+                
+                return;
+            }
+        }
     }
+    
+    // All commands must return, if not the command was not recognized.
+    ksh_write_line("Unrecognized command");
 }
 
 void ksh_type_character(char value)
