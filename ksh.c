@@ -71,7 +71,7 @@ void ksh_render_line(int nb)
     if(nb >= KSH_LINES_IN_MEMORY && lines[nb] == NULL)
         return;
     
-    uint8_t screenRow = ksh_get_line_number_from_bottom(nb);
+    int screenRow = ksh_get_line_number_from_bottom(nb);
     
     if(screenRow < 0)
         return;
@@ -92,6 +92,10 @@ void ksh_process_command(char* commandline)
     if(commandline[0] == 'p')
     {
         ksh_write_line("Test");
+    }
+    else if(strncmp(commandline, "dostuff", 7) == 0)
+    {
+        ksh_write_line("Doing stuff !");
     }
 }
 
@@ -124,8 +128,6 @@ void ksh_erase_character()
 
 void ksh_enter_command()
 {
-    Debugger();
-    
     char* currentLine = ksh_get_current_type_line();
     
     // Process data
@@ -149,8 +151,9 @@ int ksh_get_current_line_nb()
     return 0;
 }
 
-uint8_t ksh_get_line_number_from_bottom(uint8_t nb)
+int ksh_get_line_number_from_bottom(int nb)
 {
+    // TODO : Verify FBROWS should be 25 or 24. 25 causes the need for -2
     return FBROWS - nb -2;
 }
 

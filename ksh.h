@@ -42,7 +42,7 @@ char* ksh_get_current_type_line();
 BOOL ksh_is_current_type_line(int nb);
 int ksh_get_current_line_nb();
 
-uint8_t ksh_get_line_number_from_bottom(uint8_t nb);
+int ksh_get_line_number_from_bottom(int nb);
 
 void ksh_push_lines();
 
