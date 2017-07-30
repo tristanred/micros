@@ -52,8 +52,6 @@ void ksh_write(const char* characters)
             cursorColumn++;
         }
     }
-    
-    ksh_push_lines();
 }
 
 void ksh_write_line(const char* line)
@@ -144,7 +142,6 @@ char* ksh_get_current_type_line()
 BOOL ksh_is_current_type_line(int nb)
 {
     return nb == 0;
-    //return nb == ksh_get_current_line_nb();
 }
 
 int ksh_get_current_line_nb()
