@@ -28,6 +28,8 @@ BOOL mcmp(uint8_t* lhs, uint8_t* rhs, size_t count);
 // Split a string into multiple strings separated by 'separator'
 char** strspl(char* buffer, char* separator, size_t* amount);
 
+void splfree(char** splitParts, size_t parts);
+
 // Reverse a string
 char* strrev(char* str);
 

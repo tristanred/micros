@@ -244,6 +244,19 @@ char** strspl(char* buffer, char* separator, size_t* amount)
     return result;
 }
 
+void splfree(char** splitParts, size_t parts)
+{
+    for(size_t i = 0; i < parts; i++)
+    {
+        if(splitParts[i] != NULL)
+        {
+            free(splitParts[i]);
+        }
+    }
+    
+    free(splitParts);
+}
+
 char* strrev(char* str)
 {
     size_t len = strlen(str);
