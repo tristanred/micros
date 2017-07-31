@@ -100,11 +100,7 @@ void kernel_main(multiboot_info_t* arg1)
     
     
     setup_filesystem(); 
-    //test_io_port();
-    
-    //Debugger();
-    
-    // ezfs_prepare_disk();
+    ezfs_prepare_disk();
     
     // file_h file = ezfs_create_file(ROOT_DIR, "test.txt", FS_READ_WRITE, FS_FLAGS_NONE);
     

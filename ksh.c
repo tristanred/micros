@@ -3,6 +3,8 @@
 #include "string.h"
 #include "array_utils.h"
 
+#include "ezfs.h"
+
 BOOL ksh_take_fb_control()
 {
     RegisterKeyboardHook(&ksh_kb_hook);
@@ -52,7 +54,6 @@ void ksh_write(const char* characters)
             char* line = ksh_get_current_type_line();
             line[cursorColumn] = characters[i];
             cursorColumn++;
-            
         }
     }
     
@@ -111,7 +112,7 @@ void ksh_process_command(char* commandline)
         {
             if(nb > 1)
             {
-                for(int i = 1; i < nb; i++)
+                for(size_t i = 1; i < nb; i++)
                 {
                     ksh_write(parts[i]);
                 }
@@ -119,7 +120,52 @@ void ksh_process_command(char* commandline)
                 return;
             }
         }
+        else if(strcmp(parts[0], "fread") == 0)
+        {
+            if(nb > 1)
+            {
+                char* fileName = parts[1];
+                
+                file_h file = ezfs_find_file(fileName);
+                if(file != FILE_NOT_FOUND)
+                {
+                    uint8_t* buf = NULL;
+                    size_t bytesRead = ezfs_read_file(file, &buf);
+                    
+                    char* bufToStr = (char*)malloc(sizeof(char) * bytesRead + 1);
+                    
+                    strncpy(bufToStr, (char*)buf, bytesRead);
+                    
+                    ksh_write_line(bufToStr);
+                    
+                    free(buf);
+                    free(bufToStr);
+                    
+                    return;
+                }
+            }
+        }
+        else if(strcmp(parts[0], "fcreate") == 0)
+        {
+            if(nb > 2)
+            {
+                char* fileName = parts[1];
+                char* fileData = parts[2];
+                
+                size_t dataLen =  strlen(fileData);
+                
+                file_h file = ezfs_create_file(ROOT_DIR, fileName, FS_READ_WRITE, FS_FLAGS_NONE);
+                
+                size_t res = ezfs_write_file(file, (uint8_t*)fileData, dataLen);
+                
+                ASSERT(res == dataLen, "WRONG SIZE WRITE");
+                
+                return;
+            }
+        }
     }
+    
+    splfree(parts, nb);
     
     // All commands must return, if not the command was not recognized.
     ksh_write_line("Unrecognized command");
