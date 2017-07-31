@@ -104,7 +104,7 @@ char* strncpy(char* dest, const char* src, size_t count)
         dest[i] = src[i];
     }
     
-    dest[srcSize] = '\0';
+    dest[minSize] = '\0';
     
     return dest;
 }
