@@ -106,6 +106,8 @@ void ksh_process_command(char* commandline)
     size_t nb = 0;
     char** parts = strspl(commandline, " ", &nb);
     
+    BOOL success = FALSE;
+    
     if(nb > 0)
     {
         if(strcmp(parts[0], "echo") == 0)
@@ -117,7 +119,7 @@ void ksh_process_command(char* commandline)
                     ksh_write(parts[i]);
                 }
                 
-                return;
+                success = TRUE;
             }
         }
         else if(strcmp(parts[0], "fread") == 0)
@@ -140,9 +142,13 @@ void ksh_process_command(char* commandline)
                     
                     free(buf);
                     free(bufToStr);
-                    
-                    return;
                 }
+                else
+                {
+                    ksh_write_line("File not found.");
+                }
+                
+                success = TRUE;
             }
         }
         else if(strcmp(parts[0], "fcreate") == 0)
@@ -160,15 +166,42 @@ void ksh_process_command(char* commandline)
                 
                 ASSERT(res == dataLen, "WRONG SIZE WRITE");
                 
-                return;
+                success = TRUE;
+            }
+        }
+        else if(strcmp(parts[0], "fwrite") == 0)
+        {
+            if(nb > 2)
+            {
+                char* fileName = parts[1];
+                char* fileData = parts[2];
+                
+                size_t dataLen = strlen(fileData);
+                
+                file_h file = ezfs_find_file(fileName);
+                
+                if(file != FILE_NOT_FOUND)
+                {
+                    size_t res = ezfs_write_file(file, (uint8_t*)fileData, dataLen);
+                    
+                    ASSERT(res == dataLen, "WRONG SIZE WRITE");
+                }
+                else
+                {
+                    ksh_write("File not found.");
+                }
+                
+                success = TRUE;
             }
         }
     }
     
     splfree(parts, nb);
     
-    // All commands must return, if not the command was not recognized.
-    ksh_write_line("Unrecognized command");
+    if(success == FALSE)
+    {
+        ksh_write_line("Unrecognized command");
+    }
 }
 
 void ksh_type_character(char value)
