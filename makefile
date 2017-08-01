@@ -57,7 +57,6 @@ debug: build
 	qemu-system-i386 -m 128M -append "-f gd" -drive format=raw,file=disk.img,if=ide -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
 
 resetdisk:
-	rm disk.img
 	qemu-img create -f raw disk.img 32M
 
 .PHONY: clean
