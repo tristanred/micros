@@ -194,6 +194,65 @@ void ksh_process_command(char* commandline)
                 success = TRUE;
             }
         }
+        else if(strcmp(parts[0], "fappend") == 0)
+        {
+            if(nb > 2)
+            {
+                char* fileName = parts[1];
+                char* fileData = parts[2];
+                
+                size_t dataLen = strlen(fileData);
+
+                file_h file = ezfs_find_file(fileName);
+                
+                if(file != FILE_NOT_FOUND)
+                {
+                    uint8_t* data = NULL;
+                    size_t bytes = ezfs_read_file(file, &data);
+                    
+                    //uint8_t* concatBuf = array_concat((uint8_t*)fileData, dataLen, data, bytes);
+                    uint8_t* concatBuf = array_concat(data, bytes, (uint8_t*)fileData, dataLen);
+                    
+                    size_t writtenData = ezfs_write_file(file, concatBuf, dataLen + bytes);
+                    
+                    if(writtenData != dataLen + bytes)
+                    {
+                        ksh_write_line("Wrong amount of bytes was written by 'fappend'.");
+                    }
+                    
+                    free(concatBuf);
+                    free(data);
+                }
+                else
+                {
+                    ksh_write("File not found.");
+                }
+                
+                success = TRUE;
+            }
+        }
+        else if(strcmp(parts[0], "fdelete") == 0)
+        {
+            if(nb > 1)
+            {
+                char* fileName = parts[1];
+                
+                file_h file = ezfs_find_file(fileName);
+                
+                if(file != FILE_NOT_FOUND)
+                {
+                    ezfs_delete_file(file);
+                    
+                    ksh_write("File deleted.");
+                }
+                else
+                {
+                    ksh_write("File not found.");
+                }
+                
+                success = TRUE;
+            }
+        }
     }
     
     splfree(parts, nb);

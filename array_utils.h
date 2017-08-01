@@ -16,4 +16,6 @@ void array_set_pattern(uint8_t* destination, uint8_t* pattern, int destinationLe
 
 size_t array_verify_length(uint8_t* source);
 
+uint8_t* array_concat(uint8_t* first, size_t firstSize, uint8_t* second, size_t secondSize);
+
 #endif

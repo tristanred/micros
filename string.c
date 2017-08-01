@@ -3,6 +3,8 @@
 #include "memory.h"
 #include "vector.h"
 
+// Return the amount of characters of the string, not counting the 
+// null terminator.
 size_t strlen(const char* str)
 {
     size_t len = 0;
