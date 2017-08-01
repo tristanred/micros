@@ -1,7 +1,7 @@
 ### COMPILERS ###
 # Note: Trying to use NASM instead of my custom gnu Assembler
 AS=nasm
-CC=i686-elf-gcc
+CC=~/opt/cross/bin/i686-elf-gcc
 
 ### FLAGS ###
 ASFLAGS=-g -felf32
