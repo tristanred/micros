@@ -42,6 +42,7 @@ stack_bottom:
 resb 16384 ; 16 KiB
 stack_top:
 
+global _cpu_idle
 global error
 ; The linker script specifies _start as the entry point to the kernel and the
 ; bootloader will jump to this position once the kernel has been loaded. It
@@ -102,5 +103,9 @@ hang:	hlt
 error:
 	jmp hang
 	
+_cpu_idle:
+	hlt
+	nop
+	ret	
 end:
 

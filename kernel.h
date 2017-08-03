@@ -6,6 +6,9 @@
 
 #include "types.h"
 
+BOOL cpu_is_idle;
+void cpu_idle();
+
 struct kernel_features;
 struct memory_manager;
 struct ata_driver_info;
