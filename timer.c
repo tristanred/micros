@@ -4,6 +4,7 @@
 #include "io_func.h"
 #include "framebuffer.h"
 #include "keyboard.h"
+#include "kernel.h"
 
 uint32_t tick = 0;
 
@@ -17,6 +18,13 @@ static void timer_callback(registers_t regs)
     {
         mscounter++;
         tick = 0;
+    }
+    
+    if(cpu_is_idle == TRUE)
+    {
+        Debugger();
+        regs.eip++;
+        cpu_is_idle = FALSE;
     }
 }
 

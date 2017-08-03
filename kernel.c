@@ -65,11 +65,14 @@ void kErrorBeforeInit(uint32_t errno, char* msg)
     
 }
 
+extern void _cpu_idle();
+
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kernel_main(multiboot_info_t* arg1)
 {    
+    cpu_is_idle = FALSE;
     panic = FALSE;
     
     setupGdt();
@@ -124,9 +127,12 @@ void kernel_main(multiboot_info_t* arg1)
     
     //ksh_write("Hello output data. \n DoStuff");
     
+    Debugger();
     while(TRUE)
     {
         ksh_update();
+        
+        cpu_idle();
     }
     
     return;
@@ -205,4 +211,10 @@ void* alloc_kernel_module(size_t size)
 BOOL has_free_modules_space()
 {
     return kernel_info->modules_start_address + kernel_info->modules_current_offset < kernel_info->modules_end_address;
+}
+
+void cpu_idle()
+{
+    cpu_is_idle = TRUE;
+    _cpu_idle();
 }

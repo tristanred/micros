@@ -2,8 +2,7 @@ I. Keyboard Driver
   1. Fix the arrow key problem.
   
 II. Kernel Shell
-  1. Introduce command output functionality
-  2. Create a fullscreen line-view functionality.
+  1. Create a fullscreen line-view functionality.
 
 III. Memory
   1. Paging
@@ -23,3 +22,15 @@ V. Filesystem
 VI. String Functions Review
   1. Some strings functions have problem with null termination. Find them and 
      fix them.
+     
+VII. General Improvement
+  1. Let the kernel halt rather than busy looping.
+    a. Use the timer interrupt to wake up and do a loop through whoever needs
+       the CPU.
+       
+       
+
+
+
+
+
