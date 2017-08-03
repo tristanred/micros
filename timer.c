@@ -22,7 +22,6 @@ static void timer_callback(registers_t regs)
     
     if(cpu_is_idle == TRUE)
     {
-        Debugger();
         regs.eip++;
         cpu_is_idle = FALSE;
     }

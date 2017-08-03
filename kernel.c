@@ -94,13 +94,19 @@ void kernel_main(multiboot_info_t* arg1)
     init_module_ata_driver(kernel_info);
 
     kfDetectFeatures(arg1);
+    
 
-    // asm volatile ("int $0x3");
-    // asm volatile ("int $0x4");
     
-    struct pci_device result = get_device(0, 1, 1);
-    print_pci_device_info(&result);
+    // PCI bus scanning
+    int total = 0;
+    struct pci_device** list = get_devices_list(&total);
     
+    for(int i = 0; i < total; i++)
+    {
+        kWriteLog("");
+        kWriteLog_format1d("Device #%d", i);
+        print_pci_device_info(list[i]);
+    }
     
     setup_filesystem(); 
     ezfs_prepare_disk();
@@ -118,8 +124,13 @@ void kernel_main(multiboot_info_t* arg1)
     // fbPutString((char*)outBuf);
     // ASSERT(bytesWritten == readBytes, "WRONG SIZE WRITTEN.");
     
-    //format_disk();
+    // Enable interrupts
     asm volatile("sti");
+    
+    // Example of interrupts calls.
+    // asm volatile ("int $0x3");
+    // asm volatile ("int $0x4");
+
     init_timer(1000);
     SetupKeyboardDriver(SCANCODE_SET1);
     
@@ -127,7 +138,6 @@ void kernel_main(multiboot_info_t* arg1)
     
     //ksh_write("Hello output data. \n DoStuff");
     
-    Debugger();
     while(TRUE)
     {
         ksh_update();
@@ -138,50 +148,7 @@ void kernel_main(multiboot_info_t* arg1)
     return;
     
     
-    //write_data((uint8_t*)writingData, 4096, 0);
     
-    int total = 0;
-    struct pci_device** list = get_devices_list(&total);
-    
-    for(int i = 0; i < total; i++)
-    {
-        kWriteLog("");
-        kWriteLog_format1d("Device #%d", i);
-        print_pci_device_info(list[i]);
-    }
-    
-    asm volatile("sti");
-    init_timer(1000);
-    
-    SetupKeyboardDriver(SCANCODE_SET1);
-    
-    fbMoveCursor(0, 0);
-        
-    asm volatile ("int $0x3");
-    asm volatile ("int $0x4");
-    
-    //term_init();
-    
-    //term_deactivate();
-    
-    //term_showSplashScreen();
-    
-    fbPutString("AAA");
-    
-    uint32_t cycles = 0;
-    
-    while(!panic)
-    {
-        // fbMoveCursor(0, 0);
-        
-        // char msstr[255];
-        
-        // sprintf_1d(msstr, "%d", mscounter);
-        
-        // fbPutString(msstr);
-        
-        cycles++;
-    }
     
     kWriteLog("Kernel End");
 }
