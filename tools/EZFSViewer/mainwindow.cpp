@@ -3,6 +3,8 @@
 
 #include <QFileDialog>
 
+#include "ezfs_reader.h"
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -25,6 +27,14 @@ void MainWindow::on_btnLoadDisk_clicked()
     {
         ui->txtDiskFilePath->setText(diskFile);
 
-        ui->tabWidget->setEnabled(true);
+        EZFS_Reader x;
+        x.Open(diskFile.toLocal8Bit().data());
+
+        if(x.IsValidFilesystem())
+        {
+            x.ExtractFilesystemData();
+
+            ui->tabWidget->setEnabled(true);
+        }
     }
 }

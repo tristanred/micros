@@ -25,10 +25,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+    ezfs_reader.cpp
 
 HEADERS += \
-        mainwindow.h
+        mainwindow.h \
+    ezfs_types.h \
+    ezfs_reader.h
 
 FORMS += \
         mainwindow.ui
