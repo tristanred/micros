@@ -7,3 +7,6 @@ isodir
 .vscode
 disk.img
 out/
+tools/build-*
+*.pro.user
+*.ui.autosave
