@@ -308,3 +308,21 @@ char* strdigits(uint64_t number)
     
     return outResult;
 }
+
+uint64_t s_to_d(char* number)
+{
+    size_t numberLen = strlen(number);
+    
+    uint64_t result = 0;
+    
+    size_t magnitude = 1;
+    for(int i = numberLen - 1; i >= 0; i--)
+    {
+        result += (number[i] - 48) * magnitude;
+        
+        magnitude *= 10;
+    }
+    
+    return result;
+    
+}

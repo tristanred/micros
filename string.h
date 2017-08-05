@@ -36,4 +36,6 @@ char* strrev(char* str);
 // Convert a number to a string
 char* strdigits(uint64_t number);
 
+uint64_t s_to_d(char* number);
+
 #endif
