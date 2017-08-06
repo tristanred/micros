@@ -2,13 +2,14 @@
 
 #include "ezfs_types.h"
 
+#include <QFile>
+
 EZFS_Reader::EZFS_Reader()
 {
     fileStream = NULL;
     metablock = NULL;
-    file_allocations = NULL;
 
-    file_allocations = (struct file_allocation**)malloc(sizeof(struct file_allocation*) * MAX_FILES_NUM);
+    Files = new QVector<struct file_allocation*>();
 }
 
 EZFS_Reader::~EZFS_Reader()
@@ -21,16 +22,6 @@ EZFS_Reader::~EZFS_Reader()
 
     if(metablock != NULL)
         delete(metablock);
-
-    for(size_t i = 0; i < MAX_FILES_NUM; i++)
-    {
-        if(file_allocations[i] != NULL)
-        {
-            delete(file_allocations[i]);
-        }
-    }
-
-    delete(file_allocations);
 }
 
 
@@ -87,7 +78,8 @@ void EZFS_Reader::ExtractFilesystemData()
 
             fileStream->read(reinterpret_cast<char*>(alloc), sizeof(struct file_allocation));
 
-            file_allocations[i] = alloc;
+            Files->append(alloc);
         }
     }
 }
+

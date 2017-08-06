@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <fstream>
+#include <QList>
 
 struct filesystem_metablock;
 struct file_allocation;
@@ -26,8 +27,11 @@ private:
 
     struct filesystem_metablock* metablock;
 
-    size_t file_allocations_length;
-    struct file_allocation** file_allocations;
+    QVector<struct file_allocation*>* Files;
+
+
+//    size_t file_allocations_length;
+//    struct file_allocation** file_allocations;
 };
 
 #endif // EZFS_READER_H

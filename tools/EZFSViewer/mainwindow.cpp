@@ -21,10 +21,16 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_btnLoadDisk_clicked()
 {
-    QString diskFile = QFileDialog::getOpenFileName(this, "Select an ezfs disk file.");
+    QString lastDir = "";
+
+    lastDir = GetLastPath();
+
+    QString diskFile = QFileDialog::getOpenFileName(this, "Select an ezfs disk file.", lastDir);
 
     if(diskFile != "")
     {
+        SavePath(diskFile);
+
         ui->txtDiskFilePath->setText(diskFile);
 
         EZFS_Reader x;
@@ -36,5 +42,29 @@ void MainWindow::on_btnLoadDisk_clicked()
 
             ui->tabWidget->setEnabled(true);
         }
+    }
+}
+
+QString MainWindow::GetLastPath()
+{
+    QFile f("_savedpath");
+
+    if(f.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QByteArray arr = f.readAll();
+
+        return QString(arr);
+    }
+
+    return "";
+}
+
+void MainWindow::SavePath(QString path)
+{
+    QFile f("_savedpath");
+
+    if(f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+    {
+        f.write(path.toLocal8Bit());
     }
 }
