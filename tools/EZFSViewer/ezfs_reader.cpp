@@ -68,7 +68,7 @@ void EZFS_Reader::ExtractFilesystemData()
         fileStream->read(reinterpret_cast<char*>(metablock), sizeof(struct filesystem_metablock));
 
         uint64_t start = metablock->allocation_area_start;
-        uint64_t length = metablock->allocation_area_length;
+        //uint64_t length = metablock->allocation_area_length;
 
         fileStream->seekg(start, std::ios::beg);
 
@@ -81,5 +81,25 @@ void EZFS_Reader::ExtractFilesystemData()
             Files->append(alloc);
         }
     }
+}
+
+QByteArray EZFS_Reader::GetFileData(int index)
+{
+    const struct file_allocation* x = Files->at(index);
+
+    if(x != NULL)
+    {
+        uint64_t start = x->dataBlockDiskAddress;
+        uint32_t length = x->dataSize;
+
+        fileStream->seekg(start, std::ios::beg);
+
+        char* data = (char*)malloc(sizeof(length));
+        fileStream->read(data, length);
+
+        return QByteArray(data, length);
+    }
+
+    return NULL;
 }
 
