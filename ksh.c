@@ -4,6 +4,7 @@
 #include "array_utils.h"
 
 #include "ezfs.h"
+#include "ata_driver.h"
 
 BOOL ksh_take_fb_control()
 {
@@ -96,8 +97,6 @@ void ksh_render_line(int nb)
 
 void ksh_process_command(char* commandline)
 {
-    Debugger();
-    
     if(strcmp(commandline, "") == 0)
     {
         return;
@@ -118,6 +117,29 @@ void ksh_process_command(char* commandline)
                 {
                     ksh_write(parts[i]);
                 }
+                
+                success = TRUE;
+            }
+        }
+        else if(strcmp(parts[0], "dwp") == 0)
+        {
+            // dwp 512 255 1500
+            if(nb > 3)
+            {
+                char* bytesAmount = parts[1];
+                char* pattern = parts[2];
+                char* address = parts[3];
+                
+                uint32_t amountAsDWord = (uint32_t)s_to_d(bytesAmount);
+                uint8_t patternAsByte = (uint8_t)s_to_d(pattern);
+                int addressAsQWord = (int)s_to_d(address);
+                
+                uint8_t* writeData = (uint8_t*)malloc(amountAsDWord * sizeof(uint8_t));
+                
+                Debugger();
+                array_set_pattern(writeData, &patternAsByte, amountAsDWord, 1);
+                
+                write_data(writeData, amountAsDWord, addressAsQWord);
                 
                 success = TRUE;
             }
