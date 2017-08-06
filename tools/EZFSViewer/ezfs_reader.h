@@ -1,7 +1,8 @@
 #ifndef EZFS_READER_H
 #define EZFS_READER_H
 
-#include <string>
+#include <cstring>
+#include <fstream>
 
 struct filesystem_metablock;
 struct file_allocation;

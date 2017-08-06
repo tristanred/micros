@@ -12,6 +12,7 @@
 
 #define DEFAULT_FILE_SIZE 1024
 
+#define SIZEOF_filesystem_metablock
 struct filesystem_metablock
 {
     char magic[4];
@@ -27,11 +28,11 @@ struct filesystem_metablock
     uint8_t version_fs_minor;
 
     uint8_t padding[982];
-};
+} __attribute__((packed));
 
 struct file_allocation
 {
-    bool allocated;
+    int allocated;
     char name[MAX_FILE_NAME];
     uint64_t dataBlockDiskAddress;
     uint32_t fileNumber;
@@ -39,7 +40,7 @@ struct file_allocation
     uint32_t dataSize;
     uint32_t diskSize;
     int32_t type;
-};
+} __attribute__((packed));
 
 
 #endif // EZFS_TYPES_H

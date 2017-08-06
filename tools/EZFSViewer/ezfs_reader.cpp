@@ -1,6 +1,5 @@
 #include "ezfs_reader.h"
 
-#include <fstream>
 #include "ezfs_types.h"
 
 EZFS_Reader::EZFS_Reader()
@@ -23,7 +22,7 @@ EZFS_Reader::~EZFS_Reader()
     if(metablock != NULL)
         delete(metablock);
 
-    for(int i = 0; i < file_allocations_length; i++)
+    for(size_t i = 0; i < MAX_FILES_NUM; i++)
     {
         if(file_allocations[i] != NULL)
         {
@@ -52,7 +51,7 @@ void EZFS_Reader::Open(std::string path)
     char buf[4];
     fileStream->read(buf, 4);
 
-    if(strncmp(buf, "ezfs", 4) == 0)
+    if(std::strncmp(buf, "ezfs", 4) == 0)
     {
         fileSystemGood = true;
     }
@@ -90,10 +89,5 @@ void EZFS_Reader::ExtractFilesystemData()
 
             file_allocations[i] = alloc;
         }
-
-        auto one = file_allocations[0];
-        auto two= file_allocations[1];
-
-        int i = 0;
     }
 }
