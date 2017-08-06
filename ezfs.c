@@ -20,6 +20,7 @@ file_h ezfs_create_file(file_h dir, char* name, enum FS_FILE_ACCESS access, enum
     (void)access;
     (void)flags;
     
+    
     uint32_t allocationIndex = loaded_metablock->files_amount;
     uint64_t locatedAddress = ezfs_find_free_space(DEFAULT_FILE_SIZE);
     
@@ -52,7 +53,7 @@ file_h ezfs_find_file(char* name)
     {
         struct file_allocation* alloc = (allocated_files + i);
         
-        if(strcmp(alloc->name, name) == 0)
+        if(strcmp(alloc->name, name) == 0 && alloc->allocated == TRUE)
         {
             return alloc->id;
         }
@@ -71,7 +72,7 @@ size_t ezfs_read_file(file_h file, uint8_t** buf)
 {
     struct file_allocation* found = ezfs_find_file_info(file);
 
-    if(found == FALSE)
+    if(found == NULL)
     {
         buf = NULL;
         
@@ -205,7 +206,7 @@ void ezfs_format_disk()
  */
 struct filesystem_metablock* ezfs_create_metablock()
 {
-    struct filesystem_metablock* block = malloc(sizeof(struct filesystem_metablock));
+    struct filesystem_metablock* block = (struct filesystem_metablock*)malloc(sizeof(struct filesystem_metablock));
     strcpy(block->magic, "ezfs");
     block->files_amount = 0;
     
@@ -213,7 +214,7 @@ struct filesystem_metablock* ezfs_create_metablock()
     block->allocation_area_length = sizeof(struct file_allocation) * MAX_FILES_NUM;
     
     // TODO : Call ata_driver to get the disk size.
-    struct ata_identify_device* deviceInfo = malloc(sizeof(struct ata_identify_device));
+    struct ata_identify_device* deviceInfo = (struct ata_identify_device*)malloc(sizeof(struct ata_identify_device));
     driver_ata_identify(deviceInfo);
 
     block->data_area_start = block->allocation_area_start + block->allocation_area_length;
@@ -323,7 +324,7 @@ uint64_t ezfs_find_free_space(size_t size)
         else
         {
             // Means no files have been allocated yet. Gotta start somewhere.
-            return alloc->dataBlockDiskAddress;
+            return loaded_metablock->data_area_start;
         }
     }
     
@@ -414,9 +415,10 @@ struct file_allocation* ezfs_find_file_info(file_h file)
 {
     for(int i = 0; i < MAX_FILES_NUM; i++)
     {
-        if((allocated_files + i)->id == file)
+        struct file_allocation* alloc = (allocated_files + i);
+        if(alloc->id == file)
         {
-            return (allocated_files + i);
+            return alloc;
         }
     }
     
@@ -451,7 +453,7 @@ void ezfs_deallocate(struct file_allocation* file)
 
 void ezfs_sort_allocations()
 {
-    struct file_allocation** newList = malloc(sizeof(struct file_allocation*) * MAX_FILES_NUM);
+    struct file_allocation** newList = (struct file_allocation**)malloc(sizeof(struct file_allocation*) * MAX_FILES_NUM);
     
     for(int i = 0; i < MAX_FILES_NUM; i++)
     {
