@@ -324,5 +324,4 @@ uint64_t s_to_d(char* number)
     }
     
     return result;
-    
 }

@@ -130,16 +130,19 @@ void write_data(uint8_t* data, uint64_t length, uint64_t startAddress)
     uint16_t sectorStartOffset = 0;
     uint64_t sectorToStartWriting = get_sector_from_address(startAddress, &sectorStartOffset);
     
-    // Since disk writing will overwrite current data, we need to read the current
-    // data, copy our buffer onto it at the correct offset and write that 
-    // combined array on disk.
-    uint64_t endOfWriteAddress = startAddress + length;
-    uint64_t startOfWriteAddress = sectorToStartWriting * 512;
-    uint64_t sectorBytesToRead = endOfWriteAddress - startOfWriteAddress;
-
-    uint64_t sectorsLeft = (sectorBytesToRead / 512) + 1;
+    uint16_t sectorToEndReadOffset = 0;
+    uint64_t sectorToEndRead = get_sector_from_address(startAddress + length, &sectorToEndReadOffset);
     
-    uint8_t* combinedData = read_data(startOfWriteAddress, sectorBytesToRead);
+    uint64_t addrToStartReadback = sectorToStartWriting * 512;
+    uint64_t addrToEndReadback = (sectorToEndRead * 512) + 512; // Point to end of the sector
+    
+    uint64_t amountToRead = addrToEndReadback - addrToStartReadback;
+    
+    uint64_t sectorsLeft = (amountToRead / 512);
+    
+    // Read the existing data, copy our data on top of it and write the whole
+    // thing back to disk. This is because the disk only writes full sectors
+    uint8_t* combinedData = read_data(addrToStartReadback, amountToRead);
     
     uint32_t res = array_emplace(combinedData, data, sectorStartOffset, length);
     
