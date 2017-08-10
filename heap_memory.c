@@ -2,44 +2,82 @@
 
 void init_memory_manager()
 {
-    alloc_vector = (struct m_allocation*)(1024 * 1024 * 5); // Place the initial alloc table at 5MB
+    kernel_heap_start = 1024 * 1024 * 5;
+    kernel_heap_size = mm_find_max_memory() - kernel_heap_start;
     
-    alloc_count = STARTING_ALLOC_COUNT;
-    alloc_vector_total_size = sizeof(struct m_allocation) * STARTING_ALLOC_COUNT;
-    
-    for(size_t i = 0; i < alloc_count; i++)
-    {
-        struct m_allocation* target = alloc_vector + i;
-        
-        target = NULL;
-    }
-    
+    mm_setup_first_alloc_block();
     
 }
 
-void* kmalloc(size_t size)
+void* kmalloc(uint32_t size)
 {
-    struct m_allocation* found = mm_find_free_alloc_slot(size);
-    
-    return found->p;
-}
-
-struct m_allocation* mm_find_free_alloc_slot(size_t size)
-{
-    for(size_t i = 0; i < alloc_count; i++)
-    {
-        struct m_allocation* target = (alloc_vector + i);
-        struct m_allocation* next = (alloc_vector + (i + 1));
+    if(size == 0)
+        return NULL;
         
-        // TODO : First need to check if enough space exist for the entity
-        if(target->allocated == FALSE)
-        {
-            target->size = size;
-            return target;
-        }
-    }
+    uint32_t freeSpace = mm_find_free_space(size);
     
-    // Need to check if we can enlarge the alloc table
+    if(freeSpace != 0)
+    {
+        
+    }
     
     return NULL;
+}
+
+uint32_t mm_find_max_memory()
+{
+    return 1024 * 1024 * 30; // Blah, let's just say 30MB for now.
+}
+
+void mm_setup_first_alloc_block()
+{
+    struct m_allocation* first_block = (struct m_allocation*)kernel_heap_start;
+    
+    first_block->size = sizeof(struct m_allocation) * STARTING_ALLOCS_COUNT;
+    first_block->p = (void*)kernel_heap_start;
+    first_block->allocated = TRUE;
+    first_block->type = MEM_ALLOCS_BLOCK;
+    first_block->flags = 0;
+    first_block->next = NULL;
+    
+    first_alloc = first_block;
+    last_alloc = first_block;
+    
+    alloc_count = 1;
+}
+
+uint32_t mm_find_free_space(uint32_t sizeNeeded)
+{
+    struct m_allocation* current = first_alloc;
+    
+    while(current != NULL)
+    {
+        struct m_allocation* next = current->next;
+        
+        if(next != NULL)
+        {
+            if(mm_get_space_between(current, next) >= sizeNeeded)
+            {
+                return (uint32_t)current->p + current->size;
+            }
+        }
+        else
+        {
+            return (uint32_t)current->p + current->size;
+        }
+        
+        current = current->next;
+    }
+    
+    return 0;
+}
+
+uint32_t mm_get_space_between(struct m_allocation* first, struct m_allocation* second)
+{
+    return second->p - (first->p + first->size);
+}
+
+void* mm_create_alloc(uint32_t startAddress, uint32_t size)
+{
+    
 }
