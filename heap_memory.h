@@ -26,7 +26,11 @@ struct m_allocation
     enum mm_alloc_types type;
     uint32_t flags;
     
+    struct m_allocation* previous;
     struct m_allocation* next;
+    
+    // Used when type is MEM_ALLOCS_BLOCK
+    struct m_allocation* next_alloc_block;
 };
 
 size_t alloc_count;
@@ -65,5 +69,9 @@ uint32_t mm_find_free_space(uint32_t sizeNeeded);
 uint32_t mm_get_space_between(struct m_allocation* first, struct m_allocation* second);
 
 void* mm_create_alloc(uint32_t startAddress, uint32_t size);
+
+void mm_shift_allocs_in(struct m_allocation* alloc_list, struct m_allocation* shifted);
+
+void mm_shift_allocs_out(struct m_allocation* alloc_list, struct m_allocation* shifted);
 
 #endif
