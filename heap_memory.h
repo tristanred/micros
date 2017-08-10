@@ -8,6 +8,9 @@
 
 #define STARTING_ALLOCS_COUNT 100
 
+// Setting it to 20 MB to test alongside the old allocator.
+#define KHEAP_START 1024 * 1024 * 20
+
 enum mm_alloc_types
 {
     MEM_ALLOC,
@@ -30,6 +33,8 @@ size_t alloc_count;
 
 struct m_allocation* first_alloc;
 struct m_allocation* last_alloc;
+
+struct m_allocation* alloc_list_tail;
 
 uint32_t kernel_heap_start;
 size_t kernel_heap_size;

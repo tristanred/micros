@@ -2,7 +2,7 @@
 
 void init_memory_manager()
 {
-    kernel_heap_start = 1024 * 1024 * 5;
+    kernel_heap_start = KHEAP_START;
     kernel_heap_size = mm_find_max_memory() - kernel_heap_start;
     
     mm_setup_first_alloc_block();
@@ -18,7 +18,9 @@ void* kmalloc(uint32_t size)
     
     if(freeSpace != 0)
     {
+        void* res = mm_create_alloc(freeSpace, size);
         
+        return res;
     }
     
     return NULL;
@@ -44,6 +46,8 @@ void mm_setup_first_alloc_block()
     last_alloc = first_block;
     
     alloc_count = 1;
+    
+    alloc_list_tail = first_block;
 }
 
 uint32_t mm_find_free_space(uint32_t sizeNeeded)
@@ -79,5 +83,22 @@ uint32_t mm_get_space_between(struct m_allocation* first, struct m_allocation* s
 
 void* mm_create_alloc(uint32_t startAddress, uint32_t size)
 {
+    uint32_t next_alloc_addr = (uint32_t)((struct m_allocation*)alloc_list_tail->p + alloc_count);
     
+    alloc_count++;
+    
+    struct m_allocation* new_alloc = (struct m_allocation*)next_alloc_addr;
+    
+    new_alloc->size = size;
+    new_alloc->p = (void*)startAddress;
+    new_alloc->allocated = TRUE;
+    new_alloc->type = MEM_ALLOC;
+    new_alloc->flags = 0;
+    new_alloc->next = NULL;
+    
+    last_alloc->next = new_alloc;
+    
+    last_alloc = new_alloc;
+    
+    return new_alloc->p;
 }

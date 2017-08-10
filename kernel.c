@@ -52,6 +52,8 @@
 #include "ezfs.h"
 #include "ksh.h"
 
+#include "heap_memory.h"
+
 uint32_t kErrorBad;
 char* kBadErrorMessage;
 
@@ -95,7 +97,17 @@ void kernel_main(multiboot_info_t* arg1)
 
     kfDetectFeatures(arg1);
     
-
+    Debugger();
+    
+    init_memory_manager();
+    
+    char* testAlloc1 = kmalloc(sizeof(char) * 256);
+    char* testAlloc2 = kmalloc(sizeof(char) * 256);
+    char* testAlloc3 = kmalloc(sizeof(char) * 256);
+    char* testAlloc4 = kmalloc(sizeof(char) * 256);
+    
+    return;
+    
     
     // PCI bus scanning
     int total = 0;
