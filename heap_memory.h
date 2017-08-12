@@ -8,8 +8,15 @@
 
 #define STARTING_ALLOCS_COUNT 100
 
-// Setting it to 20 MB to test alongside the old allocator.
-#define KHEAP_START 1024 * 1024 * 20
+#define PAGE_SIZE 4096
+
+#define HEAP_ALLOCS_START 1024 * 1024 * 5
+#define HEAP_ALLOCS_LENGTH 16384 * PAGE_SIZE // 16384 pages equals 64MB
+
+#define HEAP_ALLOCS_AMOUNT HEAP_ALLOCS_LENGTH / sizeof(struct m_allocation)
+
+#define KERNEL_HEAP_START HEAP_ALLOCS_START + HEAP_ALLOCS_LENGTH
+#define KERNEL_HEAP_LENGTH 25600 * PAGE_SIZE // 100MB
 
 enum mm_alloc_types
 {
@@ -28,20 +35,13 @@ struct m_allocation
     
     struct m_allocation* previous;
     struct m_allocation* next;
-    
-    // Used when type is MEM_ALLOCS_BLOCK
-    struct m_allocation* next_alloc_block;
 };
 
-size_t alloc_count;
+size_t allocs_count;
+struct m_allocation* allocs;
 
-struct m_allocation* first_alloc;
-struct m_allocation* last_alloc;
-
-struct m_allocation* alloc_list_tail;
-
-uint32_t kernel_heap_start;
-size_t kernel_heap_size;
+struct m_allocation* firstAlloc;
+struct m_allocation* lastAlloc;
 
 // Internal methods
 
@@ -60,18 +60,14 @@ void* kmemcpy( void *dest, const void *src, uint32_t count );
 
 
 // Private Methods
-uint32_t mm_find_max_memory();
 
-void mm_setup_first_alloc_block();
+struct m_allocation* mm_create_allocation(size_t needed);
 
-uint32_t mm_find_free_space(uint32_t sizeNeeded);
+uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second);
 
-uint32_t mm_get_space_between(struct m_allocation* first, struct m_allocation* second);
+uint32_t mm_data_head(struct m_allocation* target);
+uint32_t mm_data_tail(struct m_allocation* target);
 
-void* mm_create_alloc(uint32_t startAddress, uint32_t size);
-
-void mm_shift_allocs_in(struct m_allocation* alloc_list, struct m_allocation* shifted);
-
-void mm_shift_allocs_out(struct m_allocation* alloc_list, struct m_allocation* shifted);
+struct m_allocation* mm_find_free_allocation();
 
 #endif

@@ -45,16 +45,16 @@ verify: $(OUTDIR)myos.bin
 
 .PHONY: run
 run: build
-	qemu-system-i386 -m 128M -append "-f d" -drive format=raw,file=disk.img,if=ide -serial file:$(OUTDIR)serial.log -kernel $(OUTDIR)myos.bin -curses
+	qemu-system-i386 -m 256M -append "-f d" -drive format=raw,file=disk.img,if=ide -serial file:$(OUTDIR)serial.log -kernel $(OUTDIR)myos.bin -curses
 
 runiso: makeiso
-	qemu-system-i386 -m 128M -append "-f d" -drive format=raw,file=disk.img,if=ide -serial file:$(OUTDIR)serial.log $(OUTDIR)myos.iso
+	qemu-system-i386 -m 256M -append "-f d" -drive format=raw,file=disk.img,if=ide -serial file:$(OUTDIR)serial.log $(OUTDIR)myos.iso
 
 debugiso: makeiso
-	qemu-system-i386 -m 128M -append "-f gd" -drive format=raw,file=disk.img,if=ide -serial file:$(OUTDIR)serial.log -s -S $(OUTDIR)myos.iso
+	qemu-system-i386 -m 256M -append "-f gd" -drive format=raw,file=disk.img,if=ide -serial file:$(OUTDIR)serial.log -s -S $(OUTDIR)myos.iso
 
 debug: build
-	qemu-system-i386 -m 128M -append "-f gd" -drive format=raw,file=disk.img,if=ide -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
+	qemu-system-i386 -m 256M -append "-f gd" -drive format=raw,file=disk.img,if=ide -serial file:$(OUTDIR)serial.log -s -S -kernel $(OUTDIR)myos.bin -curses
 
 resetdisk:
 	qemu-img create -f raw disk.img 32M
