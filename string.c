@@ -157,6 +157,20 @@ int strncmp( const char *lhs, const char *rhs, size_t count )
     return 0;
 }
 
+void *memset( void *dest, int ch, size_t count )
+{
+    // Std lib says ch is converted to a uchar
+    unsigned char* destc = (unsigned char*)dest;
+    unsigned char value = (unsigned char)ch;
+    
+    for(size_t i = 0; i < count; i++)
+    {
+        destc[i] = value;
+    }
+    
+    return dest;
+}
+
 char* alloc_sprintf_1d(char* buffer, const char* format, uint64_t number, int* nbWritten)
 {
     //ASSERT(buffer == NULL, "alloc_sprintf_1d BUFFER IS NOT NULL");

@@ -18,6 +18,8 @@ char *strncpy( char *dest, const char *src, size_t count );
 int strcmp( const char *lhs, const char *rhs );
 int strncmp( const char *lhs, const char *rhs, size_t count );
 
+void *memset( void *dest, int ch, size_t count );
+
 // My functions
 
 // Self allocating sprintf function
