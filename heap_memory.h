@@ -61,12 +61,12 @@ void* kmemcpy( void *dest, const void *src, uint32_t count );
 
 // Private Methods
 
-struct m_allocation* mm_create_allocation(size_t needed);
-
 uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second);
 
 uint32_t mm_data_head(struct m_allocation* target);
 uint32_t mm_data_tail(struct m_allocation* target);
+
+void mm_link_allocs(struct m_allocation* first, struct m_allocation* second);
 
 struct m_allocation* mm_find_free_allocation();
 

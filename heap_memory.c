@@ -62,11 +62,10 @@ void* kmalloc(uint32_t size)
         newAlloc->allocated = TRUE;
         newAlloc->type = 0;
         newAlloc->flags = 0;
-        newAlloc->previous = NULL;
-        newAlloc->next = firstAlloc;
         
         // Assert that next's previous must be NULL?
-        newAlloc->next->previous = newAlloc;
+        mm_link_allocs(newAlloc, firstAlloc);
+        newAlloc->previous = NULL;
 
         firstAlloc = newAlloc;
         
@@ -87,11 +86,9 @@ void* kmalloc(uint32_t size)
             newAlloc->type = 0;
             newAlloc->flags = 0;
             
-            // TODO : Link to corect nodes
-            current->next = newAlloc;
-            
-            newAlloc->previous = current;
-            newAlloc->next = next;
+            // Node linking
+            mm_link_allocs(current, newAlloc);
+            mm_link_allocs(newAlloc, next);
             
             return newAlloc->p;
         }
@@ -104,18 +101,29 @@ void* kmalloc(uint32_t size)
 
 void kfree(void* ptr)
 {
-
-}
-
-struct m_allocation* mm_create_allocation(size_t needed)
-{
-    
-    return NULL;
+    struct m_allocation* current = lastAlloc;
+    while(current != NULL)
+    {
+        if(current->p == ptr)
+        {
+            if(current->allocated == FALSE)
+            {
+                // TODO : Handle bad dealloc
+                return;
+            }
+            
+            memset(current->p, 0, current->size);
+            
+            mm_link_allocs(current->previous, current->next);
+        }
+        
+        current = current->previous;
+    }
 }
 
 uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second)
 {
-    return second->p - (first->p + first->size);
+    return mm_data_head(second) - mm_data_tail(first);
 }
 
 uint32_t mm_data_head(struct m_allocation* target)
@@ -126,6 +134,12 @@ uint32_t mm_data_head(struct m_allocation* target)
 uint32_t mm_data_tail(struct m_allocation* target)
 {
     return (uint32_t)target->p + target->size;
+}
+
+void mm_link_allocs(struct m_allocation* first, struct m_allocation* second)
+{
+    first->next = second;
+    second->previous = first;
 }
 
 struct m_allocation* mm_find_free_allocation()
