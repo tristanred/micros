@@ -127,3 +127,18 @@ uint32_t mm_data_tail(struct m_allocation* target)
 {
     return (uint32_t)target->p + target->size;
 }
+
+struct m_allocation* mm_find_free_allocation()
+{
+    for(size_t i = 0; i < HEAP_ALLOCS_AMOUNT; i++)
+    {
+        struct m_allocation* alloc = allocs + i;
+        
+        if(alloc->allocated == FALSE)
+        {
+            return alloc;
+        }
+    }
+    
+    return NULL;
+}
