@@ -45,20 +45,35 @@ void init_memory_manager()
         alloc->allocated = FALSE;
         alloc->type = 0;
         alloc->flags = 0;
+        
+        alloc->previous = NULL;
+        alloc->next = NULL;
     }
+    
+    struct m_allocation* stubFirstAlloc = allocs;
+    stubFirstAlloc->size = 1;
+    stubFirstAlloc->p = (void*)KERNEL_HEAP_START;
+    stubFirstAlloc->allocated = TRUE;
+    stubFirstAlloc->type = 0;
+    stubFirstAlloc->flags = 0;
+    stubFirstAlloc->next = NULL;
+    stubFirstAlloc->previous = NULL;
+    
+    firstAlloc = stubFirstAlloc;
+    lastAlloc = stubFirstAlloc;
 }
 
 void* kmalloc(uint32_t size)
 {
     struct m_allocation* alloc = firstAlloc;
-    uint32_t beginningSpace = (uint32_t)alloc->p - (KERNEL_HEAP_START);
-    if(beginningSpace > size)
+    uint32_t beginningSpace = (uint32_t)alloc->p - KERNEL_HEAP_START;
+    if(beginningSpace >= size)
     {
         // Free space at the beginning of the heap
         
         struct m_allocation* newAlloc = mm_find_free_allocation();
         newAlloc->size = size;
-        newAlloc->p = (void*)(KERNEL_HEAP_START);
+        newAlloc->p = (void*)KERNEL_HEAP_START;
         newAlloc->allocated = TRUE;
         newAlloc->type = 0;
         newAlloc->flags = 0;
@@ -68,6 +83,7 @@ void* kmalloc(uint32_t size)
         newAlloc->previous = NULL;
 
         firstAlloc = newAlloc;
+        lastAlloc = newAlloc;
         
         return firstAlloc->p;
     }
@@ -77,20 +93,51 @@ void* kmalloc(uint32_t size)
     {
         struct m_allocation* next = current->next;
         
-        if(mm_get_space(current, next) > size)
+        if(next != NULL)
         {
-            struct m_allocation* newAlloc = mm_find_free_allocation();
-            newAlloc->size = size;
-            newAlloc->p = (void*)mm_data_tail(current);
-            newAlloc->allocated = TRUE;
-            newAlloc->type = 0;
-            newAlloc->flags = 0;
+            if(mm_get_space(current, next) >= size)
+            {
+                struct m_allocation* newAlloc = mm_find_free_allocation();
+                newAlloc->size = size;
+                newAlloc->p = (void*)mm_data_tail(current);
+                newAlloc->allocated = TRUE;
+                newAlloc->type = 0;
+                newAlloc->flags = 0;
+                
+                // Node linking
+                mm_link_allocs(current, newAlloc);
+                mm_link_allocs(newAlloc, next);
+                
+                lastAlloc = newAlloc;
+                
+                return newAlloc->p;
+            }
             
-            // Node linking
-            mm_link_allocs(current, newAlloc);
-            mm_link_allocs(newAlloc, next);
-            
-            return newAlloc->p;
+        }
+        else
+        {
+            uint32_t spaceToHeapEnd = (KERNEL_HEAP_START +  KERNEL_HEAP_LENGTH) - mm_data_tail(current);
+            if(spaceToHeapEnd >= size)
+            {
+                struct m_allocation* newAlloc = mm_find_free_allocation();
+                newAlloc->size = size;
+                newAlloc->p = (void*)mm_data_tail(current);
+                newAlloc->allocated = TRUE;
+                newAlloc->type = 0;
+                newAlloc->flags = 0;
+                
+                mm_link_allocs(current, newAlloc);
+                
+                lastAlloc = newAlloc;
+                
+                return newAlloc->p;
+            }
+            else
+            {
+                // No space for alloc on the heap
+                Debugger();
+                return NULL;
+            }
         }
         
         current = next;

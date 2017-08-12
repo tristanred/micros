@@ -80,22 +80,22 @@ void kernel_main(multiboot_info_t* arg1)
     setupGdt();
     setupIdt();
 
-    setup_kernel_block();
+    //setup_kernel_block();
 
     fbInitialize();
 
     kSetupLog(SERIAL_COM1_BASE);
-    kmInitManager();
+    //kmInitManager();
     
-    setup_paging();
+    //setup_paging();
     
-    test_paging();
+    //test_paging();
     
-    init_module_kernel_features(kernel_info);
-    init_module_memory_manager(kernel_info);
-    init_module_ata_driver(kernel_info);
+    // init_module_kernel_features(kernel_info);
+    // init_module_memory_manager(kernel_info);
+    // init_module_ata_driver(kernel_info);
 
-    kfDetectFeatures(arg1);
+    //kfDetectFeatures(arg1);
     
     Debugger();
     

@@ -24,12 +24,11 @@ VI. String Functions Review
      fix them.
      
 VII. General Improvement
-  1. Let the kernel halt rather than busy looping.
-    a. Use the timer interrupt to wake up and do a loop through whoever needs
-       the CPU.
-       
-       
-
+  1. GDT and IDT are loaded at an address near 5MB and this area is close to the
+     area where the OS stores a bunch of stuff. I had a bug where the GDT and 
+     IDT tables were getting overwritten and caused a GPF. Memory manager is 
+     loaded at 6MB to fix the problem. Find a better place for those tables.
+     
 
 
 
