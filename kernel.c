@@ -135,6 +135,15 @@ void kernel_main(multiboot_info_t* arg1)
     
     ksh_take_fb_control();
     
+    #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
+    BOOL res = mm_verify_all_allocs_canary();
+    
+    if(res == FALSE)
+    {
+        Debugger();
+    }
+    
+    #endif
     //ksh_write("Hello output data. \n DoStuff");
     
     while(TRUE)

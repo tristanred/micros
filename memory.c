@@ -1,5 +1,7 @@
 #include "memory.h"
 
+#include "kernel_log.h"
+
 /**
  * The heap manager manages two areas of memory. All this is for managing 
  * memory allocations. 
@@ -23,7 +25,9 @@
  * first block of memory holding the 'm_allocation' structures. 
  *
  * This problem isn't going anywhere. Need to scan the entire list of allocation
- * everytime we need to get a new struct.
+ * everytime we need to get a new struct. One things that is not so bad is that
+ * checking the entire list serially will benefit from cache locality and branch
+ * predition.
  *
 */
 
@@ -78,6 +82,10 @@ void* kmalloc(uint32_t size)
         newAlloc->type = 0;
         newAlloc->flags = 0;
         
+        #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
+        mm_set_alloc_canary(newAlloc);
+        #endif
+        
         // Assert that next's previous must be NULL?
         mm_link_allocs(newAlloc, firstAlloc);
         newAlloc->previous = NULL;
@@ -104,6 +112,10 @@ void* kmalloc(uint32_t size)
                 newAlloc->type = 0;
                 newAlloc->flags = 0;
                 
+                #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
+                mm_set_alloc_canary(newAlloc);
+                #endif
+                
                 // Node linking
                 mm_link_allocs(current, newAlloc);
                 mm_link_allocs(newAlloc, next);
@@ -125,6 +137,10 @@ void* kmalloc(uint32_t size)
                 newAlloc->allocated = TRUE;
                 newAlloc->type = 0;
                 newAlloc->flags = 0;
+                
+                #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
+                mm_set_alloc_canary(newAlloc);
+                #endif
                 
                 mm_link_allocs(current, newAlloc);
                 
@@ -159,6 +175,18 @@ void kfree(void* ptr)
                 Debugger();
                 return;
             }
+            
+            #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
+            
+            if(mm_verify_alloc_canary(current) == FALSE)
+            {
+                kWriteLog_format1d("Overflow detected at address %d", (uint32_t)current->p);
+                
+                Debugger();
+            }
+            
+            #endif
+    
             
             memset(current->p, 0, current->size);
             
@@ -202,6 +230,30 @@ void* kmemcpy( void *dest, const void *src, uint32_t count )
     return dest;
 }
 
+void kmemplace(void* dest, uint32_t offset, const char* data, size_t count)
+{
+    char* cDest = (char*)dest;
+    
+    for(size_t i = 0; i < count; i++)
+    {
+        cDest[i + offset] = data[i];
+    }
+}
+
+void kmemget(void* src, char* dest, uint32_t offset, size_t count, size_t* readSize)
+{
+    char* cSrc = (char*)src;
+    
+    size_t dataLength = 0;
+    
+    for(size_t i = 0; i < count; i++)
+    {
+        dest[i] = cSrc[i + offset];
+        dataLength++;
+    }
+    
+    *readSize = dataLength;
+}
 
 uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second)
 {
@@ -238,3 +290,47 @@ struct m_allocation* mm_find_free_allocation()
     
     return NULL;
 }
+
+#ifdef MM_ENABLE_HEAP_ALLOC_CANARY
+
+void mm_set_alloc_canary(struct m_allocation* alloc)
+{
+    alloc->size += MM_HEAP_ALLOC_CANARY_SIZE;
+    
+    kmemplace(alloc->p, alloc->size - MM_HEAP_ALLOC_CANARY_SIZE, MM_HEAP_ALLOC_CANARY_VALUE, MM_HEAP_ALLOC_CANARY_SIZE);
+}
+
+/**
+ * Returns true if the canary was untouched, so no buffer overflow.
+*/
+BOOL mm_verify_alloc_canary(struct m_allocation* alloc)
+{
+    size_t dataLength = 0;
+    char data[MM_HEAP_ALLOC_CANARY_SIZE];
+    kmemget(alloc->p, data, alloc->size - MM_HEAP_ALLOC_CANARY_SIZE, MM_HEAP_ALLOC_CANARY_SIZE, &dataLength);
+    
+    if(strncmp(data, MM_HEAP_ALLOC_CANARY_VALUE, MM_HEAP_ALLOC_CANARY_SIZE) == 0)
+    {
+        return TRUE;
+    }
+    
+    return FALSE;
+}
+
+BOOL mm_verify_all_allocs_canary()
+{
+    struct m_allocation* current = firstAlloc;
+    while(current != NULL)
+    {
+        if(mm_verify_alloc_canary(current) == FALSE)
+        {
+            return FALSE;
+        }
+        
+        current = current->next;
+    }
+    
+    return FALSE;
+}
+
+#endif
