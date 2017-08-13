@@ -156,12 +156,21 @@ void kfree(void* ptr)
             if(current->allocated == FALSE)
             {
                 // TODO : Handle bad dealloc
+                Debugger();
                 return;
             }
             
             memset(current->p, 0, current->size);
             
             mm_link_allocs(current->previous, current->next);
+            
+            // Keeping the other attributes of the allocation to maybe help with
+            // debugging freed allocations.
+            current->allocated = FALSE;
+            current->next = NULL;
+            current->previous = NULL;
+            
+            return;
         }
         
         current = current->previous;

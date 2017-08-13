@@ -102,9 +102,18 @@ void kernel_main(multiboot_info_t* arg1)
     init_memory_manager();
     
     char* testAlloc1 = kmalloc(sizeof(char) * 256);
+    strcpy(testAlloc1, "ABCDE");
+    
     char* testAlloc2 = kmalloc(sizeof(char) * 256);
+    strcpy(testAlloc2, "GHIJK");
+    
     char* testAlloc3 = kmalloc(sizeof(char) * 256);
+    strcpy(testAlloc3, "LMNOP");
+    
+    kfree(testAlloc2);
+    
     char* testAlloc4 = kmalloc(sizeof(char) * 256);
+    strcpy(testAlloc4, "QRSTU");
     
     return;
     
