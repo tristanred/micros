@@ -81,7 +81,7 @@ uint8_t* read_data(uint64_t startAddress, uint64_t length)
     uint64_t sectorsLeft = (length / 512) + 1;
     
     uint64_t currentOutputLength = 0;
-    uint8_t* output = malloc(sizeof(uint8_t) * length);
+    uint8_t* output = malloc(sizeof(uint8_t) * sectorsLeft * 512);
     
     while(sectorsLeft > 0)
     {
