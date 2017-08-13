@@ -421,8 +421,6 @@ uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
     
     driver_ata_select_drive_with_lba_bits(ata_driver->currentDisk, ((startingSector >> 24) & 0xF));
     
-    uint16_t* buf = malloc(sizeof(uint16_t) * 256);
-    
     outb(ata_driver->currentDiskPort + FEAT_ERRO, 0x0);
     outb(ata_driver->currentDiskPort + SEC_COUNT, sectorCount);
     outb(ata_driver->currentDiskPort + LBA_LOW, (startingSector) & 0xFF);
@@ -431,10 +429,12 @@ uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
     outb(ata_driver->currentDiskPort + COMMAND_REG_STATUS, 0x20);
     
     driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST);
+
+    uint16_t* buf = malloc(sizeof(uint16_t) * 256 * sectorCount);
     
     int readCount = sectorCount * 256;
-    if(sectorCount == 0)
-        readCount = 256 * 256;
+    if(sectorCount == 0) // ATA drive recognize the value 0 to mean 256 sectors
+        readCount = 256 * 256; // which is higher than the 8 bit value allows.
         
     for(int i = 0; i < readCount; i++)
     {
@@ -534,4 +534,6 @@ void driver_ata_write_test_sectors()
     {
         ASSERT(FALSE, "TEST SECTORS FAILED.");
     }
+    
+    free(dat);
 }
