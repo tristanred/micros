@@ -378,7 +378,7 @@ BOOL ezfs_data_relocate(struct file_allocation* file, size_t required)
     ezfs_write_allocation_to_disk(file);
     
     #ifdef ZERO_ON_RELOCATE
-    uint8_t* zeros = malloc(oldSize);
+    uint8_t* zeros = (uint8_t*)malloc(oldSize);
     write_data(zeros, oldSize, oldAddress); 
     
     free(zeros);
@@ -494,7 +494,7 @@ void ezfs_init_allocation_pointers()
  */
 void ezfs_zero_file(struct file_allocation* file)
 {
-    uint8_t* zeros = malloc(file->diskSize);
+    uint8_t* zeros = (uint8_t*)malloc(file->diskSize);
     array_set(zeros, 0, file->diskSize);
     size_t zeroCount = ezfs_write_file(file->id, zeros, file->diskSize);
     
