@@ -9,7 +9,7 @@ void term_init()
 {
     RegisterKeyboardHook(&term_kb_hook);
     
-    terminal* t = kmKernelAlloc(sizeof(terminal));
+    terminal* t = malloc(sizeof(terminal));
         
     term_setup(t);
     
@@ -18,7 +18,7 @@ void term_init()
 
 void term_setup(terminal* term)
 {
-    term->fbcontent = kmKernelAlloc(sizeof(char*) * (80*20));
+    term->fbcontent = malloc(sizeof(char*) * (80*20));
     
     term->cursorX = 0;
     term->cursorY = 0;

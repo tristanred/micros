@@ -136,7 +136,6 @@ void ksh_process_command(char* commandline)
                 
                 uint8_t* writeData = (uint8_t*)malloc(amountAsDWord * sizeof(uint8_t));
                 
-                Debugger();
                 array_set_pattern(writeData, &patternAsByte, amountAsDWord, 1);
                 
                 write_data(writeData, amountAsDWord, addressAsQWord);

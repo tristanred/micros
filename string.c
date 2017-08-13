@@ -67,7 +67,7 @@ int sprintf_1d(char* buffer, const char* format, uint64_t number)
     
     buffer[stopPoint] = '\0';
     
-    kmKernelFree(numberString);
+    free(numberString);
     
     return stopPoint;
 }
@@ -276,7 +276,7 @@ void splfree(char** splitParts, size_t parts)
 char* strrev(char* str)
 {
     size_t len = strlen(str);
-    char* reverse = (char*)kmKernelAlloc(sizeof(char) * len + 1);
+    char* reverse = (char*)malloc(sizeof(char) * len + 1);
     
     for(size_t i = 0; i < len; i++)
     {
@@ -315,10 +315,10 @@ char* strdigits(uint64_t number)
     
     char* reversedResult = strrev(result);
     
-    char* outResult = (char*)kmKernelAlloc(sizeof(char) * digitCounter + 1);
+    char* outResult = (char*)malloc(sizeof(char) * digitCounter + 1);
     strcpy(outResult, reversedResult);
     
-    kmKernelFree(reversedResult);
+    free(reversedResult);
     
     return outResult;
 }

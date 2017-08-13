@@ -9,9 +9,6 @@ III. Memory
     a. Add an options to set all pages to "Not Present" and an allocate on PF
        hook. Using that we can detect bad memory usage by watching when a module
        overlaps on another's pages.
-  2. Dynamic allocation
-    a. Keep the old pools allocation module and a switch to use it if needed.
-    b. Introduce a heap area and use this allocator instead.
   
 IV. Disk IO
   1. Create helper methods for zeroing blocks of bytes. Or patterns.
@@ -29,7 +26,12 @@ VII. General Improvement
      IDT tables were getting overwritten and caused a GPF. Memory manager is 
      loaded at 6MB to fix the problem. Find a better place for those tables.
      
-
+  2. Create a malloc canary to detect buffer overflows. Extend each allocation
+     by a couple of bytes and insert a special value. At some point, each 
+     allocations are verified and if any allocation has its canary bytes 
+     overwritten then we had a buffer overflow. The process is not automatic
+     but it can help debugging some of the memory problems I've started having 
+     with the new heap allocator.
 
 
 

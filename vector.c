@@ -11,11 +11,11 @@ struct vector* vector_create()
 // Vector public interface
 struct vector* vector_create_size(size_t size)
 {
-    struct vector* vec = kmKernelAlloc(sizeof(struct vector));
+    struct vector* vec = malloc(sizeof(struct vector));
     
     vec->size = size;
     vec->count = 0;
-    vec->dataElements = kmKernelAlloc(size * sizeof(void*));
+    vec->dataElements = malloc(size * sizeof(void*));
     
     return vec;
 }
@@ -115,10 +115,10 @@ void vector_resize(struct vector* vec, size_t newSize)
     else
     {
         // TODO : Implement realloc
-        void* newData = kmKernelAlloc(newSize);
+        void* newData = malloc(newSize);
         
         memcpy(newData, vec->dataElements, vec->count * sizeof(uint32_t));
-        kmKernelFree(vec->dataElements);
+        free(vec->dataElements);
         vec->dataElements = newData;
     }
 }

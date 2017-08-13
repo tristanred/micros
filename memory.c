@@ -1,284 +1,195 @@
 #include "memory.h"
 
-#include "kernel.h"
-#include "kernel_log.h"
-#include "common.h"
-#include "string.h"
+/**
+ * The heap manager manages two areas of memory. All this is for managing 
+ * memory allocations. 
+ *
+ * The first block of memory is internal and used to store a big list of 
+ * pre-allocated 'm_allocation' structures. These structures get initialized
+ * when 'malloc' is called.
+ *
+ * The second block is the heap memory. There resides the blocks of data that 
+ * are allocated by malloc. 
+ *
+ * Each 'm_allocation's are linked together sorted by start address of the 
+ * memory. Each time a new allocation is initialized, it must be linked
+ * at the right place in the linked list to keep the addresses sorted. This way
+ * the space-searching algorithm can check each allocation together with the 
+ * next to check if they have space in-between.
+ *
+ * One problem is that when deallocating memory, the 'm_allocation' struct stays
+ * in memory but the fields are erased and the previous node is linked with the 
+ * next after. This keeps the linked list in-order but creates holes in the 
+ * first block of memory holding the 'm_allocation' structures. 
+ *
+ * This problem isn't going anywhere. Need to scan the entire list of allocation
+ * everytime we need to get a new struct.
+ *
+*/
 
-extern void set_paging();
-extern void enablePaging();
-// extern void invalidateEntry(uint32_t address);
 
-void setup_paging()
+void init_memory_manager()
 {
-    int a = 0;
-    int addr = 0;
-    for(int k = 0; k < 1024; k++)
+    uint32_t allocStartAddress = HEAP_ALLOCS_START;
+    
+    allocs = (struct m_allocation*)allocStartAddress;
+    
+    allocs_count = 0;
+    
+    for(size_t i = 0; i < HEAP_ALLOCS_AMOUNT; i++)
     {
-        for(int i = 0; i < 1024; i++)
+        struct m_allocation* alloc = allocs + i;
+        
+        alloc->size = 0;
+        alloc->p = NULL;
+        alloc->allocated = FALSE;
+        alloc->type = 0;
+        alloc->flags = 0;
+        
+        alloc->previous = NULL;
+        alloc->next = NULL;
+    }
+    
+    struct m_allocation* stubFirstAlloc = allocs;
+    stubFirstAlloc->size = 1;
+    stubFirstAlloc->p = (void*)KERNEL_HEAP_START;
+    stubFirstAlloc->allocated = TRUE;
+    stubFirstAlloc->type = 0;
+    stubFirstAlloc->flags = 0;
+    stubFirstAlloc->next = NULL;
+    stubFirstAlloc->previous = NULL;
+    
+    firstAlloc = stubFirstAlloc;
+    lastAlloc = stubFirstAlloc;
+}
+
+void* kmalloc(uint32_t size)
+{
+    struct m_allocation* alloc = firstAlloc;
+    uint32_t beginningSpace = (uint32_t)alloc->p - KERNEL_HEAP_START;
+    if(beginningSpace >= size)
+    {
+        // Free space at the beginning of the heap
+        
+        struct m_allocation* newAlloc = mm_find_free_allocation();
+        newAlloc->size = size;
+        newAlloc->p = (void*)KERNEL_HEAP_START;
+        newAlloc->allocated = TRUE;
+        newAlloc->type = 0;
+        newAlloc->flags = 0;
+        
+        // Assert that next's previous must be NULL?
+        mm_link_allocs(newAlloc, firstAlloc);
+        newAlloc->previous = NULL;
+
+        firstAlloc = newAlloc;
+        lastAlloc = newAlloc;
+        
+        return firstAlloc->p;
+    }
+    
+    struct m_allocation* current = firstAlloc;
+    while(current != NULL)
+    {
+        struct m_allocation* next = current->next;
+        
+        if(next != NULL)
         {
-            // As the address is page aligned, it will always leave 12 bits zeroed.
-            // Those bits are used by the attributes ;)
-            defaultPageTable.page_tables[a++] = addr | 3; // attributes: supervisor level, read/write, present.
+            if(mm_get_space(current, next) >= size)
+            {
+                struct m_allocation* newAlloc = mm_find_free_allocation();
+                newAlloc->size = size;
+                newAlloc->p = (void*)mm_data_tail(current);
+                newAlloc->allocated = TRUE;
+                newAlloc->type = 0;
+                newAlloc->flags = 0;
+                
+                // Node linking
+                mm_link_allocs(current, newAlloc);
+                mm_link_allocs(newAlloc, next);
+                
+                lastAlloc = newAlloc;
+                
+                return newAlloc->p;
+            }
             
-            addr += 0x1000; // Target the next 4KB page.
-        }
-        
-        #ifdef PAGE_ALL_PRESENT
-        // Currently for debugging, we'll identity-map all the pages to the 
-        // physical address.
-        
-        // attributes: supervisor level, read/write, present
-        defaultPageTable.page_directory[k] = ((uint32_t)&defaultPageTable.page_tables[k * 1024]) | 3;
-        
-        #else
-        
-        // If not, we must map the first 8MB (first 2 page directories) to
-        // be present because most of the OS currently lives under the 8 first
-        // MB's. Rest of the pages are marked not-present to allow testing
-        // page faults.
-        
-        if(k <= 1)
-        {
-            page_directory[k] = ((uint32_t)&defaultPageTable.page_tables[k * 1024]) | 3;
         }
         else
         {
-            page_directory[k] = ((uint32_t)&defaultPageTable.page_tables[k * 1024]) | 2;
+            uint32_t spaceToHeapEnd = (KERNEL_HEAP_START +  KERNEL_HEAP_LENGTH) - mm_data_tail(current);
+            if(spaceToHeapEnd >= size)
+            {
+                struct m_allocation* newAlloc = mm_find_free_allocation();
+                newAlloc->size = size;
+                newAlloc->p = (void*)mm_data_tail(current);
+                newAlloc->allocated = TRUE;
+                newAlloc->type = 0;
+                newAlloc->flags = 0;
+                
+                mm_link_allocs(current, newAlloc);
+                
+                lastAlloc = newAlloc;
+                
+                return newAlloc->p;
+            }
+            else
+            {
+                // No space for alloc on the heap
+                Debugger();
+                return NULL;
+            }
         }
-
-        #endif
         
+        current = next;
     }
-    
-    set_paging(defaultPageTable.page_directory);
-    enablePaging();
-}
-
-void test_paging()
-{
-    char* far_address = (char*)0x3C00000; // 60 MB
-    char* close_address = (char*)0xF00000; // 15 MB
-    
-    strcpy(far_address, "far_address\0");
-    strcpy(close_address, "close_address\0");
-    
-    map_phys_address(0x3C00000, 0xF00000); // Map 60 MB mark to 15 MB mark.
-    
-    // Write the string to the address 0x3C00000, which goes over to 0xF00000
-    // So far_address still have the old 'far_address' string.
-    strcpy(far_address, "xx_far_address_after_mapping\0");
-    
-    // Both addresses should have the same content since they are mapped to the 
-    // same page.
-    int res = strcmp(close_address, far_address) == 0;
-    ASSERT(res == TRUE, "PAGING IS FUCKED UP");
-
-}
-
-void map_phys_address(uint32_t addressFrom, uint32_t addressTo)
-{
-    // Take top 10 bits to identify the page directory
-    uint32_t upper10 = addressFrom & 0xFFC00000;
-    uint32_t pdeIndex = upper10 >> 22;
-    
-    // Take the middle 10 bits to identify the page table (of the directory above)
-    uint32_t lower10 = addressFrom & 0x3FF000;
-    uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
-    
-    // Assign the 12 low bits from the target with the flags Present and R/W.
-    defaultPageTable.page_tables[pte] = (addressTo & 0xFFFFF000) | 3;
-    
-    // I'm invalidating both addresses just in case, will test for validity.
-    asm volatile("invlpg (%0)" ::"r" (addressFrom) : "memory");
-    asm volatile("invlpg (%0)" ::"r" (addressTo) : "memory");
-}
-
-int count_pages(enum page_frame_flags findFlags)
-{
-    int totalCount = 0;
-    for(int i = 0; i < 1024*1024; i++)
-    {
-        if(kMemoryManager->currentPageTable->page_tables[i] & findFlags)
-            totalCount++;
-    }
-    
-    return totalCount;
-}
-
-uint32_t* find_pages(enum page_frame_flags findFlags, int* count)
-{
-    (void)findFlags;
-    (void)count;
     
     return NULL;
 }
 
-void init_module_memory_manager(struct kernel_info_block* kinfo)
+void kfree(void* ptr)
 {
-    kMemoryManager = alloc_kernel_module(sizeof(struct memory_manager));
-    kinfo->m_memory_manager = kMemoryManager;
-    
-    
-}
-
-void kmInitManager()
-{
-    basePoolsAddress = 1024 * 1024 * 5; // 5MB
-    
-    uint32_t smallPoolStartAddress = basePoolsAddress;
-    uint32_t pagePoolStartAddress = smallPoolStartAddress + small_pool_size * small_pool_unit;
-    uint32_t largePoolStartAddress = pagePoolStartAddress + page_pool_size * page_pool_unit;
-    
-    for(int i = 0; i < small_pool_size; i++)
+    struct m_allocation* current = lastAlloc;
+    while(current != NULL)
     {
-        smallPool[i].size = small_pool_unit;
-        smallPool[i].isFree = TRUE;
-        smallPool[i].p = (void*)(basePoolsAddress + small_pool_unit * i);
-    }
-    
-    for(int i = 0; i < page_pool_size; i++)
-    {
-        pagePool[i].size = page_pool_unit;
-        pagePool[i].isFree = TRUE;
-        pagePool[i].p = (void*)(pagePoolStartAddress + page_pool_unit *i);
-    }
-    
-    for(int i = 0; i < large_pool_size; i++)
-    {
-        largePool[i].size = large_pool_unit;
-        largePool[i].isFree = TRUE;
-        largePool[i].p = (void*)(largePoolStartAddress + large_pool_unit * i);
-    }
-}
-
-void* kmKernelAlloc(size_t size)
-{
-    if(size <= small_pool_unit)
-    {
-        for(int i = 0; i < small_pool_size; i++)
+        if(current->p == ptr)
         {
-            if(smallPool[i].isFree)
+            if(current->allocated == FALSE)
             {
-                smallPool[i].isFree = FALSE;
-                smallPool[i].size = size;
-                
-                return smallPool[i].p;
+                // TODO : Handle bad dealloc
+                Debugger();
+                return;
             }
-        }
-        
-        Debugger();
-        kWriteLog("Small pool is full !");
-    }
-    else if(size <= page_pool_unit)
-    {
-        for(int i = 0; i < page_pool_size; i++)
-        {
-            if(pagePool[i].isFree)
-            {
-                pagePool[i].isFree = FALSE;
-                pagePool[i].size = size;
-                
-                return pagePool[i].p;
-            }
-        }
-        
-        Debugger();        
-        kWriteLog("Page pool is full !");
-    }
-    else if(size <= large_pool_unit)
-    {
-        for(int i = 0; i < large_pool_size; i++)
-        {
-            if(largePool[i].isFree)
-            {
-                largePool[i].isFree = FALSE;
-                largePool[i].size = size;
-                
-                return largePool[i].p;
-            }
-        }
-        
-        Debugger();
-        kWriteLog("Large pool is full !");
-    }
-    else
-    {
-        // Allocation is too big, not supported for now.
-        kWriteLog("Trying to allocate too much.");
-        
-        Debugger();
-    }
-    
-    Debugger();
-    ASSERT(FALSE, "MEMORY ALLOCATE FAILED. NULL RETURNED.");
-    
-    return (void*)0;
-}
-
-void kmKernelFree(void* ptr)
-{
-    // TODO : For now, no other way than checking each allocation unit
-    
-    for(int i = 0; i < large_pool_size; i++)
-    {
-        if(largePool[i].p == ptr)
-        {
-            largePool[i].isFree = TRUE;
-            largePool[i].size = 0;
             
-            return;
-            // Maybe zero out the memory or something.
-        }
-    }
-    
-    for(int i = 0; i < page_pool_size; i++)
-    {
-        if(pagePool[i].p == ptr)
-        {
-            pagePool[i].isFree = TRUE;
-            pagePool[i].size = 0;
+            memset(current->p, 0, current->size);
+            
+            mm_link_allocs(current->previous, current->next);
+            
+            // Keeping the other attributes of the allocation to maybe help with
+            // debugging freed allocations.
+            current->allocated = FALSE;
+            current->next = NULL;
+            current->previous = NULL;
             
             return;
         }
+        
+        current = current->previous;
     }
-
-    for(int i = 0; i < small_pool_size; i++)
-    {
-        if(smallPool[i].p == ptr)
-        {
-            smallPool[i].isFree = TRUE;
-            smallPool[i].size = 0;
-            
-            return;
-        }
-    }
-    
-    kWriteLog_format1d("Could not find allocation for %d", (uint32_t)ptr);
 }
 
-void kmKernelCopy(void* ptrFrom, void* ptrTo)
+void kmzero(void* ptr)
 {
-    uint8_t* ptrFromChar = (uint8_t*)ptrFrom;
-    uint8_t* ptrToChar = (uint8_t*)ptrTo;
+    char* ptrFromChar = (char*)ptr;
     
-    alloc_unit_t alloc;
-    BOOL ptrFound = kmFindInPools(ptrFrom, &alloc);
+    size_t fromSize = sizeof(*ptr);
     
-    if(ptrFound)
+    for(size_t i = 0; i < fromSize; i++)
     {
-        for(size_t i = 0; i < alloc.size; i++)
-        {
-            ptrToChar[i] = ptrFromChar[i];
-        }
-    }
-    else
-    {
-        ASSERT(FALSE, "kmKernelCopy ptrFrom not found in the pools.");
+        ptrFromChar[i] = 0;
     }
 }
 
-void* memcpy( void *dest, const void *src, size_t count )
+void* kmemcpy( void *dest, const void *src, uint32_t count )
 {
     uint8_t* ptrSrc = (uint8_t*)src;
     uint8_t* ptrDest = (uint8_t*)dest;
@@ -291,221 +202,39 @@ void* memcpy( void *dest, const void *src, size_t count )
     return dest;
 }
 
-void kmKernelZero(void* ptrFrom)
+
+uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second)
 {
-    char* ptrFromChar = (char*)ptrFrom;
-    
-    size_t fromSize = sizeof(*ptrFrom);
-    
-    for(size_t i = 0; i < fromSize; i++)
-    {
-        ptrFromChar[i] = 0;
-    }
+    return mm_data_head(second) - mm_data_tail(first);
 }
 
-BOOL kmFindInPools(void* ptr, alloc_unit_t* alloc)
+uint32_t mm_data_head(struct m_allocation* target)
 {
-    for(int i = 0; i < small_pool_size; i++)
-    {
-        if(smallPool[i].p == ptr)
-        {
-            *alloc = smallPool[i];
-            
-            return TRUE;
-        }
-    }
-    
-    for(int i = 0; i < page_pool_size; i++)
-    {
-        if(pagePool[i].p == ptr)
-        {
-            *alloc = pagePool[i];
-            
-            return TRUE;
-        }
-    }
-    
-    for(int i = 0; i < large_pool_size; i++)
-    {
-        if(largePool[i].p == ptr)
-        {
-            *alloc = largePool[i];
-            
-            return TRUE;
-        }
-    }
-    
-    alloc = NULL;
-    
-    return FALSE;
+    return (uint32_t)target->p;
 }
 
-size_t kmCountFreeSmallPoolUnits()
+uint32_t mm_data_tail(struct m_allocation* target)
 {
-    size_t total = 0;
-    
-    for(int i = 0; i < small_pool_size; i++)
-    {
-        if(smallPool[i].isFree)
-        {
-            total++;
-        }
-    }
-    
-    return total;
+    return (uint32_t)target->p + target->size;
 }
 
-size_t kmCountFreePagePoolUnits()
+void mm_link_allocs(struct m_allocation* first, struct m_allocation* second)
 {
-    size_t total = 0;
-    
-    for(int i = 0; i < page_pool_size; i++)
-    {
-        if(pagePool[i].isFree)
-        {
-            total++;
-        }
-    }
-    
-    return total;
+    first->next = second;
+    second->previous = first;
 }
 
-size_t kmCountFreeLargePoolUnits()
+struct m_allocation* mm_find_free_allocation()
 {
-    size_t total = 0;
-    
-    for(int i = 0; i < large_pool_size; i++)
+    for(size_t i = 0; i < HEAP_ALLOCS_AMOUNT; i++)
     {
-        if(largePool[i].isFree)
+        struct m_allocation* alloc = allocs + i;
+        
+        if(alloc->allocated == FALSE)
         {
-            total++;
+            return alloc;
         }
     }
     
-    return total;
-}
-
-struct memstats* kmGetMemoryStats()
-{
-    struct memstats* stats = kmKernelAlloc(sizeof(struct memstats));
-    
-    // SMALL POOL
-    stats->small_pool_count = small_pool_size;
-    stats->small_pool_used = 0;
-    stats->small_pool_free = 0;
-    stats->small_pool_mem_unit = small_pool_unit;
-    stats->small_pool_mem_used = 0;
-    stats->small_pool_mem_free = 0;
-    for(int i = 0; i < small_pool_size; i++)
-    {
-        if(smallPool[i].isFree)
-        {
-            stats->small_pool_free++;
-        }
-        else
-        {
-            stats->small_pool_used++;
-            stats->small_pool_mem_used += small_pool_unit;
-        }
-    }
-    stats->small_pool_mem_free = (small_pool_size * small_pool_unit) - stats->small_pool_mem_used;
-    
-    // PAGE POOL
-    stats->page_pool_count = page_pool_size;
-    stats->page_pool_used = 0;
-    stats->page_pool_free = 0;
-    stats->page_pool_mem_unit = page_pool_unit;
-    stats->page_pool_mem_used = 0;
-    stats->page_pool_mem_free = 0;
-    for(int i = 0; i < page_pool_size; i++)
-    {
-        if(pagePool[i].isFree)
-        {
-            stats->page_pool_free++;
-        }
-        else
-        {
-            stats->page_pool_used++;
-            stats->page_pool_mem_used += page_pool_unit;
-        }
-    }
-    stats->page_pool_mem_free = (page_pool_size * page_pool_unit) - stats->page_pool_mem_used;
-
-    // LARGE POOL
-    stats->large_pool_count = large_pool_size;
-    stats->large_pool_used = 0;
-    stats->large_pool_free = 0;
-    stats->large_pool_mem_unit = large_pool_unit;
-    stats->large_pool_mem_used = 0;
-    stats->large_pool_mem_free = 0;
-    for(int i = 0; i < large_pool_size; i++)
-    {
-        if(largePool[i].isFree)
-        {
-            stats->large_pool_free++;
-        }
-        else
-        {
-            stats->large_pool_used++;
-            stats->large_pool_mem_used += large_pool_unit;
-        }
-    }
-    stats->large_pool_mem_free = (large_pool_size * large_pool_unit) - stats->large_pool_mem_used;
-    
-    stats->total_alloc_amount = small_pool_size + page_pool_size + large_pool_size;
-    stats->total_alloc_used = 0;
-    stats->total_alloc_used += stats->small_pool_used;
-    stats->total_alloc_used += stats->page_pool_used;
-    stats->total_alloc_used += stats->large_pool_used;
-    stats->total_alloc_free = stats->total_alloc_amount - stats->total_alloc_used;
-
-    stats->total_memory_amount = (small_pool_unit * small_pool_size) + (page_pool_unit * page_pool_size) + (large_pool_unit * large_pool_size);
-    stats->total_memory_used = 0;
-    stats->total_memory_used += stats->small_pool_mem_used;
-    stats->total_memory_used += stats->page_pool_mem_used;
-    stats->total_memory_used += stats->large_pool_mem_used;
-    stats->total_memory_free = stats->total_memory_amount - stats->total_memory_used;
-    
-    return stats;
-}
-
-char** kmGetMemoryStatsText(int* linesCount)
-{
-    int currentLine = 0;
-    int nbLinesTotal = 24;
-    char** statsLines = kmKernelAlloc(sizeof(char*) * nbLinesTotal); // 24 fields in memstats
-    struct memstats* stats = kmGetMemoryStats();
-    
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "SMALL POOL COUNT = %d", stats->small_pool_count, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "SMALL POOL USED = %d", stats->small_pool_used, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "SMALL POOL FREE = %d", stats->small_pool_free, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "SMALL POOL MEM UNIT = %d", stats->small_pool_mem_unit, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "SMALL POOL MEM USED = %d", stats->small_pool_mem_used, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "SMALL POOL MEM FREE = %d", stats->small_pool_mem_free, NULL);currentLine++;
-    
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "PAGE POOL COUNT = %d", stats->page_pool_count, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "PAGE POOL USED = %d", stats->page_pool_used, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "PAGE POOL FREE = %d", stats->page_pool_free, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "PAGE POOL MEM UNIT = %d", stats->page_pool_mem_unit, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "PAGE POOL MEM USED = %d", stats->page_pool_mem_used, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "PAGE POOL MEM FREE = %d", stats->page_pool_mem_free, NULL);currentLine++;
-    
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "LARGE POOL COUNT = %d", stats->large_pool_count, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "LARGE POOL USED = %d", stats->large_pool_used, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "LARGE POOL FREE = %d", stats->large_pool_free, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "LARGE POOL MEM UNIT = %d", stats->large_pool_mem_unit, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "LARGE POOL MEM USED = %d", stats->large_pool_mem_used, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "LARGE POOL MEM FREE = %d", stats->large_pool_mem_free, NULL);currentLine++;
-    
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "TOTAL ALLOCS SLOTS = %d", stats->total_alloc_amount, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "TOTAL ALLOCS USED = %d", stats->total_alloc_used, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "TOTAL ALLOCS FREE = %d", stats->total_alloc_free, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "TOTAL MEMORY AMOUNT = %d", stats->total_memory_amount, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "TOTAL MEMORY USED = %d", stats->total_memory_used, NULL);currentLine++;
-    statsLines[currentLine] = alloc_sprintf_1d(statsLines[currentLine], "TOTAL MEMORY FREE = %d", stats->total_memory_free, NULL);currentLine++;
-    
-    ASSERT(currentLine == nbLinesTotal, "WRONG AMOUNT OF LINES WRITTEN");
-    
-    *linesCount = nbLinesTotal;
-    return statsLines;
+    return NULL;
 }

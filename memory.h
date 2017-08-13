@@ -1,147 +1,77 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-struct kernel_info_block;
-
 #include <stddef.h>
 #include <stdint.h>
 
 #include "common.h"
 
-uint32_t kmNextAvailableMemoryAddress;
+#define STARTING_ALLOCS_COUNT 100
 
-/* POOL ALLOCATOR
- *
- *
- */
-struct AllocationUnit
+#define PAGE_SIZE 4096
+
+#define HEAP_ALLOCS_START (1024 * 1024 * 6)
+#define HEAP_ALLOCS_LENGTH (16384 * PAGE_SIZE) // 16384 pages equals 64MB
+
+#define HEAP_ALLOCS_AMOUNT (HEAP_ALLOCS_LENGTH / sizeof(struct m_allocation))
+
+#define KERNEL_HEAP_START (HEAP_ALLOCS_START + HEAP_ALLOCS_LENGTH)
+#define KERNEL_HEAP_LENGTH (25600 * PAGE_SIZE) // 100MB
+
+enum mm_alloc_types
+{
+    MEM_ALLOC,
+    MEM_ALLOCS_BLOCK
+};
+
+struct m_allocation
 {
     uint32_t size;
     void* p;
-    BOOL isFree;
-};
-typedef struct AllocationUnit alloc_unit_t;
-
-struct memstats
-{
-    size_t small_pool_count;
-    size_t small_pool_used;
-    size_t small_pool_free;
+    BOOL allocated;
     
-    size_t small_pool_mem_unit;
-    size_t small_pool_mem_used;
-    size_t small_pool_mem_free;
+    enum mm_alloc_types type;
+    uint32_t flags;
     
-    size_t page_pool_count;
-    size_t page_pool_used;
-    size_t page_pool_free;
-    
-    size_t page_pool_mem_unit;
-    size_t page_pool_mem_used;
-    size_t page_pool_mem_free;
-    
-    size_t large_pool_count;
-    size_t large_pool_used;
-    size_t large_pool_free;
-    
-    size_t large_pool_mem_unit;
-    size_t large_pool_mem_used;
-    size_t large_pool_mem_free;
-
-    size_t total_alloc_amount;
-    size_t total_alloc_used;
-    size_t total_alloc_free;
-
-    size_t total_memory_amount;
-    size_t total_memory_used;
-    size_t total_memory_free;
+    struct m_allocation* previous;
+    struct m_allocation* next;
 };
 
-#define small_pool_unit 256
-#define page_pool_unit 1024 * 4
-#define large_pool_unit 1024 * 512
+size_t allocs_count;
+struct m_allocation* allocs;
 
-#define small_pool_size 10 * 1024
-#define page_pool_size 610
-#define large_pool_size 160
+struct m_allocation* firstAlloc;
+struct m_allocation* lastAlloc;
 
-uint32_t basePoolsAddress;
+// Internal methods
 
-alloc_unit_t smallPool[small_pool_size];
-alloc_unit_t pagePool[page_pool_size];
-alloc_unit_t largePool[large_pool_size];
+void init_memory_manager();
 
-// Paging Stuff
-#define PAGE_ALL_PRESENT
+// Public API
 
-struct page_table_info
-{
-    uint32_t page_directory[1024] __attribute__((aligned(4096)));
-    uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
-} __attribute__((aligned(4096)));
- 
-// Storing a default page table before I start getting multiple address mappings
-struct page_table_info defaultPageTable;
+#define malloc kmalloc
+#define free kfree
+#define memcpy kmemcpy
 
-void setup_paging();
-void test_paging();
+// Standard C methods
+void* kmalloc(uint32_t size);
+void kfree(void* ptr);
+void* krealloc( void *ptr, uint32_t new_size );
 
-void map_phys_address(uint32_t addressFrom, uint32_t addressTo);
-
-// TODO : Find prefix for paging methods
-
-enum page_frame_flags {
-    PG_PRESENT = 1,
-    PG_WRITABLE = 2,
-    PG_ACCESSED = 32,
-    PG_DIRTY = 64
-};
-
-int count_pages(enum page_frame_flags findFlags);
-uint32_t* find_pages(enum page_frame_flags findFlags, int* count);
-
-// Memory Manager stuff
-
-struct memory_manager {
-    struct page_table_info* currentPageTable;
-    
-    int managed_pagetables_amount;
-    struct page_table_info* managed_pagetables;
-};
-
-struct memory_manager* kMemoryManager;
-
-void init_module_memory_manager(struct kernel_info_block* kinfo);
-
-void kmInitManager();
-
-void* kmKernelAlloc(size_t size);
-
-void kmKernelFree(void* ptr);
-
-// TODO : Size detection of memory pointed is not yet active, use strcpy if need
-// or create a copy method with amount of mem copied.
-void kmKernelCopy(void* ptrFrom, void* ptrTo);
-
-void* memcpy( void *dest, const void *src, size_t count );
-
-void kmKernelZero(void* ptrFrom);
+// Extended methods
+void kmzero(void* ptr);
+void* kmemcpy( void *dest, const void *src, uint32_t count );
 
 
-// Pool management method
-BOOL kmFindInPools(void* ptr, alloc_unit_t* alloc);
+// Private Methods
 
-size_t kmCountFreeSmallPoolUnits();
-size_t kmCountFreePagePoolUnits();
-size_t kmCountFreeLargePoolUnits();
+uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second);
 
-// Memory statistics methods
-struct memstats* kmGetMemoryStats();
-char** kmGetMemoryStatsText(int* linesCount);
+uint32_t mm_data_head(struct m_allocation* target);
+uint32_t mm_data_tail(struct m_allocation* target);
 
-// User mode memory methods
-// Currently define'd while userspace implementation is created
-#define malloc kmKernelAlloc
-#define free kmKernelFree
+void mm_link_allocs(struct m_allocation* first, struct m_allocation* second);
+
+struct m_allocation* mm_find_free_allocation();
 
 #endif

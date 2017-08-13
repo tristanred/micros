@@ -52,8 +52,6 @@
 #include "ezfs.h"
 #include "ksh.h"
 
-#include "heap_memory.h"
-
 uint32_t kErrorBad;
 char* kBadErrorMessage;
 
@@ -80,43 +78,23 @@ void kernel_main(multiboot_info_t* arg1)
     setupGdt();
     setupIdt();
 
-    //setup_kernel_block();
+    setup_kernel_block();
 
     fbInitialize();
 
     kSetupLog(SERIAL_COM1_BASE);
-    //kmInitManager();
+    
+    init_memory_manager();
     
     //setup_paging();
     
     //test_paging();
     
-    // init_module_kernel_features(kernel_info);
+    init_module_kernel_features(kernel_info);
     // init_module_memory_manager(kernel_info);
-    // init_module_ata_driver(kernel_info);
+    init_module_ata_driver(kernel_info);
 
-    //kfDetectFeatures(arg1);
-    
-    Debugger();
-    
-    init_memory_manager();
-    
-    char* testAlloc1 = kmalloc(sizeof(char) * 256);
-    strcpy(testAlloc1, "ABCDE");
-    
-    char* testAlloc2 = kmalloc(sizeof(char) * 256);
-    strcpy(testAlloc2, "GHIJK");
-    
-    char* testAlloc3 = kmalloc(sizeof(char) * 256);
-    strcpy(testAlloc3, "LMNOP");
-    
-    kfree(testAlloc2);
-    
-    char* testAlloc4 = kmalloc(sizeof(char) * 256);
-    strcpy(testAlloc4, "QRSTU");
-    
-    return;
-    
+    kfDetectFeatures(arg1);
     
     // PCI bus scanning
     int total = 0;
@@ -128,7 +106,7 @@ void kernel_main(multiboot_info_t* arg1)
         kWriteLog_format1d("Device #%d", i);
         print_pci_device_info(list[i]);
     }
-    
+        
     setup_filesystem(); 
     ezfs_prepare_disk();
     
@@ -185,7 +163,7 @@ void setup_kernel_block()
 
 void* alloc_kernel_module(size_t size)
 {
-    return kmKernelAlloc(size);
+    return malloc(size);
     
     // if(!has_free_modules_space())
     //     return NULL;
