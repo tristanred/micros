@@ -31,7 +31,14 @@
  *
 */
 
-
+/*
+ * Must be called before any memory calls are done. 
+ * This creates the two areas, the allocation block and the heap.
+ *
+ * There is an allocation of 1 byte at first in order to init the firstAlloc and
+ * lastAlloc to a value. This avoids having to check for NULL values in those at
+ * every calls to malloc.
+ */
 void init_memory_manager()
 {
     uint32_t allocStartAddress = HEAP_ALLOCS_START;
@@ -58,7 +65,7 @@ void init_memory_manager()
     stubFirstAlloc->size = 1;
     stubFirstAlloc->p = (void*)KERNEL_HEAP_START;
     stubFirstAlloc->allocated = TRUE;
-    stubFirstAlloc->type = 0;
+    stubFirstAlloc->type = MEM_STUB;
     stubFirstAlloc->flags = 0;
     stubFirstAlloc->next = NULL;
     stubFirstAlloc->previous = NULL;
@@ -67,6 +74,12 @@ void init_memory_manager()
     lastAlloc = stubFirstAlloc;
 }
 
+/**
+ * Allocate memory on the heap.
+ *
+ * Allocations can be configured to set 'canary bytes' at the end of the memory
+ * area to detect buffer overflows.
+ */
 void* kmalloc(uint32_t size)
 {
     struct m_allocation* alloc = firstAlloc;
@@ -79,7 +92,7 @@ void* kmalloc(uint32_t size)
         newAlloc->size = size;
         newAlloc->p = (void*)KERNEL_HEAP_START;
         newAlloc->allocated = TRUE;
-        newAlloc->type = 0;
+        newAlloc->type = MEM_ALLOC;
         newAlloc->flags = 0;
         
         #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
@@ -109,7 +122,7 @@ void* kmalloc(uint32_t size)
                 newAlloc->size = size;
                 newAlloc->p = (void*)mm_data_tail(current);
                 newAlloc->allocated = TRUE;
-                newAlloc->type = 0;
+                newAlloc->type = MEM_ALLOC;
                 newAlloc->flags = 0;
                 
                 #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
@@ -135,7 +148,7 @@ void* kmalloc(uint32_t size)
                 newAlloc->size = size;
                 newAlloc->p = (void*)mm_data_tail(current);
                 newAlloc->allocated = TRUE;
-                newAlloc->type = 0;
+                newAlloc->type = MEM_ALLOC;
                 newAlloc->flags = 0;
                 
                 #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
@@ -162,8 +175,18 @@ void* kmalloc(uint32_t size)
     return NULL;
 }
 
+/**
+ * Release memory allocated by malloc.
+ */
 void kfree(void* ptr)
 {
+    if(ptr == NULL)
+    {
+        kWriteLog("free() called on NULL pointer.");
+        
+        return;
+    }
+    
     struct m_allocation* current = lastAlloc;
     while(current != NULL)
     {
@@ -173,6 +196,7 @@ void kfree(void* ptr)
             {
                 // TODO : Handle bad dealloc
                 Debugger();
+                
                 return;
             }
             
@@ -187,8 +211,9 @@ void kfree(void* ptr)
             
             #endif
     
-            
+            #ifdef MM_ZERO_ON_FREE
             memset(current->p, 0, current->size);
+            #endif
             
             mm_link_allocs(current->previous, current->next);
             
@@ -205,18 +230,10 @@ void kfree(void* ptr)
     }
 }
 
-void kmzero(void* ptr)
-{
-    char* ptrFromChar = (char*)ptr;
-    
-    size_t fromSize = sizeof(*ptr);
-    
-    for(size_t i = 0; i < fromSize; i++)
-    {
-        ptrFromChar[i] = 0;
-    }
-}
-
+/**
+ * Copy data from one pointer to another. Must specify a size to copy.
+ * Don't put a wrong size. Seriously, do not.
+ */
 void* kmemcpy( void *dest, const void *src, uint32_t count )
 {
     uint8_t* ptrSrc = (uint8_t*)src;
@@ -230,6 +247,9 @@ void* kmemcpy( void *dest, const void *src, uint32_t count )
     return dest;
 }
 
+/**
+ * Place bytes at the specific offset in a buffer.
+ */
 void kmemplace(void* dest, uint32_t offset, const char* data, size_t count)
 {
     char* cDest = (char*)dest;
@@ -240,6 +260,14 @@ void kmemplace(void* dest, uint32_t offset, const char* data, size_t count)
     }
 }
 
+/**
+ * Get some bytes from the buffer at a specific offset. The returning buffer
+ * 'dest' must be provided as an out parameter. This was done because this 
+ * function was made for the free() method and was causing an infinite loop
+ * with the free() function needing to free the buffer returned by this function
+ * the fix was to allocate 'dest' on the stack, skipping the need to call free
+ * from the free function.
+ */
 void kmemget(void* src, char* dest, uint32_t offset, size_t count, size_t* readSize)
 {
     char* cSrc = (char*)src;
@@ -255,27 +283,44 @@ void kmemget(void* src, char* dest, uint32_t offset, size_t count, size_t* readS
     *readSize = dataLength;
 }
 
+/**
+ * Return the space between two allocs.
+ */
 uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second)
 {
     return mm_data_head(second) - mm_data_tail(first);
 }
 
+/**
+ * Return the starting address pointed by an allocation structure.
+ */
 uint32_t mm_data_head(struct m_allocation* target)
 {
     return (uint32_t)target->p;
 }
 
+/**
+ * Return the end of the data pointed to by an allocation structure.
+ */
 uint32_t mm_data_tail(struct m_allocation* target)
 {
     return (uint32_t)target->p + target->size;
 }
 
+/**
+ * Link two allocations together.
+ */
 void mm_link_allocs(struct m_allocation* first, struct m_allocation* second)
 {
     first->next = second;
     second->previous = first;
 }
 
+/**
+ * Scan the list of allocation and return the first one who is free.
+ * It needs to scan the list linearly so it gets slower as more allocations 
+ * come into play.
+ */
 struct m_allocation* mm_find_free_allocation()
 {
     for(size_t i = 0; i < HEAP_ALLOCS_AMOUNT; i++)
@@ -293,6 +338,11 @@ struct m_allocation* mm_find_free_allocation()
 
 #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
 
+/**
+ * Set the last X bytes of an allocation to a specific sequence of bytes.
+ * That sequence of bytes is checked when it is freed or manually. If the 
+ * special bytes have been modified then we have detected a buffer overflow.
+ */
 void mm_set_alloc_canary(struct m_allocation* alloc)
 {
     alloc->size += MM_HEAP_ALLOC_CANARY_SIZE;
@@ -317,6 +367,10 @@ BOOL mm_verify_alloc_canary(struct m_allocation* alloc)
     return FALSE;
 }
 
+/**
+ * Trigger a search of all allocations and returns FALSE as soon as a buffer 
+ * overflow is detected.
+ */
 BOOL mm_verify_all_allocs_canary()
 {
     struct m_allocation* current = firstAlloc;

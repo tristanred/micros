@@ -19,6 +19,8 @@
 #define KERNEL_HEAP_LENGTH (25600 * PAGE_SIZE) // 100MB
 
 // Feature flags
+#define MM_ZERO_ON_FREE
+
 #define MM_ENABLE_HEAP_ALLOC_CANARY
 
 #define MM_HEAP_ALLOC_CANARY_SIZE 5
@@ -26,8 +28,9 @@
 
 enum mm_alloc_types
 {
+    MEM_UNALLOC,
     MEM_ALLOC,
-    MEM_ALLOCS_BLOCK
+    MEM_STUB
 };
 
 struct m_allocation
@@ -65,7 +68,6 @@ void kfree(void* ptr);
 void* krealloc( void *ptr, uint32_t new_size );
 
 // Extended methods
-void kmzero(void* ptr);
 void* kmemcpy( void *dest, const void *src, uint32_t count );
 
 void kmemplace(void* dest, uint32_t offset, const char* data, size_t count);
