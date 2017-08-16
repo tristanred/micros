@@ -1,5 +1,4 @@
 ### COMPILERS ###
-# Note: Trying to use NASM instead of my custom gnu Assembler
 AS=nasm
 CC=~/opt/cross/bin/i686-elf-gcc
 
