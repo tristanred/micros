@@ -79,6 +79,7 @@ uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second);
 
 uint32_t mm_data_head(struct m_allocation* target);
 uint32_t mm_data_tail(struct m_allocation* target);
+uint32_t mm_space_to_end(struct m_allocation* target);
 
 void mm_link_allocs(struct m_allocation* first, struct m_allocation* second);
 

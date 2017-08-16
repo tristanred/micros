@@ -13,6 +13,9 @@
  * The second block is the heap memory. There resides the blocks of data that 
  * are allocated by malloc. 
  *
+ * When malloc is called, a new entry 'm_allocation' is registered and setup
+ * with the values needed to manage the heap memory block.
+ *
  * Each 'm_allocation's are linked together sorted by start address of the 
  * memory. Each time a new allocation is initialized, it must be linked
  * at the right place in the linked list to keep the addresses sorted. This way
@@ -25,19 +28,23 @@
  * first block of memory holding the 'm_allocation' structures. 
  *
  * This problem isn't going anywhere. Need to scan the entire list of allocation
- * everytime we need to get a new struct. One things that is not so bad is that
+ * everytime we need to get a new struct. One thing that is not so bad is that
  * checking the entire list serially will benefit from cache locality and branch
- * predition.
+ * prediction.
  *
 */
 
 /*
+ * Module init function.
+ *
  * Must be called before any memory calls are done. 
  * This creates the two areas, the allocation block and the heap.
  *
  * There is an allocation of 1 byte at first in order to init the firstAlloc and
  * lastAlloc to a value. This avoids having to check for NULL values in those at
- * every calls to malloc.
+ * every calls to malloc. Instead of doing this, we could just assign that first
+ * allocation to something that will remain for the entire duration of the 
+ * kernel.
  */
 void init_memory_manager()
 {
@@ -47,6 +54,9 @@ void init_memory_manager()
     
     allocs_count = 0;
     
+    // Setup each structure, probably writing 0 over already-zeroed memory but
+    // if the memory still had data in it this will make sure we get clean
+    // values.
     for(size_t i = 0; i < HEAP_ALLOCS_AMOUNT; i++)
     {
         struct m_allocation* alloc = allocs + i;
@@ -86,9 +96,15 @@ void* kmalloc(uint32_t size)
     uint32_t beginningSpace = (uint32_t)alloc->p - KERNEL_HEAP_START;
     if(beginningSpace >= size)
     {
-        // Free space at the beginning of the heap
+        // This case handles when the first allocated block is not aligned on 
+        // exact start of the heap zone. This should never happen since we have
+        // a stub alloc in place.
         
         struct m_allocation* newAlloc = mm_find_free_allocation();
+        
+        if(newAlloc == NULL)
+            return NULL;
+        
         newAlloc->size = size;
         newAlloc->p = (void*)KERNEL_HEAP_START;
         newAlloc->allocated = TRUE;
@@ -99,7 +115,6 @@ void* kmalloc(uint32_t size)
         mm_set_alloc_canary(newAlloc);
         #endif
         
-        // Assert that next's previous must be NULL?
         mm_link_allocs(newAlloc, firstAlloc);
         newAlloc->previous = NULL;
 
@@ -137,11 +152,10 @@ void* kmalloc(uint32_t size)
                 
                 return newAlloc->p;
             }
-            
         }
         else
         {
-            uint32_t spaceToHeapEnd = (KERNEL_HEAP_START +  KERNEL_HEAP_LENGTH) - mm_data_tail(current);
+            uint32_t spaceToHeapEnd = mm_space_to_end(current);
             if(spaceToHeapEnd >= size)
             {
                 struct m_allocation* newAlloc = mm_find_free_allocation();
@@ -233,6 +247,7 @@ void kfree(void* ptr)
 /**
  * Copy data from one pointer to another. Must specify a size to copy.
  * Don't put a wrong size. Seriously, do not.
+ * TODO : Validate size of dest and src in the alloc list.
  */
 void* kmemcpy( void *dest, const void *src, uint32_t count )
 {
@@ -308,6 +323,14 @@ uint32_t mm_data_tail(struct m_allocation* target)
 }
 
 /**
+ * Return the amount of space from the end of an allocation to the end of heap.
+ */
+uint32_t mm_space_to_end(struct m_allocation* target)
+{
+    return (KERNEL_HEAP_START +  KERNEL_HEAP_LENGTH) - mm_data_tail(target);
+}
+
+/**
  * Link two allocations together.
  */
 void mm_link_allocs(struct m_allocation* first, struct m_allocation* second)
@@ -340,7 +363,7 @@ struct m_allocation* mm_find_free_allocation()
 
 /**
  * Set the last X bytes of an allocation to a specific sequence of bytes.
- * That sequence of bytes is checked when it is freed or manually. If the 
+ * That sequence of bytes is checked when it is freed or called manually. If the 
  * special bytes have been modified then we have detected a buffer overflow.
  */
 void mm_set_alloc_canary(struct m_allocation* alloc)
