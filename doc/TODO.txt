@@ -6,7 +6,7 @@ II. Kernel Shell
 
 III. Memory
   1. Paging
-    a. Add an options to set all pages to "Not Present" and an allocate on PF
+    a. Add an option to set all pages to "Not Present" and an allocate on PF
        hook. Using that we can detect bad memory usage by watching when a module
        overlaps on another's pages.
     b. Re-introduce paging functions to the heap allocator.

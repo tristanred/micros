@@ -7,7 +7,7 @@
 
 // extern void set_paging();
 // extern void enablePaging();
-// // extern void invalidateEntry(uint32_t address);
+// extern void invalidateEntry(uint32_t address);
 
 // void setup_paging()
 // {

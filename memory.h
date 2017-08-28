@@ -5,9 +5,7 @@
 #include <stdint.h>
 
 #include "common.h"
-
-#define PAGE_SIZE 4096
-
+#include "paging.h"
 
 // Heap sizes flags
 #define HEAP_ALLOCS_START (1024 * 1024 * 6)

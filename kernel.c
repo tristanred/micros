@@ -144,7 +144,6 @@ void kernel_main(multiboot_info_t* arg1)
     }
     
     #endif
-    //ksh_write("Hello output data. \n DoStuff");
     
     while(TRUE)
     {
@@ -152,11 +151,6 @@ void kernel_main(multiboot_info_t* arg1)
         
         cpu_idle();
     }
-    
-    return;
-    
-    
-    
     
     kWriteLog("Kernel End");
 }

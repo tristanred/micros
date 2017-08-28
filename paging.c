@@ -68,7 +68,6 @@ void test_paging()
     // same page.
     int res = strcmp(close_address, far_address) == 0;
     ASSERT(res == TRUE, "PAGING IS FUCKED UP");
-
 }
 
 void map_phys_address(uint32_t addressFrom, uint32_t addressTo)
@@ -109,4 +108,3 @@ uint32_t* find_pages(enum page_frame_flags findFlags, int* count)
     
     return NULL;
 }
-
