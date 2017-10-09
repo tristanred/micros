@@ -1,6 +1,6 @@
 #include "paging.h"
 
-extern void set_paging();
+extern void set_paging(uint32_t* pt);
 extern void enablePaging();
 // extern void invalidateEntry(uint32_t address);
 
