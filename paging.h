@@ -19,6 +19,15 @@ struct page_table_info
 // Storing a default page table before I start getting multiple address mappings
 struct page_table_info defaultPageTable;
 
+void init_page_allocator();
+
+void pa_create_pagetable(struct page_table_info* pt);
+
+void pa_set_current_pagetable(struct page_table_info* pt);
+
+void
+
+// OLD PAGING API
 void setup_paging();
 void test_paging();
 
