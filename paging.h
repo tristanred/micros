@@ -25,8 +25,6 @@ void pa_create_pagetable(struct page_table_info* pt);
 
 void pa_set_current_pagetable(struct page_table_info* pt);
 
-void
-
 // OLD PAGING API
 void setup_paging();
 void test_paging();
