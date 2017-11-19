@@ -3,26 +3,34 @@
 mkdir i686-cross
 cd i686-cross
 
-curl ftp://ftp.gnu.org/gnu/binutils/binutils-2.9.1.tar.gz > binutils-2.9.1.tar.gz
-
+curl ftp://ftp.gnu.org/gnu/binutils/binutils-2.29.tar.gz > binutils-2.29.tar.gz
 curl ftp://ftp.gnu.org/gnu/gcc/gcc-7.2.0/gcc-7.2.0.tar.gz > gcc-7.2.0.tar.gz
 
 sudo apt-get update
-sudo apt-get install libgmp3-dev libmpfr-dev libisl-dev libcloog-isl-dev libmpc-dev texinfo
+sudo apt-get install -y libgmp3-dev libmpfr-dev libisl-dev libcloog-isl-dev libmpc-dev texinfo
 
 export PREFIX="$HOME/opt/arm-i686"
 export TARGET=i686-elf
 export PATH="$PREFIX/bin:$PATH"
 
-tar -xzf binutils-2.9.1.tar.gz
+tar -xzf binutils-2.29.tar.gz
 tar -xzf gcc-7.2.0.tar.gz
 
 mkdir build-binutils
 cd build-binutils
 
-../binutils-2.9.1/configure --target=$TARGET --prefix="$PREFIX" --with-sysroot --disable-nls --disable-werror
+../binutils-2.29/configure --target=$TARGET --prefix="$PREFIX" --with-sysroot --disable-nls --disable-werror
 make
-make install
+
+read -r -p "Binutils build done. Install to $PREFIX ? [Yn]" response
+
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+then
+    make install
+    echo "Installed binutils to $PREFIX"
+else
+    echo "Run make install manually to install the binaries."
+fi
 
 cd ..
 
@@ -35,5 +43,15 @@ which -- $TARGET-as || echo $TARGET-as is not in the PATH
 ../gcc-7.2.0/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c,c++ --without-headers
 make all-gcc
 make all-target-libgcc
-make install-gcc
-make install-target-libgcc
+
+read -r -p "GCC build done. Install to $PREFIX ? [Yn]" response
+
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+then
+    make install-gcc
+    make install-target-libgcc
+    
+    echo "Installed gcc and libgcc to $PREFIX"
+else
+    echo "Run make install-gcc and make install-target-libgcc manually to install the binaries."
+fi
