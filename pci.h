@@ -6,6 +6,8 @@
 
 #include "common.h"
 
+#include "pci_class.h"
+
 #define PCI_INDEX_PORT 0xCF8
 #define PCI_DATA_PORT 0xCFC
 
