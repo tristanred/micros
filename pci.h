@@ -17,6 +17,7 @@
 // 8 functions per device
 // 256 bytes of data on each function
 
+// TODO : Move to pcidev.h
 struct pci_device 
 {
     BOOL valid_device;
@@ -81,12 +82,35 @@ struct pci_request
     uint8_t reg_num;
 };
 
-struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function);
+/* 
+ * This is the set of devices controlled by the kernel. It is meant to be 
+ * allocated once and kept in a kernel module. The controlset can be rescanned
+ * by calling pci_rescan_devices.
+ */
+struct pci_controlset
+{
+    int devicesCount;
+    struct pci_device** deviceList;
+};
 
-struct pci_device** get_devices_list();
+
+// PCI Public interface
+
+/*
+ * This function enumerates the devices on the PCI bus and replace the current
+ * controlset in the pci kernel module. If a new device 
+ */
+void pci_rescan_devices();
+
+struct pci_device** get_devices_list(int* count);
+struct pci_controlset* get_devices_list2(int* count);
+
+void print_pci_device_info(struct pci_device* device);
+
+// PCI Internal interface
+struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function);
 
 uint32_t build_request(uint8_t bus, uint8_t device, uint8_t function, uint8_t reg);
 
-void print_pci_device_info(struct pci_device* device);
 
 #endif

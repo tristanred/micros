@@ -26,6 +26,9 @@ VI. String Functions Review
   1. Some strings functions have problem with null termination. Find them and 
      fix them.
      
+VII. Kernel Modules
+  1. Rework and formalize the Kernel module architecture.
+     
 VII. General Improvement
   1. GDT and IDT are loaded at an address near 5MB and this area is close to the
      area where the OS stores a bunch of stuff. I had a bug where the GDT and 
