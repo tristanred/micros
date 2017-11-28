@@ -2,7 +2,7 @@
 
 # Install the dependencies
 sudo apt-get update
-sudo apt-get install -y build-essential git nasm qemu hexcurse
+sudo apt-get install -y build-essential git nasm qemu grub hexcurse
 
 # Download the cross compiler binaries
 curl http://transfer.lerouxtechnologies.com/crosscompiler.tar.gz > crosscompiler.tar.gz
