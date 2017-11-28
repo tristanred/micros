@@ -5,7 +5,7 @@ sudo apt-get update
 sudo apt-get install -y build-essential git nasm qemu hexcurse
 
 # Download the cross compiler binaries
-scp osdev@lerouxtechnologies.com:crosscompiler.tar.gz .
+curl http://transfer.lerouxtechnologies.com/crosscompiler.tar.gz > crosscompiler.tar.gz
 
 tar -xzf crosscompiler.tar.gz -C ~/
 
