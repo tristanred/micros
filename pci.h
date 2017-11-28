@@ -93,6 +93,17 @@ struct pci_controlset
     struct pci_device** deviceList;
 };
 
+/*
+ * Kernel module for PCI bus
+ */
+struct pci_module
+{
+    BOOL module_loaded;
+    BOOL module_active;
+    struct pci_controlset* current_controlset;
+    
+};
+
 
 // PCI Public interface
 
