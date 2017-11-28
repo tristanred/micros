@@ -1,0 +1,18 @@
+Kernel Module documentation
+
+1. Description of Kernel Modules
+
+Kernel modules are "pieces" of the kernel designed to separate jobs of a kernel.
+The modules should not be dependant on each other and should be able to be 
+loaded and used at will. Some modules can be defined as deactivated or 
+activated.
+
+Each kernel modules have a pointer to them in the kernel_info_block structure.
+A kernel function is used to initialize and activate a module. Each module
+can be resolved by going from the kernel_info_block. Internally a module keeps
+a statically allocated pointer to the module so the functions can target the 
+structure without going through the kernel block all the time.
+
+Each module keeps a BOOL called module_loaded that is flipped by the kernel to
+indicate if the module is loaded and a module_active to indicate if the 
+module is currently activated. Being active implicates being loaded.

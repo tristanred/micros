@@ -160,6 +160,7 @@ struct pci_device** get_devices_list(int* count)
     
     struct pci_device** array = (struct pci_device**)vector_get_array(vec, count);
     
+    // TODO : vec owns the backing data for 'array'. Wrong call to free() ?
     free(vec);
     
     return array;
