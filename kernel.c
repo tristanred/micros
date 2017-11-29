@@ -97,13 +97,14 @@ void kernel_main(multiboot_info_t* arg1)
     
     // PCI bus scanning
     int total = 0;
-    struct pci_device** list = get_devices_list(&total);
+    
+    struct pci_controlset* set = get_devices_list(&total);
     
     for(int i = 0; i < total; i++)
     {
         kWriteLog("");
         kWriteLog_format1d("Device #%d", i);
-        print_pci_device_info(list[i]);
+        print_pci_device_info(set->deviceList[i]);
     }
         
     setup_filesystem(); 
@@ -134,15 +135,14 @@ void kernel_main(multiboot_info_t* arg1)
     
     ksh_take_fb_control();
     
-    #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
+#ifdef MM_ENABLE_HEAP_ALLOC_CANARY
     BOOL res = mm_verify_all_allocs_canary();
     
     if(res == FALSE)
     {
         Debugger();
     }
-    
-    #endif
+#endif
     
     while(TRUE)
     {
@@ -156,7 +156,7 @@ void kernel_main(multiboot_info_t* arg1)
 
 void setup_kernel_block()
 {
-    kernel_info = (struct kernel_info_block*)0x100000;
+    kernel_info = (struct kernel_info_block*)(KIBLOCK_ADDR_START);
     
     kernel_info->modules_start_address = (uint32_t)(kernel_info + sizeof(struct kernel_info_block));
     kernel_info->modules_end_address = (uint32_t)(kernel_info + (1024*1024*5)); // 5MB
@@ -165,15 +165,15 @@ void setup_kernel_block()
 
 void* alloc_kernel_module(size_t size)
 {
-    return malloc(size);
+    //return malloc(size);
     
-    // if(!has_free_modules_space())
-    //     return NULL;
+    if(!has_free_modules_space())
+        return NULL; // TODO : Panic instead, unrecoverable situation
     
-    // uint32_t nextModuleAddress = kernel_info->modules_current_offset + size;
-    // kernel_info->modules_current_offset += size;
+    uint32_t nextModuleAddress = kernel_info->modules_current_offset + size;
+    kernel_info->modules_current_offset += size;
     
-    // return (void*)nextModuleAddress;
+    return (void*)nextModuleAddress;
 }
 
 BOOL has_free_modules_space()

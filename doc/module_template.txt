@@ -1,0 +1,8 @@
+struct <modulename>
+{
+    BOOL module_loaded;
+    BOOL module_active;
+    
+};
+
+struct <modulename>* module_local_instancename;

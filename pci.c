@@ -132,7 +132,7 @@ struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
     return dev;
 }
 
-struct pci_device** get_devices_list(int* count)
+struct pci_device** pci_scan_bus(int* count)
 {
     struct vector* vec = vector_create();
     
@@ -160,10 +160,22 @@ struct pci_device** get_devices_list(int* count)
     
     struct pci_device** array = (struct pci_device**)vector_get_array(vec, count);
     
-    // TODO : vec owns the backing data for 'array'. Wrong call to free() ?
     free(vec);
     
     return array;
+}
+
+struct pci_controlset* get_devices_list(int* count)
+{
+    struct pci_controlset* cs = malloc(sizeof(struct pci_controlset));
+    
+    int scanCount = 0;
+    cs->deviceList = pci_scan_bus(&scanCount);
+    cs->devicesCount = scanCount;
+    
+    *count = scanCount;
+    
+    return cs;
 }
 
 uint32_t build_request(uint8_t bus, uint8_t device, uint8_t function, uint8_t reg)

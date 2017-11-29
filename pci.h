@@ -113,13 +113,14 @@ struct pci_module
  */
 void pci_rescan_devices();
 
-struct pci_device** get_devices_list(int* count);
-struct pci_controlset* get_devices_list2(int* count);
+struct pci_controlset* get_devices_list(int* count);
 
 void print_pci_device_info(struct pci_device* device);
 
 // PCI Internal interface
 struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function);
+
+struct pci_device** pci_scan_bus(int* count);
 
 uint32_t build_request(uint8_t bus, uint8_t device, uint8_t function, uint8_t reg);
 

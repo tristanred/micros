@@ -90,7 +90,7 @@
 #define PCI_SUB_MODEM_CONTROLLER                    0x03
 #define PCI_SUB_GPIB_CONTROLLER                     0x04
 #define PCI_SUB_SMARTCARD_CONTROLLER                0x05
-#define PCI_SUB_SERIAL_CONTROLLER                   0x80
+//TODO NEW NAME #define PCI_SUB_SERIAL_CONTROLLER                   0x80
 
 /* PCI GENERIC SYS 0x08 SUBCLASSES */
 #define PCI_SUB_GENERIC_SYS_PIC                     0x00

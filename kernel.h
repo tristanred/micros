@@ -6,6 +6,8 @@
 
 #include "types.h"
 
+#define KIBLOCK_ADDR_START 1024 * 1024 * 2 // 2MB
+
 BOOL cpu_is_idle;
 void cpu_idle();
 
