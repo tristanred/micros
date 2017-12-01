@@ -1,0 +1,5 @@
+GGYG A possible system board resource and/or hardware failure has occurred.
+GGYY Memory modules are detected, but a memory failure has occurred.
+YGGG Another failure has occurred.
+GGYY Memory modules are detected, but a memory failure has occurred.
+GYYG System board failure has occurred.
