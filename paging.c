@@ -4,6 +4,109 @@ extern void set_paging(uint32_t* pt);
 extern void enablePaging();
 // extern void invalidateEntry(uint32_t address);
 
+void init_page_allocator()
+{
+    
+}
+
+struct page_table_info* pa_create_pagetable()
+{
+    // TODO : Figure out where to put the PTI in memory
+    // since we don't have any memory pages yet.
+    // Put in kernel pagetable ?
+    return NULL;
+}
+
+
+void pa_set_current_pagetable(struct page_table_info* pt)
+{
+    // Does not actually set the MMU pt used.
+    currentPageTable = pt;
+}
+
+void pa_alloc_pages(size_t count)
+{
+    // Currently allocating only one page, at the end of the range of pages
+    // currently allocated.
+    
+    struct page_table_info* pt = pa_get_current_pt();
+    
+    int p = 0;
+    BOOL seek = TRUE;
+    while(seek)
+    {
+        if(pt->page_tables[p++] & PG_PRESENT != PG_PRESENT)
+        {
+            // Flip the user/protect/present flags.
+            // TODO : Find Physical memory location to place the page in
+            uint32_t freeaddr = pa_find_free_physical_page();
+            pa_map_page(freeaddr, p * PAGE_SIZE);
+            
+            seek = FALSE;
+        }
+    }
+    
+    // for(int k = 0; k < 1024; k++)
+    // {
+    //     for(int i = 0; i < 1024; i++)
+    //     {
+    //         int p = i + (k * 1024);
+            
+    //         if(pt->page_tables[p] & PG_PRESENT != PG_PRESENT)
+    //         {
+    //             // Flip the user/protect/present flags. Keep the address bits
+    //             pt->page_tables[p] = pt->page_tables[p] | 3;
+                
+    //             return;
+    //         }
+    //     }
+    // }
+}
+
+struct page_table_info* pa_get_current_pt()
+{
+    return currentPageTable;
+}
+
+uint32_t pa_find_free_physical_page()
+{
+    int p = 0;
+    while(p < (1024*1024))
+    {
+        if(physicalPageMapping.page_tables[p] & PG_PRESENT != PG_PRESENT)
+        {
+            return p * PAGE_SIZE;
+        }
+        
+        p++;;
+    }
+    
+    // No free pages in memory.
+    return 0; // TODO : return error instead
+}
+
+void pa_map_page(uint32_t paddr, uint32_t vaddr)
+{
+    // Take top 10 bits to identify the page directory
+    uint32_t upper10 = vaddr & 0xFFC00000;
+    uint32_t pdeIndex = upper10 >> 22;
+    
+    // Take the middle 10 bits to identify the page table (of the directory above)
+    uint32_t lower10 = vaddr & 0x3FF000;
+    uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
+    
+    // Assign the 12 low bits from the target with the flags Present and R/W.
+    pa_get_current_pt()->page_tables[pte] = (paddr & 0xFFFFF000) | 3;
+    
+    // Mark the physical mapping as used
+    physicalPageMapping.page_tables[pte] = physicalPageMapping.page_tables[pte] | 3;
+    
+    // I'm invalidating both addresses just in case, will test for validity.
+    asm volatile("invlpg (%0)" ::"r" (vaddr) : "memory");
+    asm volatile("invlpg (%0)" ::"r" (paddr) : "memory");
+}
+
+
 void setup_paging()
 {
     int a = 0;
