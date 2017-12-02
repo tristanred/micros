@@ -1,0 +1,20 @@
+Steps to execute when creating a new pagetable (process address space).
+
+Allocate a new page A (4KB)
+Create an instance of page_table_info(4MB+4KB) into page A. This only covers the
+  first 4KB of the structure's data, the Page Directory.
+Allocate a second page B after A. This allows access to the first 1024 
+  page table entries, mapping 4MB of the process.
+Keep a link to the page table in the process structure.
+
+
+
+Steps when creating the initial kernel master pagetable.
+Create an instance of page_table_info at a known location.
+Identity-map all the PDE and PTE.
+Choose which PTE will be present
+  Mark first 1MB as present (first 256 pages)
+  Mark first X MB as present for the kernel structures.
+    Some of those pages are going to be lists of pagetables. A page can contain
+    1024 pointers to pagetables. That page cannot be paged out if we need any of
+    those page tables.

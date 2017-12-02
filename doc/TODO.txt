@@ -47,3 +47,6 @@ VIII. Processes & Threads
   2. Create syncronisation primitives.
   3. Create some methods where the current thread get preempted if others are 
      waiting.
+
+IX. Add a MODULE_PRELUDE macro to auto insert required properties in kernel
+    modules.
