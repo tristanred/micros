@@ -73,7 +73,7 @@ uint32_t pa_find_free_physical_page()
     int p = 0;
     while(p < (1024*1024))
     {
-        if(physicalPageMapping.page_tables[p] & PG_PRESENT != PG_PRESENT)
+        if(kernelPagetable.page_tables[p] & PG_PRESENT != PG_PRESENT)
         {
             return p * PAGE_SIZE;
         }
@@ -99,7 +99,7 @@ void pa_map_page(uint32_t paddr, uint32_t vaddr)
     pa_get_current_pt()->page_tables[pte] = (paddr & 0xFFFFF000) | 3;
     
     // Mark the physical mapping as used
-    physicalPageMapping.page_tables[pte] = physicalPageMapping.page_tables[pte] | 3;
+    kernelPagetable.page_tables[pte] = kernelPagetable.page_tables[pte] | 3;
     
     // I'm invalidating both addresses just in case, will test for validity.
     asm volatile("invlpg (%0)" ::"r" (vaddr) : "memory");
