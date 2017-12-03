@@ -13,8 +13,42 @@ Steps when creating the initial kernel master pagetable.
 Create an instance of page_table_info at a known location.
 Identity-map all the PDE and PTE.
 Choose which PTE will be present
-  Mark first 1MB as present (first 256 pages)
+  Mark first 1MB as present (first 256 pages) for BIOS stuff.
   Mark first X MB as present for the kernel structures.
     Some of those pages are going to be lists of pagetables. A page can contain
     1024 pointers to pagetables. That page cannot be paged out if we need any of
     those page tables.
+    
+? Problem : Each complete pagetable structure takes 4MB + 4k. This is a problem
+  because even if the whole 4MB is not mapped in memory, 4MB * max proc number 
+  must be reserved in the kernel address space. So a 4GB memory would only 
+  support 1024 proc. And that's with the whole 4GB used to map pages.
+  To get around this problem, we must use a dynamic pagetable allocation 
+  structure. Each pagetable start with X allocated pages and can grow to
+  allocate more data. When a pagetable grow too much and will collide with 
+  another data structure it must be copied elsewhere before it can grow.
+  References to the pagetable will only exist in the kernel so easy to adjust.
+  
+  To track the pagetables we use a vector of tracking structure pt_alloc_page.
+  Example implementation
+  struct pg_alloc_page {
+    struct pg_tracker pagetables[512];
+  } __attribute__((aligned(4096)));
+  
+  struct pg_tracker {
+    uint32_t ptPtr;
+    uint32 pcount;
+  }
+  
+  Each pg_alloc_page structure is contained in a full page and can track 512
+  pagetables for 512 processes. For additional processes if needed, we can 
+  allocate new tracker pages.
+  
+  
+So to initialize paging : 
+Create a page for the first pg_alloc_page.
+Create a pagetable (not set to CR3 yet)
+Link new pagetable in a tracker in pg_alloc_page
+Map first 1MB
+Map first kernel pages for the new structs.
+
