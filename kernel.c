@@ -76,6 +76,8 @@ void kernel_main(multiboot_info_t* arg1)
     
     setupGdt();
     setupIdt();
+    
+    init_page_allocator();
 
     setup_kernel_block();
 

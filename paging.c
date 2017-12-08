@@ -24,21 +24,33 @@ void pa_setup_kernel_pagetable()
             addr += 0x1000;
         }
         
-        kpt->page_directory[k] = ((uint32_t)&kpt->page_tables[k * 1024]) | 3;;
-        //kpt->page_directory[k] = 3; // super, rw, present, no address
+        // Map all PDE to a different PTE set (each PDE maps 4MB)
+        //kpt->page_directory[k] = ((uint32_t)&kpt->page_tables[k * 1024]) | 3;
+        
+        // Each PDE points to the first pagetable (first 4MB).
+        kpt->page_directory[k] = 3; // super, rw, present, no address
     }
     
     Debugger();
     
+    // Manually set the 2 first PDE to the first pagetable.
+    // So 0x400000 and 0x0 points to the first byte.
     kpt->page_directory[0] = (uint32_t)(&(kpt->page_tables[0])) | 3; // same as (uint32_t)(257*4096)
-    //kpt->page_directory[1] = 0xEDCBA000 | 3;
-    kpt->page_directory[2] = (uint32_t)(&(kpt->page_tables[50 * 1024])) | 3;
+    kpt->page_directory[1] = (uint32_t)(&(kpt->page_tables[0])) | 3; // same as (uint32_t)(257*4096)
+    //kpt->page_directory[2] = (uint32_t)(&(kpt->page_tables[50 * 1024])) | 3;
     
+    int* oneData = (int*)0xF00;
+    int* twoData = (int*)0x400F00;
     
-    set_paging(kpt->page_directory);
+    *oneData = 0xFEFE;
+    *twoData = 0xBABA;
+    
+    set_paging(kpt);
     enablePaging();
     
+    ASSERT(*oneData == *twoData, "Paging does not work.");
     
+    kernelPagetable = kpt;
     
     int i = 0;
 }
