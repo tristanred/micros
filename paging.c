@@ -6,7 +6,41 @@ extern void enablePaging();
 
 void init_page_allocator()
 {
+    pa_setup_kernel_pagetable();
+}
+
+void pa_setup_kernel_pagetable()
+{
+    struct page_table_info* kpt = (struct page_table_info*)(512*4096);
     
+    int a = 0;
+    int addr = 0;
+    for(int k = 0; k < 1024; k++)
+    {
+        for(int i = 0; i < 1024; i++)
+        {
+            kpt->page_tables[a++] = addr | 3;
+            
+            addr += 0x1000;
+        }
+        
+        kpt->page_directory[k] = ((uint32_t)&kpt->page_tables[k * 1024]) | 3;;
+        //kpt->page_directory[k] = 3; // super, rw, present, no address
+    }
+    
+    Debugger();
+    
+    kpt->page_directory[0] = (uint32_t)(&(kpt->page_tables[0])) | 3; // same as (uint32_t)(257*4096)
+    //kpt->page_directory[1] = 0xEDCBA000 | 3;
+    kpt->page_directory[2] = (uint32_t)(&(kpt->page_tables[50 * 1024])) | 3;
+    
+    
+    set_paging(kpt->page_directory);
+    enablePaging();
+    
+    
+    
+    int i = 0;
 }
 
 struct page_table_info* pa_create_pagetable()
@@ -17,12 +51,35 @@ struct page_table_info* pa_create_pagetable()
     return NULL;
 }
 
-
 void pa_set_current_pagetable(struct page_table_info* pt)
 {
     // Does not actually set the MMU pt used.
     currentPageTable = pt;
 }
+
+void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
+{
+    // uint32_t upper10 = addressFrom & 0xFFC00000;
+    // uint32_t pdeIndex = upper10 >> 22;
+    
+    // // Take the middle 10 bits to identify the page table (of the directory above)
+    // uint32_t lower10 = addressFrom & 0x3FF000;
+    // uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
+    
+    // // Assign the 12 low bits from the target with the flags Present and R/W.
+    // defaultPageTable.page_tables[pte] = (addressTo & 0xFFFFF000) | 3;
+
+    uint32_t p = (addr & 0xFFFFF000) / 4096;
+    pt->page_tables[p] = (addr & 0xFFFFF000) | (PG_PRESENT | PG_WRITABLE);
+
+}
+
+// Allocate a range of pages in the target pagetable. Range is [start, end)
+void pa_pt_alloc_pagerange(struct page_table_info* pt, uint32_t startAddress, uint32_t endAddress)
+{
+    
+}
+
 
 void pa_alloc_pages(size_t count)
 {
