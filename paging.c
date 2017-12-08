@@ -45,6 +45,8 @@ void pa_setup_kernel_pagetable()
     *oneData = 0xFEFE;
     *twoData = 0xBABA;
     
+    ASSERT(*oneData != *twoData, "Paging does not work.");
+    
     set_paging(kpt);
     enablePaging();
     
