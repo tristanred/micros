@@ -26,12 +26,14 @@ enum page_frame_flags
 
 
 // Storing a default page table before I start getting multiple address mappings
-struct page_table_info defaultPageTable;
+// TODO : Changed to pointer, todo allocate somewhere
+struct page_table_info* defaultPageTable;
 
 // Physical memory pages, this PT is not supposed to be loaded.
 // Each entry is not a PTE but some bits to mark each physical page
 // as occupied or other info.
-struct page_table_info kernelPagetable;
+// TODO : Changed to pointer, todo allocate somewhere
+struct page_table_info* kernelPagetable;
 
 // Point to the page table currently loaded
 struct page_table_info* currentPageTable;
