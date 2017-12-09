@@ -99,6 +99,38 @@ void pa_map_page(struct page_table_info* pt, uint32_t paddr, uint32_t vaddr);
 
 void pa_handle_pagefault();
 
+// # Page Frame Functions #
+#define PAGE_ALIGN(x) (x & 0xFFFFF000)
+#define FRAME_INDX(x) (PAGE_ALIGN(x) / 4096)
+
+struct page_frame_map
+{
+    uint8_t frames[1024*1024];
+    
+} __attribute__((aligned(4096)));
+
+enum physical_frame_flags
+{
+    PFM_ALLOCATED = 1,
+    PFM_WRITABLE = 2
+};
+
+struct page_frame_map* pfm_frame_map;
+
+int pfm_alloc_frame(uint32_t addr);
+
+int pfm_free_frame(uint32_t addr);
+
+int pfm_copy_frame(uint32_t fromAddr, uint32_t toAddr);
+
+int pfm_find_free();
+
+int pfm_find_list(uint32_t amount, uint32_t** list);
+
+// # Private Page Frame functions #
+
+int pfm_setup_map(uint32_t addr);
+
 // OLD PAGING API
 void setup_paging();
 void test_paging();

@@ -152,6 +152,91 @@ void pa_map_page(struct page_table_info* pt, uint32_t paddr, uint32_t vaddr)
     asm volatile("invlpg (%0)" ::"r" (paddr) : "memory");
 }
 
+void pa_handle_pagefault()
+{
+    
+}
+
+int pfm_alloc_frame(uint32_t addr)
+{
+    uint32_t a = PAGE_ALIGN(addr);
+    uint32_t pfmindex = a / 4096;
+    
+    pfm_frame_map->frames[pfmindex] |= (PFM_ALLOCATED | PFM_WRITABLE);
+    
+    return 0;
+}
+
+int pfm_free_frame(uint32_t addr)
+{
+    uint32_t a = PAGE_ALIGN(addr);
+    uint32_t pfmindex = a / 4096;
+    
+    pfm_frame_map->frames[pfmindex] = 0;
+    
+    return 0;
+}
+
+int pfm_copy_frame(uint32_t fromAddr, uint32_t toAddr)
+{
+    uint32_t alignedFrom = PAGE_ALIGN(fromAddr);
+    uint32_t alignedTo = PAGE_ALIGN(toAddr);
+    
+    for(size_t i = 0; i < PAGE_SIZE; i++)
+    {
+        uint8_t* byteFrom = (uint8_t*)alignedFrom + i;
+        uint8_t* byteTo = (uint8_t*)alignedTo + i;
+        
+        *byteTo = *byteFrom;
+    }
+    
+    return 0;
+}
+
+int pfm_find_free()
+{
+    for(size_t i = 0; i < 1024*1024; i++)
+    {
+        if((pfm_frame_map->frames[i] & PFM_ALLOCATED) == pfm_frame_map->frames[i])
+        {
+            return i * 4096;
+        }
+    }
+
+    return -1;
+}
+
+int pfm_find_list(uint32_t amount, uint32_t** list)
+{
+    for(size_t i = 0; i < amount; i++)
+    {
+        uint32_t res = pfm_find_free();
+        
+        if(res == 0)
+        {
+            // If we can't get all the required pages, return failure.
+            return -1;
+        }
+        else
+        {
+            *list[i] = res;
+        }
+    }
+
+    return 0;
+}
+
+int pfm_setup_map(uint32_t addr)
+{
+    pfm_frame_map = (struct page_frame_map*)addr;
+    
+    for(size_t i = 0; i < 1024*1024; i++)
+    {
+        pfm_frame_map->frames[i] = 0;
+    }
+    
+    return 0;
+}
 
 void setup_paging()
 {
