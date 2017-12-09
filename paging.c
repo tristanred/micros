@@ -6,10 +6,12 @@ extern void enablePaging();
 
 void init_page_allocator()
 {
-    pa_setup_kernel_pagetable();
+    struct page_table_info* kpt = pa_build_kernel_pagetable();
+    
+    pa_set_current_pagetable(kpt);
 }
 
-void pa_setup_kernel_pagetable()
+struct page_table_info* pa_build_kernel_pagetable()
 {
     struct page_table_info* kpt = (struct page_table_info*)(512*4096);
     
@@ -37,7 +39,6 @@ void pa_setup_kernel_pagetable()
     // So 0x400000 and 0x0 points to the first byte.
     kpt->page_directory[0] = (uint32_t)(&(kpt->page_tables[0])) | 3; // same as (uint32_t)(257*4096)
     kpt->page_directory[1] = (uint32_t)(&(kpt->page_tables[0])) | 3; // same as (uint32_t)(257*4096)
-    //kpt->page_directory[2] = (uint32_t)(&(kpt->page_tables[50 * 1024])) | 3;
     
     int* oneData = (int*)0xF00;
     int* twoData = (int*)0x400F00;
@@ -47,14 +48,13 @@ void pa_setup_kernel_pagetable()
     
     ASSERT(*oneData != *twoData, "Paging does not work.");
     
-    set_paging(kpt);
-    enablePaging();
+    // set_paging(kpt); // Un comment to test paging immediately
+    // enablePaging();
     
     ASSERT(*oneData == *twoData, "Paging does not work.");
     
-    kernelPagetable = kpt;
-    
-    int i = 0;
+    return kpt;
+    //kernelPagetable = kpt;
 }
 
 struct page_table_info* pa_create_pagetable()
@@ -65,73 +65,48 @@ struct page_table_info* pa_create_pagetable()
     return NULL;
 }
 
-void pa_set_current_pagetable(struct page_table_info* pt)
-{
-    // Does not actually set the MMU pt used.
-    currentPageTable = pt;
-}
-
 void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
 {
-    // uint32_t upper10 = addressFrom & 0xFFC00000;
-    // uint32_t pdeIndex = upper10 >> 22;
+    /* To allocate the page containing addr, we must first find a free page 
+     * frame in physical memory. Also must check if the page is not already
+     * mapped.
+     */
+    
+    uint32_t upper10 = addr & 0xFFC00000;
+    uint32_t pdeIndex = upper10 >> 22;
     
     // // Take the middle 10 bits to identify the page table (of the directory above)
-    // uint32_t lower10 = addressFrom & 0x3FF000;
-    // uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
+    uint32_t lower10 = addr & 0x3FF000;
+    uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
+    
+    pt->page_tables[pte] = (addr & 0xFFFFF000) | 3;
+    
+    // Checking if the pagetable is unmapped and not present.
+    if((pt->page_tables[pte] & 0xFFFFF000) == 0 && 
+       (pt->page_tables[pte] & PG_PRESENT) == 0)
+    {
+        pt->page_tables[pte] = (addr & 0xFFFFF000) | (PG_PRESENT | PG_WRITABLE);
+    }
+    else
+    {
+        // Cannot allocate, already allocated. 
+        // TODO : Inform.
+        // TODO : What if current address is different from new address.
+    }
     
     // // Assign the 12 low bits from the target with the flags Present and R/W.
     // defaultPageTable.page_tables[pte] = (addressTo & 0xFFFFF000) | 3;
 
-    uint32_t p = (addr & 0xFFFFF000) / 4096;
-    pt->page_tables[p] = (addr & 0xFFFFF000) | (PG_PRESENT | PG_WRITABLE);
 
 }
 
-// Allocate a range of pages in the target pagetable. Range is [start, end)
-void pa_pt_alloc_pagerange(struct page_table_info* pt, uint32_t startAddress, uint32_t endAddress)
+void pa_set_current_pagetable(struct page_table_info* pt)
 {
+    // Does not actually set the MMU pt used.
+    currentPageTable = pt;
     
-}
-
-
-void pa_alloc_pages(size_t count)
-{
-    // Currently allocating only one page, at the end of the range of pages
-    // currently allocated.
-    
-    struct page_table_info* pt = pa_get_current_pt();
-    
-    int p = 0;
-    BOOL seek = TRUE;
-    while(seek)
-    {
-        if(pt->page_tables[p++] & PG_PRESENT != PG_PRESENT)
-        {
-            // Flip the user/protect/present flags.
-            // TODO : Find Physical memory location to place the page in
-            uint32_t freeaddr = pa_find_free_physical_page();
-            pa_map_page(freeaddr, p * PAGE_SIZE);
-            
-            seek = FALSE;
-        }
-    }
-    
-    // for(int k = 0; k < 1024; k++)
-    // {
-    //     for(int i = 0; i < 1024; i++)
-    //     {
-    //         int p = i + (k * 1024);
-            
-    //         if(pt->page_tables[p] & PG_PRESENT != PG_PRESENT)
-    //         {
-    //             // Flip the user/protect/present flags. Keep the address bits
-    //             pt->page_tables[p] = pt->page_tables[p] | 3;
-                
-    //             return;
-    //         }
-    //     }
-    // }
+    set_paging(pt->page_directory);
+    enablePaging();
 }
 
 struct page_table_info* pa_get_current_pt()
@@ -139,24 +114,24 @@ struct page_table_info* pa_get_current_pt()
     return currentPageTable;
 }
 
-uint32_t pa_find_free_physical_page()
+uint32_t pa_find_free_physical_page(struct page_table_info* pt)
 {
-    int p = 0;
-    while(p < (1024*1024))
+    (void)pt;
+    
+    for(int k = 0; k < 1024; k++) // PDE
     {
-        if(kernelPagetable->page_tables[p] & PG_PRESENT != PG_PRESENT)
+        for(int i = 0; i < 1024; i++)
         {
-            return p * PAGE_SIZE;
+            
         }
-        
-        p++;;
     }
+    
     
     // No free pages in memory.
     return 0; // TODO : return error instead
 }
 
-void pa_map_page(uint32_t paddr, uint32_t vaddr)
+void pa_map_page(struct page_table_info* pt, uint32_t paddr, uint32_t vaddr)
 {
     // Take top 10 bits to identify the page directory
     uint32_t upper10 = vaddr & 0xFFC00000;
@@ -167,10 +142,10 @@ void pa_map_page(uint32_t paddr, uint32_t vaddr)
     uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
     
     // Assign the 12 low bits from the target with the flags Present and R/W.
-    pa_get_current_pt()->page_tables[pte] = (paddr & 0xFFFFF000) | 3;
+    pt->page_tables[pte] = (paddr & 0xFFFFF000) | 3;
     
     // Mark the physical mapping as used
-    kernelPagetable->page_tables[pte] = kernelPagetable->page_tables[pte] | 3;
+    pt->page_tables[pte] = pt->page_tables[pte] | 3;
     
     // I'm invalidating both addresses just in case, will test for validity.
     asm volatile("invlpg (%0)" ::"r" (vaddr) : "memory");

@@ -1,3 +1,21 @@
+Paging functions
+
+# Public interface #
+-Create pagetable-
+Allocate page
+Allocate range
+Free page
+Count allocated pages
+
+TranslateVirtualAddress // VM to physical address
+
+EnablePaging
+DisablePaging
+
+FindFreePhysicalPageFrame
+
+
+
 Steps to execute when creating a new pagetable (process address space).
 
 Allocate a new page A (4KB)
