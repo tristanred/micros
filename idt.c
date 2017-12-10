@@ -5,6 +5,8 @@
 
 #include "kernel_log.h"
 
+#include "paging.h"
+
 idtEntry idtEntries[256];
 isr_t interrupt_handlers[256];
 
@@ -128,6 +130,9 @@ void isr_handler(registers_t regs)
     {
         // TODO : HANDLE PAGE FAULT
         Debugger();
+        
+        pa_handle_pagefault();
+        
         // If page fault was handled. The faulting instruction will be replayed.
         // Right now, we'll just skip the instruction.
         regs.eip++;
