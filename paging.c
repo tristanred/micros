@@ -65,13 +65,38 @@ struct page_table_info* pa_create_pagetable()
     return NULL;
 }
 
+void pa_pt_alloc_page(struct page_table_info* pt, uint32_t* addr)
+{
+    uint32_t allocAddress = pa_pt_find_free_page(pt);
+    
+    pa_pt_alloc_pageaddr(pt, allocAddress);
+    
+    *addr = allocAddress;
+}
+
 void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
+{
+    
+    uint32_t frameAddress = 0;
+    int res = pfm_find_free(&frameAddress);
+    
+    if(res < 0)
+    {
+        // No free memory in RAM.
+        // TODO
+        return;
+    }
+    
+    pa_pt_alloc_pageaddr_at(pt, addr, frameAddress);
+}
+
+void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t physaddr)
 {
     /* To allocate the page containing addr, we must first find a free page 
      * frame in physical memory. Also must check if the page is not already
      * mapped.
      */
-    
+
     uint32_t upper10 = addr & 0xFFC00000;
     uint32_t pdeIndex = upper10 >> 22;
     
@@ -79,13 +104,19 @@ void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
     uint32_t lower10 = addr & 0x3FF000;
     uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
     
-    pt->page_tables[pte] = (addr & 0xFFFFF000) | 3;
-    
     // Checking if the pagetable is unmapped and not present.
-    if((pt->page_tables[pte] & 0xFFFFF000) == 0 && 
-       (pt->page_tables[pte] & PG_PRESENT) == 0)
+    if((pt->page_tables[pte] & 0xFFFFF000) == 0)
     {
-        pt->page_tables[pte] = (addr & 0xFFFFF000) | (PG_PRESENT | PG_WRITABLE);
+        int res = pfm_alloc_frame(physaddr);
+        
+        if(res < 0)
+        {
+            // Unable to reserve the frame.
+            // TODO
+            return;
+        }
+        
+        pt->page_tables[pte] = (physaddr & 0xFFFFF000) | (PG_PRESENT | PG_WRITABLE);
     }
     else
     {
@@ -93,11 +124,95 @@ void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
         // TODO : Inform.
         // TODO : What if current address is different from new address.
     }
+}
+
+void pa_pt_alloc_pagerange(struct page_table_info* pt, uint32_t startAddress, uint32_t endAddress)
+{
+    (void)pt;
+    (void)startAddress;
+    (void)endAddress;
+}
+
+uint32_t pa_pt_find_free_page(struct page_table_info* pt)
+{
+    /*
+        Finding a free page : 
+        Iterate through the page directory entries
+        If a directory is present, check all pagetables entries for one that is
+        not 'present', if theres one we can allocate there.
+        If we get to the end of the directory, check the next directory.
+        If we get to the end of the pagetables, we need to open up a new 
+        directory.
+        
+        
+        
+    */
     
-    // // Assign the 12 low bits from the target with the flags Present and R/W.
-    // defaultPageTable.page_tables[pte] = (addressTo & 0xFFFFF000) | 3;
-
-
+    for(int i = 0; i < 1024; i++)
+    {
+        int pde = pt->page_directory[i];
+        
+        if((pde & 0x1) == 0) // If not present
+        {
+            continue;
+        }
+        
+        for(int k = 0; k < 1024; k++)
+        {
+            int pte = (i * 1024) + k;
+            
+            if((pt->page_tables[pte] & 0xFFFFF000) == 0)
+            {
+                // Found a free page ! Woohoo
+                return pte * PAGE_SIZE;
+            }
+        }
+    }
+    
+    // Need to allocate a new PDE to point to a new page of entries
+    // Means we need to allocate a new page and have our new PDE point to it
+    
+    // Find a free page frame
+    uint32_t freeFrame = 0;
+    int res = pfm_find_free(&freeFrame);
+    
+    if(res < 0)
+    {
+        // TODO : Out of memory
+        return 0;
+    }
+    
+    // Find a free PDE 
+    
+    BOOL found = FALSE;
+    uint32_t index = 0;
+    for(int i = 0; i < 1024; i++)
+    {
+        uint32_t pde = pt->page_directory[i];
+        
+        if(pde == 0)
+        {
+            found = TRUE;
+            index = i;
+            break;
+        }
+    }
+    
+    if(found == FALSE)
+    {
+        // No free PDE, wow, quite unlucky !
+    }
+    
+    // Need to find a space in the virtual address space
+    uint32_t pdeFirstPageAddr = 1024 * PAGE_SIZE * index;
+    
+    pt->page_directory[index] = pdeFirstPageAddr | 3;
+    
+    // Now the page directory entry is loaded and points to a page that will
+    // contain all the page table entries. The first of which is free and can be
+    // returned from this function.
+    
+    return pdeFirstPageAddr;
 }
 
 void pa_set_current_pagetable(struct page_table_info* pt)
@@ -193,13 +308,15 @@ int pfm_copy_frame(uint32_t fromAddr, uint32_t toAddr)
     return 0;
 }
 
-int pfm_find_free()
+int pfm_find_free(uint32_t* frame)
 {
     for(size_t i = 0; i < 1024*1024; i++)
     {
         if((pfm_frame_map->frames[i] & PFM_ALLOCATED) == pfm_frame_map->frames[i])
         {
-            return i * 4096;
+            *frame = i * PAGE_SIZE;
+            
+            return 0;
         }
     }
 
@@ -210,16 +327,17 @@ int pfm_find_list(uint32_t amount, uint32_t** list)
 {
     for(size_t i = 0; i < amount; i++)
     {
-        uint32_t res = pfm_find_free();
+        uint32_t addr = 0;
+        int res = pfm_find_free(&addr);
         
-        if(res == 0)
+        if(res < 0)
         {
             // If we can't get all the required pages, return failure.
             return -1;
         }
         else
         {
-            *list[i] = res;
+            *list[i] = addr;
         }
     }
 

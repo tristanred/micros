@@ -59,15 +59,33 @@ struct page_table_info* pa_build_kernel_pagetable();
  */
 struct page_table_info* pa_create_pagetable();
 
+
+/**
+ * Allocate a page from anywhere in virtual memory. Returns the address of the 
+ * page in the 'addr' parameter.
+ */
+void pa_pt_alloc_page(struct page_table_info* pt, uint32_t* addr);
+
 /**
  * Allocate a page at the 4kb aligned address 'addr'.
  */
 void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr);
 
 /**
+ * Allocate a page at the specified virtual address backed in RAM by a pageframe
+ * at the specified physical address.
+ */
+void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t physaddr);
+
+/**
  * Allocate a range of pages. Range is [start, end)
  */
 void pa_pt_alloc_pagerange(struct page_table_info* pt, uint32_t startAddress, uint32_t endAddress);
+
+/**
+ * Find an unallocated page in the pagetable.
+ */
+uint32_t pa_pt_find_free_page(struct page_table_info* pt);
 
 /**
  * Set the current pagetable as active on the processor.
@@ -123,12 +141,11 @@ int pfm_free_frame(uint32_t addr);
 
 int pfm_copy_frame(uint32_t fromAddr, uint32_t toAddr);
 
-int pfm_find_free();
+int pfm_find_free(uint32_t* frame);
 
 int pfm_find_list(uint32_t amount, uint32_t** list);
 
 // # Private Page Frame functions #
-
 int pfm_setup_map(uint32_t addr);
 
 // OLD PAGING API
