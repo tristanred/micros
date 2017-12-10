@@ -217,7 +217,6 @@ uint32_t pa_pt_find_free_page(struct page_table_info* pt)
 
 void pa_set_current_pagetable(struct page_table_info* pt)
 {
-    // Does not actually set the MMU pt used.
     currentPageTable = pt;
     
     set_paging(pt->page_directory);
@@ -226,24 +225,8 @@ void pa_set_current_pagetable(struct page_table_info* pt)
 
 struct page_table_info* pa_get_current_pt()
 {
+    // Can also read CR3 register
     return currentPageTable;
-}
-
-uint32_t pa_find_free_physical_page(struct page_table_info* pt)
-{
-    (void)pt;
-    
-    for(int k = 0; k < 1024; k++) // PDE
-    {
-        for(int i = 0; i < 1024; i++)
-        {
-            
-        }
-    }
-    
-    
-    // No free pages in memory.
-    return 0; // TODO : return error instead
 }
 
 void pa_map_page(struct page_table_info* pt, uint32_t paddr, uint32_t vaddr)

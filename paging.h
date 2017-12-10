@@ -59,7 +59,6 @@ struct page_table_info* pa_build_kernel_pagetable();
  */
 struct page_table_info* pa_create_pagetable();
 
-
 /**
  * Allocate a page from anywhere in virtual memory. Returns the address of the 
  * page in the 'addr' parameter.
@@ -100,11 +99,6 @@ void pa_set_current_pagetable(struct page_table_info* pt);
 struct page_table_info* pa_get_current_pt();
 
 /**
- * Find a free page in the pagetable. Does not modify the page.
- */
-uint32_t pa_find_free_physical_page(struct page_table_info* pt);
-
-/**
  * Using the specified pagetable, map the given page in physical ram at a free
  * page frame. The physical page frame is found by scanning a free frame in RAM.
  */
@@ -135,18 +129,42 @@ enum physical_frame_flags
 
 struct page_frame_map* pfm_frame_map;
 
+/**
+ * Mark the page frame at 'addr' as allocated.
+ */
 int pfm_alloc_frame(uint32_t addr);
 
+/**
+ * Mark the page frame at 'addr' as free.
+ */
 int pfm_free_frame(uint32_t addr);
 
+/**
+ * Copy the data from one frame to the other.
+ */
 int pfm_copy_frame(uint32_t fromAddr, uint32_t toAddr);
 
+/**
+ * Find a free page frame in physical memory.
+ */
 int pfm_find_free(uint32_t* frame);
 
+/**
+ * Find a list of free page frames.
+ */
 int pfm_find_list(uint32_t amount, uint32_t** list);
 
 // # Private Page Frame functions #
+/**
+ * Setup the page frame bitmap.
+ */
 int pfm_setup_map(uint32_t addr);
+
+/**
+ * Mark the frames of physical memory that we have on the system.
+ * This is the amount of available RAM.
+ */
+int pfm_set_avail_frames();
 
 // OLD PAGING API
 void setup_paging();
