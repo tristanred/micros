@@ -131,7 +131,7 @@ void isr_handler(registers_t regs)
         // TODO : HANDLE PAGE FAULT
         Debugger();
         
-        pa_handle_pagefault();
+        pa_handle_pagefault(get_pagefault_addr(), regs.err_code);
         
         // If page fault was handled. The faulting instruction will be replayed.
         // Right now, we'll just skip the instruction.

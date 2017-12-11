@@ -109,7 +109,7 @@ void pa_alloc_map_page(struct page_table_info* pt, uint32_t page);
  */
 void pa_map_page(struct page_table_info* pt, uint32_t paddr, uint32_t vaddr);
 
-void pa_handle_pagefault();
+void pa_handle_pagefault(uint32_t addr, uint32_t code);
 
 // # Page Frame Functions #
 #define PAGE_ALIGN(x) (x & 0xFFFFF000)

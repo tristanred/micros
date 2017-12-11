@@ -25,6 +25,7 @@ typedef struct registers
 } registers_t;
 
 extern void loadIdt();
+extern uint32_t get_pagefault_addr();
 
 void setupIdt();
 

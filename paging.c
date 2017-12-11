@@ -250,7 +250,7 @@ void pa_map_page(struct page_table_info* pt, uint32_t paddr, uint32_t vaddr)
     asm volatile("invlpg (%0)" ::"r" (paddr) : "memory");
 }
 
-void pa_handle_pagefault()
+void pa_handle_pagefault(uint32_t addr, uint32_t code)
 {
     
 }
