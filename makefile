@@ -18,6 +18,7 @@ prepare:
 	mkdir -p $(BUILDDIR)
 
 build: prepare bootloader kernel linker verify
+	objdump -x out/myos.bin > out/micros.map
 
 bootloader: prepare boot.asm
 	$(AS) boot.asm -o $(BUILDDIR)boot.o $(ASFLAGS)
