@@ -6,14 +6,39 @@ extern void enablePaging();
 
 void init_page_allocator()
 {
-    struct page_table_info* kpt = pa_build_kernel_pagetable();
+    uint32_t res = pfm_setup_map(PFM_LOCATION);
+    
+    if(res != 0)
+    {
+        // Can't setup PFM, we're fucked.
+    }
+    
+    struct page_table_info* kpt = pa_build_kernel_pagetable(KPT_LOCATION);
+    
+    if(kpt == NULL)
+    {
+        
+    }
     
     pa_set_current_pagetable(kpt);
+    
+    enablePaging();
 }
 
-struct page_table_info* pa_build_kernel_pagetable()
+void pa_test_paging()
 {
-    struct page_table_info* kpt = (struct page_table_info*)(512*4096);
+    Debugger();
+    
+    uint8_t* mybyte = (uint8_t*)0xA00000; // 10MB
+    
+    *mybyte = 0xFF;
+    
+    int i = 0;
+}
+
+struct page_table_info* pa_build_kernel_pagetable(uint32_t address)
+{
+    struct page_table_info* kpt = (struct page_table_info*)(address);
     
     int a = 0;
     int addr = 0;
@@ -33,8 +58,6 @@ struct page_table_info* pa_build_kernel_pagetable()
         kpt->page_directory[k] = 3; // super, rw, present, no address
     }
     
-    Debugger();
-    
     // Manually set the 2 first PDE to the first pagetable.
     // So 0x400000 and 0x0 points to the first byte.
     kpt->page_directory[0] = (uint32_t)(&(kpt->page_tables[0])) | 3; // same as (uint32_t)(257*4096)
@@ -48,8 +71,8 @@ struct page_table_info* pa_build_kernel_pagetable()
     
     ASSERT(*oneData != *twoData, "Paging does not work.");
     
-    // set_paging(kpt); // Un comment to test paging immediately
-    // enablePaging();
+    set_paging(kpt); // Un comment to test paging immediately
+    enablePaging();
     
     ASSERT(*oneData == *twoData, "Paging does not work.");
     
@@ -76,7 +99,6 @@ void pa_pt_alloc_page(struct page_table_info* pt, uint32_t* addr)
 
 void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
 {
-    
     uint32_t frameAddress = 0;
     int res = pfm_find_free(&frameAddress);
     
@@ -97,15 +119,15 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
      * mapped.
      */
 
-    uint32_t upper10 = addr & 0xFFC00000;
+    uint32_t upper10 = addr & PAGEDIR_MASK;
     uint32_t pdeIndex = upper10 >> 22;
     
     // // Take the middle 10 bits to identify the page table (of the directory above)
-    uint32_t lower10 = addr & 0x3FF000;
+    uint32_t lower10 = addr & PAGETAB_MASK;
     uint32_t pte = (lower10 >> 12) + (pdeIndex * 1024);
     
     // Checking if the pagetable is unmapped and not present.
-    if((pt->page_tables[pte] & 0xFFFFF000) == 0)
+    if((pt->page_tables[pte] & PAGEBITS) == 0)
     {
         int res = pfm_alloc_frame(physaddr);
         
@@ -116,7 +138,7 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
             return;
         }
         
-        pt->page_tables[pte] = (physaddr & 0xFFFFF000) | (PG_PRESENT | PG_WRITABLE);
+        pt->page_tables[pte] = (physaddr & PAGEBITS) | (PG_PRESENT | PG_WRITABLE);
     }
     else
     {
@@ -220,7 +242,6 @@ void pa_set_current_pagetable(struct page_table_info* pt)
     currentPageTable = pt;
     
     set_paging(pt->page_directory);
-    enablePaging();
 }
 
 struct page_table_info* pa_get_current_pt()

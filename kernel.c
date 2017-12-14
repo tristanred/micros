@@ -78,6 +78,8 @@ void kernel_main(multiboot_info_t* arg1)
     setupIdt();
     
     init_page_allocator();
+    
+    pa_test_paging();
 
     setup_kernel_block();
 
@@ -108,7 +110,7 @@ void kernel_main(multiboot_info_t* arg1)
         kWriteLog_format1d("Device #%d", i);
         print_pci_device_info(set->deviceList[i]);
     }
-        
+    
     setup_filesystem(); 
     ezfs_prepare_disk();
     

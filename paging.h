@@ -8,6 +8,11 @@
 
 #define PAGE_SIZE 4096
 
+#define PAGEDIR_MASK 0xFFC00000
+#define PAGETAB_MASK 0x3FF000
+#define PAGEBITS (PAGEDIR_MASK | PAGETAB_MASK)
+#define PAGEOFF_MASK 0xFFF
+
 #define PAGE_ALL_PRESENT
 
 struct page_table_info
@@ -35,6 +40,8 @@ struct page_table_info* defaultPageTable;
 // TODO : Changed to pointer, todo allocate somewhere
 struct page_table_info* kernelPagetable;
 
+#define KPT_LOCATION (512 * PAGE_SIZE)
+
 // Point to the page table currently loaded
 struct page_table_info* currentPageTable;
 
@@ -48,10 +55,15 @@ struct page_table_info* currentPageTable;
 void init_page_allocator();
 
 /**
+ * Just a test function to allow debugging.
+ */
+void pa_test_paging();
+
+/**
  * Create a pagetable and set the pages for supervisor access.
  * All pages are identity mapped and the Page Directories are unmapped.
  */
-struct page_table_info* pa_build_kernel_pagetable();
+struct page_table_info* pa_build_kernel_pagetable(uint32_t address);
 
 /**
  * Create a blank pagetable with user access and all pages and directories are
@@ -120,6 +132,8 @@ struct page_frame_map
     uint8_t frames[1024*1024];
     
 } __attribute__((aligned(4096)));
+
+#define PFM_LOCATION (256 * PAGE_SIZE)
 
 enum physical_frame_flags
 {
