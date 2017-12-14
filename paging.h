@@ -14,6 +14,7 @@
 #define PAGEOFF_MASK 0xFFF
 
 #define PAGE_ALL_PRESENT
+#define PA_LOAD_ON_DEMAND 1
 
 struct page_table_info
 {
@@ -120,6 +121,8 @@ void pa_alloc_map_page(struct page_table_info* pt, uint32_t page);
  * In the pagetable, map a virtual page to a physical page frame.
  */
 void pa_map_page(struct page_table_info* pt, uint32_t paddr, uint32_t vaddr);
+
+void pa_decompose_vaddress(uint32_t vaddr, uint32_t* pde, uint32_t* pte, uint32_t* off);
 
 void pa_handle_pagefault(uint32_t addr, uint32_t code);
 

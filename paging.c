@@ -271,9 +271,39 @@ void pa_map_page(struct page_table_info* pt, uint32_t paddr, uint32_t vaddr)
     asm volatile("invlpg (%0)" ::"r" (paddr) : "memory");
 }
 
+void pa_decompose_vaddress(uint32_t vaddr, uint32_t* pde, uint32_t* pte, uint32_t* off)
+{    
+    uint32_t upper10 = vaddr & PAGEDIR_MASK;
+    uint32_t pdeIndex = upper10 >> 22;
+    
+    // Take the middle 10 bits to identify the page table (of the directory above)
+    uint32_t lower10 = vaddr & PAGETAB_MASK;
+    uint32_t pteIndex = (lower10 >> 12) + (pdeIndex * 1024);
+
+    *pde = pdeIndex;
+    *pte = pteIndex;
+    *off = vaddr & PAGEOFF_MASK;
+}
+
 void pa_handle_pagefault(uint32_t addr, uint32_t code)
 {
+    // Addr is the v address
+    // Need to decompose into PDE and PTE to get correct entry
+    uint32_t pde = 0;
+    uint32_t pte = 0;
+    uint32_t off = 0;
+    pa_decompose_vaddress(addr, &pde, &pte, &off);
     
+    uint32_t entry = pa_get_current_pt()->page_tables[pte];
+    
+    if(PA_LOAD_ON_DEMAND == TRUE)
+    {
+        pa_pt_alloc_pageaddr(pa_get_current_pt(), PAGE_ALIGN(addr));
+    }
+    else
+    {
+        // Crash the system, reference to unallocated page.
+    }
 }
 
 int pfm_alloc_frame(uint32_t addr)
