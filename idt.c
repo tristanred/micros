@@ -106,9 +106,8 @@ void setupIdt()
 // This gets called from our ASM interrupt handler stub.
 void isr_handler(registers_t regs)
 {
-
     kWriteLog("recieved interrupt: ");
-    kWriteLog_format1d("%d", (uint32_t)regs.int_no);
+    //kWriteLog_format1d("%d", (uint32_t)regs.int_no);
     kWriteLog("\n");
 
     if(regs.int_no == 0) // DIV 0 ERROR
