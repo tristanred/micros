@@ -22,7 +22,17 @@ struct page_table_info
     uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
 } __attribute__((aligned(4096)));
 
-enum page_frame_flags 
+struct _page_directory
+{
+    uint32_t page_directory[1024] __attribute__((aligned(4096)));
+} __attribute__((aligned(4096)));
+
+struct _page_table
+{
+    uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
+} __attribute__((aligned(4096)));
+
+enum page_frame_flags
 {
     PG_PRESENT = 1,
     PG_WRITABLE = 2,
@@ -41,7 +51,7 @@ struct page_table_info* defaultPageTable;
 // TODO : Changed to pointer, todo allocate somewhere
 struct page_table_info* kernelPagetable;
 
-#define KPT_LOCATION (512 * PAGE_SIZE)
+#define KPT_LOCATION (768 * PAGE_SIZE)
 
 // Point to the page table currently loaded
 struct page_table_info* currentPageTable;
@@ -73,7 +83,7 @@ struct page_table_info* pa_build_kernel_pagetable(uint32_t address);
 struct page_table_info* pa_create_pagetable();
 
 /**
- * Allocate a page from anywhere in virtual memory. Returns the address of the 
+ * Allocate a page from anywhere in virtual memory. Returns the address of the
  * page in the 'addr' parameter.
  */
 void pa_pt_alloc_page(struct page_table_info* pt, uint32_t* addr);
@@ -95,13 +105,22 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
 void pa_pt_alloc_pagerange(struct page_table_info* pt, uint32_t startAddress, uint32_t endAddress);
 
 /**
+ * Load a page directory on the current pagetable. This will allocate a new page
+ * and point the directory to it, that page will contain the 1024 PTE.
+ * If the directory is already loaded, this function will not do anything.
+ */
+void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex);
+
+void pa_directory_load_at(struct page_table_info* pt, uint32_t pdeIndex, uint32_t physAddr);
+
+/**
  * Find an unallocated page in the pagetable.
  */
 uint32_t pa_pt_find_free_page(struct page_table_info* pt);
 
 /**
  * Set the current pagetable as active on the processor.
- * TODO : Check the fuck out of the pt parameter. OS will 
+ * TODO : Check the fuck out of the pt parameter. OS will
  * crash if we try to setup a bad pagetable.
  */
 void pa_set_current_pagetable(struct page_table_info* pt);
@@ -126,6 +145,8 @@ void pa_decompose_vaddress(uint32_t vaddr, uint32_t* pde, uint32_t* pte, uint32_
 
 void pa_handle_pagefault(uint32_t addr, uint32_t code);
 
+void pa_print_kpt(struct page_table_info* pt);
+
 // # Page Frame Functions #
 #define PAGE_ALIGN(x) (x & 0xFFFFF000)
 #define FRAME_INDX(x) (PAGE_ALIGN(x) / 4096)
@@ -133,10 +154,10 @@ void pa_handle_pagefault(uint32_t addr, uint32_t code);
 struct page_frame_map
 {
     uint8_t frames[1024*1024];
-    
+
 } __attribute__((aligned(4096)));
 
-#define PFM_LOCATION (256 * PAGE_SIZE)
+#define PFM_LOCATION (512 * PAGE_SIZE)
 
 enum physical_frame_flags
 {

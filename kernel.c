@@ -57,11 +57,11 @@ char* kBadErrorMessage;
 void kErrorBeforeInit(uint32_t errno, char* msg)
 {
     // Do something with the error code and gtfo
-    
+
     kErrorBad = errno;
-    
+
     kBadErrorMessage = msg;
-    
+
 }
 
 extern void _cpu_idle();
@@ -70,15 +70,18 @@ extern void _cpu_idle();
 extern "C" /* Use C linkage for kernel_main. */
 #endif
 void kernel_main(multiboot_info_t* arg1)
-{    
+{
     cpu_is_idle = FALSE;
     panic = FALSE;
-    
+
     setupGdt();
     setupIdt();
-    
+
+    kSetupLog(SERIAL_COM1_BASE);
+    init_memory_manager();
+
     init_page_allocator();
-    
+
     pa_test_paging();
 
     setup_kernel_block();
@@ -86,82 +89,82 @@ void kernel_main(multiboot_info_t* arg1)
     fbInitialize();
 
     kSetupLog(SERIAL_COM1_BASE);
-    
+
     init_memory_manager();
-    
+
     //setup_paging();
-    
+
     //test_paging();
-    
+
     init_module_kernel_features(kernel_info);
     // init_module_memory_manager(kernel_info);
     init_module_ata_driver(kernel_info);
 
     kfDetectFeatures(arg1);
-    
+
     // PCI bus scanning
     int total = 0;
-    
+
     struct pci_controlset* set = get_devices_list(&total);
-    
+
     for(int i = 0; i < total; i++)
     {
         kWriteLog("");
         kWriteLog_format1d("Device #%d", i);
         print_pci_device_info(set->deviceList[i]);
     }
-    
-    setup_filesystem(); 
+
+    setup_filesystem();
     ezfs_prepare_disk();
-    
+
     // file_h file = ezfs_create_file(ROOT_DIR, "test.txt", FS_READ_WRITE, FS_FLAGS_NONE);
-    
+
     // char filebuf[4];
     // strcpy(filebuf, "abcd");
-    
+
     // size_t bytesWritten = ezfs_write_file(file, (uint8_t*)filebuf, 4);
-    
+
     // uint8_t* outBuf = NULL;
     // size_t readBytes = ezfs_read_file(file, &outBuf);
-    
+
     // fbPutString((char*)outBuf);
     // ASSERT(bytesWritten == readBytes, "WRONG SIZE WRITTEN.");
-    
+
     // Enable interrupts
     asm volatile("sti");
-    
+
     // Example of interrupts calls.
     // asm volatile ("int $0x3");
     // asm volatile ("int $0x4");
 
     init_timer(1000);
     SetupKeyboardDriver(SCANCODE_SET1);
-    
+
     ksh_take_fb_control();
-    
+
 #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
     BOOL res = mm_verify_all_allocs_canary();
-    
+
     if(res == FALSE)
     {
         Debugger();
     }
 #endif
-    
+
     while(TRUE)
     {
         ksh_update();
-        
+
         cpu_idle();
     }
-    
+
     kWriteLog("Kernel End");
 }
 
 void setup_kernel_block()
 {
     kernel_info = (struct kernel_info_block*)(KIBLOCK_ADDR_START);
-    
+
     kernel_info->modules_start_address = (uint32_t)(kernel_info + sizeof(struct kernel_info_block));
     kernel_info->modules_end_address = (uint32_t)(kernel_info + (1024*1024*5)); // 5MB
     kernel_info->modules_current_offset = kernel_info->modules_start_address;
@@ -170,13 +173,13 @@ void setup_kernel_block()
 void* alloc_kernel_module(size_t size)
 {
     //return malloc(size);
-    
+
     if(!has_free_modules_space())
         return NULL; // TODO : Panic instead, unrecoverable situation
-    
+
     uint32_t nextModuleAddress = kernel_info->modules_current_offset + size;
     kernel_info->modules_current_offset += size;
-    
+
     return (void*)nextModuleAddress;
 }
 

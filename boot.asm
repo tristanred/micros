@@ -5,7 +5,7 @@ VIDINFO  equ  1<<2              ; video flag
 FLAGS    equ  MBALIGN | MEMINFO; | VIDINFO ; this is the Multiboot 'flag' field
 MAGIC    equ  0x1BADB002        ; 'magic number' lets bootloader find the header
 CHECKSUM equ -(MAGIC + FLAGS)   ; checksum of above, to prove we are multiboot
- 
+
 ; Declare a multiboot header that marks the program as a kernel. These are magic
 ; values that are documented in the multiboot standard. The bootloader will
 ; search for this signature in the first 8 KiB of the kernel file, aligned at a
@@ -25,7 +25,7 @@ align 4
 	dd 640 ; width
 	dd 480 ; height
 	dd 24 ; depth
- 
+
 ; The multiboot standard does not define the value of the stack pointer register
 ; (esp) and it is up to the kernel to provide a stack. This allocates room for a
 ; small stack by creating a symbol at the bottom of it, then allocating 16384
@@ -39,7 +39,8 @@ align 4
 section .bss
 align 4
 stack_bottom:
-resb 16384 ; 16 KiB
+resb 16384; 256 KB to allow the rest of the code to fill in the rest of the 1 MB
+;resb 262144; 256 KB to allow the rest of the code to fill in the rest of the 1 MB
 stack_top:
 
 global _cpu_idle
@@ -61,12 +62,12 @@ _start:
 	; safeguards, no debugging mechanisms, only what the kernel provides
 	; itself. It has absolute and complete power over the
 	; machine.
- 
+
 	; To set up a stack, we set the esp register to point to the top of our
 	; stack (as it grows downwards on x86 systems). This is necessarily done
 	; in assembly as languages such as C cannot function without a stack.
 	mov esp, stack_top
-	
+
 	; This is a good place to initialize crucial processor state before the
 	; high-level kernel is entered. It's best to minimize the early
 	; environment where crucial features are offline. Note that the
@@ -75,7 +76,7 @@ _start:
 	; yet. The GDT should be loaded here. Paging should be enabled here.
 	; C++ features such as global constructors and exceptions will require
 	; runtime support to work as well.
- 
+
 	; Enter the high-level kernel. The ABI requires the stack is 16-byte
 	; aligned at the time of the call instruction (which afterwards pushes
 	; the return pointer of size 4 bytes). The stack was originally 16-byte
@@ -85,7 +86,7 @@ _start:
     push ebx
 	extern kernel_main
 	call kernel_main
-	
+
 	; If the system has nothing more to do, put the computer into an
 	; infinite loop. To do that:
 	; 1) Disable interrupts with cli (clear interrupt enable in eflags).
@@ -99,13 +100,13 @@ _start:
 	cli
 hang:	hlt
 	jmp hang
-	
+
 error:
 	jmp hang
-	
+
 _cpu_idle:
 	hlt
 	nop
-	ret	
+	ret
 end:
 
