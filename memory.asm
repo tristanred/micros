@@ -1,5 +1,6 @@
 global set_paging
 global enablePaging
+global disablePaging
 ; global invalidateEntry
 
 set_paging:
@@ -17,6 +18,16 @@ enablePaging:
     mov eax, cr0
     or eax, 0x80000000
     mov cr0, eax
+    mov esp, ebp
+    pop ebp
+    ret
+
+disablePaging:
+    push ebp
+    mov ebp, esp
+    mov eax, cr0
+    and eax, 0x7FFFFFFF
+    mov cr0, eax,
     mov esp, ebp
     pop ebp
     ret

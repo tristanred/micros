@@ -2,6 +2,7 @@
 
 extern void set_paging(uint32_t* pt);
 extern void enablePaging();
+extern void disablePaging();
 // extern void invalidateEntry(uint32_t address);
 
 void init_page_allocator()
@@ -12,7 +13,7 @@ void init_page_allocator()
 
     //setup_paging();
 
-    uint32_t res = pfm_setup_map(PFM_LOCATION);
+    int res = pfm_setup_map(PFM_LOCATION);
 
     if(res != 0)
     {
@@ -26,8 +27,8 @@ void init_page_allocator()
 
     }
 
-    pa_directory_load_at(kpt, 0, 768 * 0x1000);
-    pa_directory_load_at(kpt, 1, 769 * 0x1000);
+    pa_directory_load_at(kpt, 0, 769 * 0x1000);
+    pa_directory_load_at(kpt, 1, 770 * 0x1000);
     for(int i = 0; i < 1024; i++)
     {
         uint32_t addr = i * 0x1000;
@@ -43,6 +44,10 @@ void init_page_allocator()
 
 void pa_print_kpt(struct page_table_info* pt)
 {
+    disablePaging();
+
+    Debugger();
+
     kWriteLog("----------------------------------------");
     kWriteLog("Printing Kernel Page table");
     kWriteLog_format1d("KPT param stack address : %d", (uint64_t)&pt);
@@ -50,18 +55,43 @@ void pa_print_kpt(struct page_table_info* pt)
 
     int a = 0;
     int addr = 0;
-    for(int k = 0; k < 2; k++)
+    for(int k = 0; k < 1024; k++)
     {
-        kWriteLog_format1d("PDE #%d", k);
+        if(PD_PRESENT(pt->page_directory[k]))
+        {
+            kWriteLog_format1d("[PDE #%d]", k);
+        }
+        else
+        {
+            kWriteLog_format1d("PDE #%d EMPTY", k);
+        }
+
         kWriteLog_format1d("Bits : %d", pt->page_directory[k]);
 
-        for(int i = 0; i < 1024; i++)
+        if(PD_PRESENT(pt->page_directory[k]))
         {
-            kWriteLog_format1d("  PTE #%d", i);
-            kWriteLog_format1d("  Bits = %d", pt->page_directory[a++]);
-            kWriteLog_format1d("  Addr = %d", addr);
+            for(int i = 0; i < 1024; i++)
+            {
+                int ptIndex = i + (k * 1024);
+                if(PT_PRESENT(pt->page_tables[ptIndex]))
+                {
+                    kWriteLog_format1d("  [PTE #%d] ***", ptIndex);
+                }
+                else
+                {
+                    kWriteLog_format1d("  [PTE #%d]", ptIndex);
+                }
 
-            addr += 0x1000;
+                kWriteLog_format1d("  Bits = %d", pt->page_tables[ptIndex]);
+                kWriteLog_format1d("  Addr = %d", addr);
+
+                addr += 0x1000;
+            }
+        }
+        else
+        {
+            addr += 0x1000 * 1024;
+            a += 1024;
         }
     }
 
@@ -69,13 +99,35 @@ void pa_print_kpt(struct page_table_info* pt)
     kWriteLog_format1d("Final Addr = %d", addr);
     kWriteLog("Printing KPT done");
     kWriteLog("----------------------------------------");
+
+    enablePaging();
 }
 
 void pa_test_paging()
 {
     Debugger();
 
+    uint8_t* _one = (uint8_t*)0; // 10MB
+    uint8_t* _two = (uint8_t*)(1024*1024); // 10MB
+    uint8_t* _three = (uint8_t*)(1024*1024*2); // 10MB
+    uint8_t* _four = (uint8_t*)(1024*1024*3); // 10MB
+    uint8_t* _five = (uint8_t*)(1024*1024*4); // 10MB
+    uint8_t* _six = (uint8_t*)(1024*1024*5); // 10MB
+    uint8_t* _seven = (uint8_t*)(1024*1024*6); // 10MB
+    uint8_t* _eight = (uint8_t*)(1024*1024*7); // 10MB
+    uint8_t* _nine = (uint8_t*)(1024*1024*8); // 10MB
     uint8_t* mybyte = (uint8_t*)0xA00000; // 10MB
+
+    *_one = 0xFF;
+    *_two = 0xFF;
+    *_three = 0xFF;
+    *_four = 0xFF;
+    *_five = 0xFF;
+    *_six = 0xFF;
+    *_seven = 0xFF;
+    *_eight = 0xFF;
+    *_nine = 0xFF;
+    *mybyte = 0xFF;
 
     *mybyte = 0xFF;
 
@@ -93,7 +145,7 @@ struct page_table_info* pa_build_kernel_pagetable(uint32_t address)
         for(int i = 0; i < 1024; i++)
         {
             //kpt->page_tables[a++] = addr | 2;
-            kpt->page_tables[a++] = 2;
+            kpt->page_tables[a++] = 0;
 
             addr += 0x1000;
         }
@@ -102,7 +154,7 @@ struct page_table_info* pa_build_kernel_pagetable(uint32_t address)
         //kpt->page_directory[k] = ((uint32_t)&kpt->page_tables[k * 1024]) | 3;
 
         // Each PDE points to the first pagetable (first 4MB).
-        kpt->page_directory[k] = 2; // super, rw, present, no address
+        kpt->page_directory[k] = 0; // super, rw, present, no address
     }
 
     return kpt;
@@ -188,7 +240,10 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
             return;
         }
 
+        pt->page_tables[2500] = 0xFEFE | (PG_PRESENT | PG_WRITABLE);
         pt->page_tables[pte] = (physaddr & PAGEBITS) | (PG_PRESENT | PG_WRITABLE);
+
+        pa_invalidate_tlb(addr, physaddr);
     }
     else
     {
@@ -219,6 +274,7 @@ void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex)
 
         if(res == 0)
         {
+            pfm_alloc_frame(frameAddr);
             pt->page_directory[pdeIndex] = frameAddr | 3;
         }
 
@@ -279,7 +335,7 @@ uint32_t pa_pt_find_free_page(struct page_table_info* pt)
     // Find a free page frame
     uint32_t freeFrame = 0;
     int res = pfm_find_free(&freeFrame);
-
+    // TODO : MARK AS ALLOCATED
     if(res < 0)
     {
         // TODO : Out of memory
@@ -388,6 +444,14 @@ void pa_handle_pagefault(uint32_t addr, uint32_t code)
     {
         // Crash the system, reference to unallocated page.
     }
+
+    //pa_print_kpt(currentPageTable);
+}
+
+void pa_invalidate_tlb(uint32_t vaddr, uint32_t paddr)
+{
+    asm volatile("invlpg (%0)" ::"r" (vaddr) : "memory");
+    asm volatile("invlpg (%0)" ::"r" (paddr) : "memory");
 }
 
 int pfm_alloc_frame(uint32_t addr)

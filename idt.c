@@ -35,7 +35,7 @@ void setupIdt()
 {
     idtPointer.limit = (sizeof(idtEntry) * 256) - 1;
     idtPointer.base = (uint32_t)&idtEntries;
-    
+
     // Fill interrupt table
     idtSetEntry(0,(uint32_t)isr0, 0x08, 0x8E);
     idtSetEntry(1,(uint32_t)isr1, 0x08, 0x8E);
@@ -69,7 +69,7 @@ void setupIdt()
     idtSetEntry(29,(uint32_t)isr29, 0x08, 0x8E);
     idtSetEntry(30,(uint32_t)isr30, 0x08, 0x8E);
     idtSetEntry(31,(uint32_t)isr31, 0x08, 0x8E);
-    
+
     // Configure hardware IRQ's
     outb(0x20, 0x11);
     outb(0xA0, 0x11);
@@ -81,7 +81,7 @@ void setupIdt()
     outb(0xA1, 0x01);
     outb(0x21, 0x0);
     outb(0xA1, 0x0);
-    
+
     idtSetEntry(32, (uint32_t)irq0, 0x08, 0x8E);
     idtSetEntry(33, (uint32_t)irq1, 0x08, 0x8E);
     idtSetEntry(34, (uint32_t)irq2, 0x08, 0x8E);
@@ -98,8 +98,8 @@ void setupIdt()
     idtSetEntry(45, (uint32_t)irq13, 0x08, 0x8E);
     idtSetEntry(46, (uint32_t)irq14, 0x08, 0x8E);
     idtSetEntry(47, (uint32_t)irq15, 0x08, 0x8E);
-    
-    
+
+
     loadIdt((uint32_t)&idtPointer);
 }
 
@@ -113,7 +113,7 @@ void isr_handler(registers_t regs)
     if(regs.int_no == 0) // DIV 0 ERROR
     {
     //    regs.eip++;
-        
+
     //    panic = TRUE;
         DivideByZeroFault();
     }
@@ -129,12 +129,12 @@ void isr_handler(registers_t regs)
     {
         // TODO : HANDLE PAGE FAULT
         Debugger();
-        
+
         pa_handle_pagefault(get_pagefault_addr(), regs.err_code);
-        
+
         // If page fault was handled. The faulting instruction will be replayed.
         // Right now, we'll just skip the instruction.
-        regs.eip++;
+        //regs.eip++;
     }
 }
 
