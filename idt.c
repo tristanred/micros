@@ -128,7 +128,7 @@ void isr_handler(registers_t regs)
     else if(regs.int_no == 14) // PAGE FAULT
     {
         // TODO : HANDLE PAGE FAULT
-        Debugger();
+        //Debugger();
 
         pa_handle_pagefault(get_pagefault_addr(), regs.err_code);
 

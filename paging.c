@@ -7,7 +7,7 @@ extern void disablePaging();
 
 void init_page_allocator()
 {
-    Debugger();
+    //Debugger();
 
     // defaultPageTable = (struct page_table_info*)(KPT_LOCATION);
 
@@ -29,6 +29,7 @@ void init_page_allocator()
 
     pa_directory_load_at(kpt, 0, 769 * 0x1000);
     pa_directory_load_at(kpt, 1, 770 * 0x1000);
+    //pa_directory_load_at(kpt, 2, 771 * 0x1000);
     for(int i = 0; i < 1024; i++)
     {
         uint32_t addr = i * 0x1000;
@@ -105,7 +106,7 @@ void pa_print_kpt(struct page_table_info* pt)
 
 void pa_test_paging()
 {
-    Debugger();
+    //Debugger();
 
     uint8_t* _one = (uint8_t*)0; // 10MB
     uint8_t* _two = (uint8_t*)(1024*1024); // 10MB
@@ -118,16 +119,16 @@ void pa_test_paging()
     uint8_t* _nine = (uint8_t*)(1024*1024*8); // 10MB
     uint8_t* mybyte = (uint8_t*)0xA00000; // 10MB
 
-    *_one = 0xFF;
-    *_two = 0xFF;
-    *_three = 0xFF;
-    *_four = 0xFF;
-    *_five = 0xFF;
-    *_six = 0xFF;
-    *_seven = 0xFF;
-    *_eight = 0xFF;
-    *_nine = 0xFF;
-    *mybyte = 0xFF;
+    // *_one = 0xFF;
+    // *_two = 0xFF;
+    // *_three = 0xFF;
+    // *_four = 0xFF;
+    // *_five = 0xFF;
+    // *_six = 0xFF;
+    // *_seven = 0xFF;
+    // *_eight = 0xFF;
+    // *_nine = 0xFF;
+    //*mybyte = 0xFF;
 
     *mybyte = 0xFF;
 
@@ -240,8 +241,13 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
             return;
         }
 
-        pt->page_tables[2500] = 0xFEFE | (PG_PRESENT | PG_WRITABLE);
         pt->page_tables[pte] = (physaddr & PAGEBITS) | (PG_PRESENT | PG_WRITABLE);
+
+        if(pte == 2560)
+        {
+            // Is being put at address 0x303800
+            pt->page_tables[pte] = 0x99999003;
+        }
 
         pa_invalidate_tlb(addr, physaddr);
     }
@@ -264,7 +270,7 @@ void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex)
 {
     uint32_t pde = pt->page_directory[pdeIndex];
 
-    if((pde & PG_PRESENT) == 0)
+    if(PD_PRESENT(pde) == FALSE)
     {
         // Find a free page frame and point the PDE to it
         // Then set it to present
@@ -276,9 +282,12 @@ void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex)
         {
             pfm_alloc_frame(frameAddr);
             pt->page_directory[pdeIndex] = frameAddr | 3;
-        }
 
+            asm volatile("invlpg (%0)" ::"r" (frameAddr) : "memory");
+        }
     }
+
+
     // TODO : Eventually going to have to check if the PDE is paged out
     // and load it.
 }
@@ -287,7 +296,7 @@ void pa_directory_load_at(struct page_table_info* pt, uint32_t pdeIndex, uint32_
 {
     uint32_t pde = pt->page_directory[pdeIndex];
 
-    if((pde & PG_PRESENT) == 0)
+    if(PD_PRESENT(pde) == FALSE)
     {
         pt->page_directory[pdeIndex] = physAddr | 3;
     }
@@ -432,6 +441,8 @@ void pa_handle_pagefault(uint32_t addr, uint32_t code)
     uint32_t off = 0;
     pa_decompose_vaddress(addr, &pde, &pte, &off);
 
+    Debugger();
+
     pa_directory_load(pa_get_current_pt(), pde);
 
     uint32_t entry = pa_get_current_pt()->page_tables[pte];
@@ -439,6 +450,9 @@ void pa_handle_pagefault(uint32_t addr, uint32_t code)
     if(entry == 0 && PA_LOAD_ON_DEMAND == TRUE)
     {
         pa_pt_alloc_pageaddr(pa_get_current_pt(), PAGE_ALIGN(addr));
+
+        asm volatile("invlpg (%0)" ::"r" (addr) : "memory");
+
     }
     else
     {

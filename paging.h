@@ -17,25 +17,25 @@
 #define PA_LOAD_ON_DEMAND 1
 
 // PDE Flags
-#define PD_PRESENT(x) (x & 0x1 == 0x1)
-#define PD_RW(x) (x & 0x2 == 0x2)
-#define PD_SUPER(x) (x & 0x4 == 0x4)
-#define PD_PWT(x) (x & 0x8 == 0x8)
-#define PD_PCD(x) (x & 0x10 == 0x10)
-#define PD_ACCES(x) (x & 0x20 == 0x20)
-#define PD_ADDRBITS(x) (x & 0xFFFFF000)
-#define PD_FLAGBITS(x) (x) & 0xFFF)
+#define PD_PRESENT(x)   ((x & 0x1)  == 0x1)
+#define PD_RW(x)        ((x & 0x2)  == 0x2)
+#define PD_SUPER(x)     ((x & 0x4)  == 0x4)
+#define PD_PWT(x)       ((x & 0x8)  == 0x8)
+#define PD_PCD(x)       ((x & 0x10) == 0x10)
+#define PD_ACCES(x)     ((x & 0x20) == 0x20)
+#define PD_ADDRBITS(x)  (x & 0xFFFFF000)
+#define PD_FLAGBITS(x)  (x & 0xFFF)
 
 // PTE Flags
-#define PT_PRESENT(x) (x & 0x1 == 0x1)
-#define PT_RW(x) (x & 0x2 == 0x2)
-#define PT_SUPER(x) (x & 0x4 == 0x4)
-#define PT_PWT(x) (x & 0x8 == 0x8)
-#define PT_PCD(x) (x & 0x10 == 0x10)
-#define PT_ACCES(x) (x & 0x20 == 0x20)
-#define PT_DIRTY(x) (x & 0x40 == 0x40)
-#define PT_ADDRBITS(x) (x & 0xFFFFF000)
-#define PT_FLAGBITS(x) (x) & 0xFFF)
+#define PT_PRESENT(x)   ((x & 0x1) == 0x1)
+#define PT_RW(x)        ((x & 0x2) == 0x2)
+#define PT_SUPER(x)     ((x & 0x4) == 0x4)
+#define PT_PWT(x)       ((x & 0x8) == 0x8)
+#define PT_PCD(x)       ((x & 0x10) == 0x10)
+#define PT_ACCES(x)     ((x & 0x20) == 0x20)
+#define PT_DIRTY(x)     ((x & 0x40) == 0x40)
+#define PT_ADDRBITS(x)  (x & 0xFFFFF000)
+#define PT_FLAGBITS(x)  (x & 0xFFF)
 
 struct page_table_info
 {
