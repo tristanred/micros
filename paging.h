@@ -72,7 +72,7 @@ struct page_table_info* defaultPageTable;
 // TODO : Changed to pointer, todo allocate somewhere
 struct page_table_info* kernelPagetable;
 
-#define KPT_LOCATION (768 * PAGE_SIZE)
+#define KPT_LOCATION (1024 * PAGE_SIZE)
 
 // Point to the page table currently loaded
 struct page_table_info* currentPageTable;

@@ -26,16 +26,22 @@ void init_page_allocator()
     {
 
     }
-
-    pa_directory_load_at(kpt, 0, 769 * 0x1000);
-    pa_directory_load_at(kpt, 1, 770 * 0x1000);
-    //pa_directory_load_at(kpt, 2, 771 * 0x1000);
+    
+    // Start with 2 directories. One for the first 4MB that is identity-mapped
+    // And another for the second 4MB segment where the KPT resides.
+    pa_directory_load_at(kpt, 0, 1025 * PAGE_SIZE);
+    pa_directory_load_at(kpt, 1, 1026 * PAGE_SIZE);
+    
     for(int i = 0; i < 1024; i++)
     {
         uint32_t addr = i * 0x1000;
         pa_pt_alloc_pageaddr_at(kpt, addr, addr);
     }
 
+    pa_pt_alloc_pageaddr(kpt, KPT_LOCATION);
+    pa_pt_alloc_pageaddr(kpt, 1025 * PAGE_SIZE);
+    pa_pt_alloc_pageaddr(kpt, 1026 * PAGE_SIZE);
+    
     pa_set_current_pagetable(kpt);
 
     //pa_print_kpt(kpt);
@@ -108,27 +114,7 @@ void pa_test_paging()
 {
     //Debugger();
 
-    uint8_t* _one = (uint8_t*)0; // 10MB
-    uint8_t* _two = (uint8_t*)(1024*1024); // 10MB
-    uint8_t* _three = (uint8_t*)(1024*1024*2); // 10MB
-    uint8_t* _four = (uint8_t*)(1024*1024*3); // 10MB
-    uint8_t* _five = (uint8_t*)(1024*1024*4); // 10MB
-    uint8_t* _six = (uint8_t*)(1024*1024*5); // 10MB
-    uint8_t* _seven = (uint8_t*)(1024*1024*6); // 10MB
-    uint8_t* _eight = (uint8_t*)(1024*1024*7); // 10MB
-    uint8_t* _nine = (uint8_t*)(1024*1024*8); // 10MB
-    uint8_t* mybyte = (uint8_t*)0xA00000; // 10MB
-
-    // *_one = 0xFF;
-    // *_two = 0xFF;
-    // *_three = 0xFF;
-    // *_four = 0xFF;
-    // *_five = 0xFF;
-    // *_six = 0xFF;
-    // *_seven = 0xFF;
-    // *_eight = 0xFF;
-    // *_nine = 0xFF;
-    //*mybyte = 0xFF;
+    uint8_t* mybyte = (uint8_t*)(1024*1024*18); // 18MB
 
     *mybyte = 0xFF;
 
@@ -243,12 +229,6 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
 
         pt->page_tables[pte] = (physaddr & PAGEBITS) | (PG_PRESENT | PG_WRITABLE);
 
-        if(pte == 2560)
-        {
-            // Is being put at address 0x303800
-            pt->page_tables[pte] = 0x99999003;
-        }
-
         pa_invalidate_tlb(addr, physaddr);
     }
     else
@@ -280,7 +260,10 @@ void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex)
 
         if(res == 0)
         {
-            pfm_alloc_frame(frameAddr);
+            uint32_t vAddr = &(pt->page_tables[1024 * pdeIndex]);
+            pa_pt_alloc_pageaddr_at(pt, vAddr, frameAddr);
+            
+            //pfm_alloc_frame(frameAddr);
             pt->page_directory[pdeIndex] = frameAddr | 3;
 
             asm volatile("invlpg (%0)" ::"r" (frameAddr) : "memory");
