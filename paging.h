@@ -106,6 +106,11 @@ struct page_table_info* pa_create_pagetable();
 /**
  * Allocate a page from anywhere in virtual memory. Returns the address of the
  * page in the 'addr' parameter.
+ * 
+ * Not meant to be used a whole lot because the page can be anywhere in memory
+ * and we can't be sure that if we allocate two pages they will be contiguous
+ * in virtual memory. Used if we only need 4096 bytes. Overflows will not be 
+ * detected.
  */
 void pa_pt_alloc_page(struct page_table_info* pt, uint32_t* addr);
 
@@ -119,11 +124,6 @@ void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr);
  * at the specified physical address.
  */
 void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t physaddr);
-
-/**
- * Allocate a range of pages. Range is [start, end)
- */
-void pa_pt_alloc_pagerange(struct page_table_info* pt, uint32_t startAddress, uint32_t endAddress);
 
 /**
  * Load a page directory on the current pagetable. This will allocate a new page
@@ -156,11 +156,6 @@ struct page_table_info* pa_get_current_pt();
  * page frame. The physical page frame is found by scanning a free frame in RAM.
  */
 void pa_alloc_map_page(struct page_table_info* pt, uint32_t page);
-
-/**
- * In the pagetable, map a virtual page to a physical page frame.
- */
-void pa_map_page(struct page_table_info* pt, uint32_t paddr, uint32_t vaddr);
 
 void pa_decompose_vaddress(uint32_t vaddr, uint32_t* pde, uint32_t* pte, uint32_t* off);
 
@@ -226,19 +221,5 @@ int pfm_setup_map(uint32_t addr);
  * This is the amount of available RAM.
  */
 int pfm_set_avail_frames();
-
-// OLD PAGING API
-void setup_paging();
-void test_paging();
-
-void map_phys_address(uint32_t addressFrom, uint32_t addressTo);
-
-// TODO : Find prefix for paging methods
-
-
-int count_pages(enum page_frame_flags findFlags);
-uint32_t* find_pages(enum page_frame_flags findFlags, int* count);
-
-
 
 #endif
