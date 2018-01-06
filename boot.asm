@@ -39,8 +39,7 @@ align 4
 section .bss
 align 4
 stack_bottom:
-resb 16384; 256 KB to allow the rest of the code to fill in the rest of the 1 MB
-;resb 262144; 256 KB to allow the rest of the code to fill in the rest of the 1 MB
+resb 262144; 256 KB to allow the rest of the code to fill in the rest of the 1 MB
 stack_top:
 
 global _cpu_idle
