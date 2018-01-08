@@ -43,15 +43,10 @@ struct page_table_info
     uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
 } __attribute__((aligned(4096)));
 
-struct _page_directory
+struct page
 {
-    uint32_t page_directory[1024] __attribute__((aligned(4096)));
-} __attribute__((aligned(4096)));
-
-struct _page_table
-{
-    uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
-} __attribute__((aligned(4096)));
+    uint8_t data[4096] __attribute__((aligned(4096)));
+}__attribute__((aligned(4096)));
 
 enum page_frame_flags
 {

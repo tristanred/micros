@@ -40,4 +40,9 @@ char* strdigits(uint64_t number);
 
 uint64_t s_to_d(char* number);
 
+// Stack allocated functions
+int sprintf_1d_buf(char* buffer, const char* format, uint64_t number);
+void strdigits_buf(uint64_t number, char* buf);
+void strrev_buf(char* str, char* buf);
+
 #endif

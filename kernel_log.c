@@ -24,3 +24,12 @@ void kWriteLog_format1d(const char* str, uint64_t number)
     
     kWriteLog(outBuf);
 }
+
+void kWriteLog_format1d_stacksafe(const char* str, uint64_t number)
+{
+    char outBuf[256];
+    
+    sprintf_1d_buf(outBuf, str, number);
+    
+    kWriteLog(outBuf);
+}

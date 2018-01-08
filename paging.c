@@ -52,18 +52,15 @@ void init_page_allocator()
     pa_pt_alloc_page(kpt, &ptr3);
     pa_pt_alloc_page(kpt, &ptr4);
 
+    pa_print_kpt(kpt);
 }
 
 void pa_print_kpt(struct page_table_info* pt)
 {
-    disablePaging();
-
-    Debugger();
-
     kWriteLog("----------------------------------------");
     kWriteLog("Printing Kernel Page table");
-    kWriteLog_format1d("KPT param stack address : %d", (uint32_t)&pt);
-    kWriteLog_format1d("KPT Pointer : %d", (uint32_t)pt);
+    kWriteLog_format1d_stacksafe("KPT param stack address : %d", (uint32_t)&pt);
+    kWriteLog_format1d_stacksafe("KPT Pointer : %d", (uint32_t)pt);
 
     int a = 0;
     int addr = 0;
@@ -71,14 +68,14 @@ void pa_print_kpt(struct page_table_info* pt)
     {
         if(PD_PRESENT(pt->page_directory[k]))
         {
-            kWriteLog_format1d("[PDE #%d]", k);
+            kWriteLog_format1d_stacksafe("[PDE #%d]", k);
         }
         else
         {
-            kWriteLog_format1d("PDE #%d EMPTY", k);
+            kWriteLog_format1d_stacksafe("PDE #%d EMPTY", k);
         }
 
-        kWriteLog_format1d("Bits : %d", pt->page_directory[k]);
+        kWriteLog_format1d_stacksafe("Bits : %d", pt->page_directory[k]);
 
         if(PD_PRESENT(pt->page_directory[k]))
         {
@@ -87,15 +84,15 @@ void pa_print_kpt(struct page_table_info* pt)
                 int ptIndex = i + (k * 1024);
                 if(PT_PRESENT(pt->page_tables[ptIndex]))
                 {
-                    kWriteLog_format1d("  [PTE #%d] ***", ptIndex);
+                    kWriteLog_format1d_stacksafe("  [PTE #%d] ***", ptIndex);
                 }
                 else
                 {
-                    kWriteLog_format1d("  [PTE #%d]", ptIndex);
+                    kWriteLog_format1d_stacksafe("  [PTE #%d]", ptIndex);
                 }
 
-                kWriteLog_format1d("  Bits = %d", pt->page_tables[ptIndex]);
-                kWriteLog_format1d("  Addr = %d", addr);
+                kWriteLog_format1d_stacksafe("  Bits = %d", pt->page_tables[ptIndex]);
+                kWriteLog_format1d_stacksafe("  Addr = %d", addr);
 
                 addr += 0x1000;
             }
@@ -107,12 +104,10 @@ void pa_print_kpt(struct page_table_info* pt)
         }
     }
 
-    kWriteLog_format1d("Final PTE count = %d", a);
-    kWriteLog_format1d("Final Addr = %d", addr);
+    kWriteLog_format1d_stacksafe("Final PTE count = %d", a);
+    kWriteLog_format1d_stacksafe("Final Addr = %d", addr);
     kWriteLog("Printing KPT done");
     kWriteLog("----------------------------------------");
-
-    enablePaging();
 }
 
 void pa_test_paging()

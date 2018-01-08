@@ -14,4 +14,7 @@ void kWriteLog(const char* str);
 
 void kWriteLog_format1d(const char* str, uint64_t number);
 
+void kWriteLog_format1d_stacksafe(const char* str, uint64_t number);
+
+
 #endif
