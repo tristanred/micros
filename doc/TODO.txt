@@ -1,49 +1,58 @@
-I. Keyboard Driver
-  1. Fix the arrow key problem.
-  
-II. Kernel Shell
+I. Memory
+  1. Paging
+    a. Implement PageTables management. Curently doing with the PageAllocator
+       module.
+    b. Create a system map diagram. This will document the layout of the pages
+       needed by the kernel.
+    c. Implementation of the disk paging functions.
+    d. Page allocation optimization.
+    e. Copy On Write implementation
+    
+  2. Memory Manager
+    a. Integrate the PageAllocator to the memory manager.
+
+II. Boot Sequence
+  1. When booting, write load sequence on the screen and log.
+  2. When system is ready, show MICROS logo until user input.
+  3. Start shell after input
+
+III. Kernel Shell
   1. Create a fullscreen line-view functionality.
 
-III. Memory
-  1. Paging
-    a. Add an option to set all pages to "Not Present" and an allocate on PF
-       hook. Using that we can detect bad memory usage by watching when a module
-       overlaps on another's pages.
-    b. Re-introduce paging functions to the heap allocator.
-    c. Introduce dynamic page allocation. New space on heaps require more pages
-       to be given to the current process (kernel for now).
+IV. Keyboard Driver
+  1. Investigate the arrow key problem.
 
-IV. Disk IO
+V. Filesystem
+  1. Return error values when FS operations fail.
+  2. Find out why reading a file result in a File Not Found after X times.
+
+VI. Disk IO
   1. Create helper methods for zeroing blocks of bytes. Or patterns.
   2. Create an interface for the ATA Tester. See the docs/ata_tester.txt for 
      a mockup of the interface.
   3. Setup DMA functionality for disk reading.
   
-V. Filesystem
-  1. Return error values when FS operations fail.
-  
-VI. String Functions Review
+VII. String Functions Review
   1. Some strings functions have problem with null termination. Find them and 
      fix them.
      
-VII. Kernel Modules
+VIII. Kernel Modules
   1. Rework and formalize the Kernel module architecture.
+  2. Add a MODULE_PRELUDE macro to auto insert required properties in kernel
+     modules.
      
-VII. General Improvement
+IX. General Improvement
   1. GDT and IDT are loaded at an address near 5MB and this area is close to the
      area where the OS stores a bunch of stuff. I had a bug where the GDT and 
      IDT tables were getting overwritten and caused a GPF. Memory manager is 
      loaded at 6MB to fix the problem. Find a better place for those tables.
-  2. Create a malloc canary to detect buffer overflows. Extend each allocation
-     by a couple of bytes and insert a special value. At some point, each 
-     allocations are verified and if any allocation has its canary bytes 
-     overwritten then we had a buffer overflow. The process is not automatic
-     but it can help debugging some of the memory problems I've started having 
-     with the new heap allocator.
 
-VIII. Processes & Threads
+X. Processes & Threads
   1. Create structure to store threads and threads. Store registers and switch
      them when passing from thread to another.
   2. Create syncronisation primitives.
   3. Create some methods where the current thread get preempted if others are 
      waiting.
+    
+XI. ARM Build
+  1. Mad research. 

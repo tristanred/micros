@@ -1,0 +1,10 @@
+call pa_print_kpt(pa_get_current_pt())
+
+
+
+3149824
+3153920
+
+
+
+303800

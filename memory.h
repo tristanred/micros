@@ -19,7 +19,7 @@
 // Feature flags
 #define MM_ZERO_ON_FREE
 
-#define MM_ENABLE_HEAP_ALLOC_CANARY
+//#define MM_ENABLE_HEAP_ALLOC_CANARY
 
 #define MM_HEAP_ALLOC_CANARY_SIZE 5
 #define MM_HEAP_ALLOC_CANARY_VALUE "QUACK"
@@ -36,10 +36,10 @@ struct m_allocation
     uint32_t size;
     void* p;
     BOOL allocated;
-    
+
     enum mm_alloc_types type;
     uint32_t flags;
-    
+
     struct m_allocation* previous;
     struct m_allocation* next;
 };

@@ -173,8 +173,6 @@ void *memset( void *dest, int ch, size_t count )
 
 char* alloc_sprintf_1d(char* buffer, const char* format, uint64_t number, int* nbWritten)
 {
-    //ASSERT(buffer == NULL, "alloc_sprintf_1d BUFFER IS NOT NULL");
-    
     // Hacky calculation. 64 bit max number is 20 digits.
     int bufMaxLength = strlen(format) + 20; 
     
@@ -338,4 +336,92 @@ uint64_t s_to_d(char* number)
     }
     
     return result;
+}
+
+int sprintf_1d_buf(char* buffer, const char* format, uint64_t number)
+{
+    size_t formatSize = strlen(format);
+    
+    char numberString[64];
+    strdigits_buf(number, numberString);
+    size_t numberStringSize = strlen(numberString);
+    
+    size_t formatCounter = 0;
+    size_t bufferCounter = 0;
+    
+    size_t stopPoint = formatSize - 2 + numberStringSize;
+    
+    int go = 0;
+    while(go == 0)
+    {
+        if(format[bufferCounter] == '%' && format[bufferCounter + 1] == 'd')
+        {
+            formatCounter += 2;
+            
+            size_t numberCounter = 0;
+            for(numberCounter = 0; numberCounter < numberStringSize; numberCounter++)
+            {
+                buffer[bufferCounter++] = numberString[numberCounter];
+            }
+        }
+        else
+        {
+            buffer[bufferCounter++] = format[formatCounter++];
+        }
+        
+        if(bufferCounter >= stopPoint)
+        {
+            go = 1;
+        }
+    }
+    
+    buffer[stopPoint] = '\0';
+        
+    return stopPoint;
+}
+
+void strdigits_buf(uint64_t number, char* buf)
+{
+    char result[256];
+    uint64_t digitCounter = 0;
+    uint64_t divider = number;
+    
+    if(divider == 0)
+    {
+        result[0] = '0';
+        digitCounter++;
+    }
+    
+    while(divider != 0)
+    {
+        uint64_t remainder = divider % 10;
+        
+        char digitCode = remainder + 48;
+        
+        divider = divider / 10;
+        
+        result[digitCounter++] = digitCode;
+    }
+    
+    result[digitCounter] = '\0';
+    
+    char reversedResult[64];
+    strrev_buf(result, reversedResult);
+    
+    strcpy(buf, reversedResult);
+}
+
+void strrev_buf(char* str, char* buf)
+{
+    size_t len = strlen(str);
+    char reverse[256];
+    
+    for(size_t i = 0; i < len; i++)
+    {
+        reverse[i] = str[(len - 1) - i];
+    }
+    
+    reverse[len] = '\0';
+    
+    strcpy(buf, reverse);
 }
