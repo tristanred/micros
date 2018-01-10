@@ -47,10 +47,10 @@ void init_page_allocator()
     
     enablePaging();
     
-    pa_pt_alloc_page(kpt, &ptr1);
-    pa_pt_alloc_page(kpt, &ptr2);
-    pa_pt_alloc_page(kpt, &ptr3);
-    pa_pt_alloc_page(kpt, &ptr4);
+    // pa_pt_alloc_page(kpt, &ptr1);
+    // pa_pt_alloc_page(kpt, &ptr2);
+    // pa_pt_alloc_page(kpt, &ptr3);
+    // pa_pt_alloc_page(kpt, &ptr4);
 
     pa_print_kpt(kpt);
 }
