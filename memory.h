@@ -8,12 +8,7 @@
 #include "paging.h"
 
 // Heap sizes flags
-#define HEAP_ALLOCS_START (1024 * 1024 * 6)
-#define HEAP_ALLOCS_LENGTH (16384 * PAGE_SIZE) // 16384 pages equals 64MB
-
-#define HEAP_ALLOCS_AMOUNT (HEAP_ALLOCS_LENGTH / sizeof(struct m_allocation))
-
-#define KERNEL_HEAP_START (HEAP_ALLOCS_START + HEAP_ALLOCS_LENGTH)
+#define KERNEL_HEAP_START (1024 * 1024 * 6)
 #define KERNEL_HEAP_LENGTH (25600 * PAGE_SIZE) // 100MB
 
 // Feature flags
@@ -82,6 +77,7 @@ uint32_t mm_space_to_end(struct m_allocation* target);
 void mm_link_allocs(struct m_allocation* first, struct m_allocation* second);
 
 struct m_allocation* mm_find_free_allocation();
+struct m_allocation* mm_find_free_space(size_t bytes);
 
 #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
 void  mm_set_alloc_canary(struct m_allocation* alloc);

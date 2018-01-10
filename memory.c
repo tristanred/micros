@@ -48,40 +48,7 @@
  */
 void init_memory_manager()
 {
-    uint32_t allocStartAddress = HEAP_ALLOCS_START;
-    
-    allocs = (struct m_allocation*)allocStartAddress;
-    
-    allocs_count = 0;
-    
-    // Setup each structure, probably writing 0 over already-zeroed memory but
-    // if the memory still had data in it this will make sure we get clean
-    // values.
-    for(size_t i = 0; i < HEAP_ALLOCS_AMOUNT; i++)
-    {
-        struct m_allocation* alloc = allocs + i;
-        
-        alloc->size = 0;
-        alloc->p = NULL;
-        alloc->allocated = FALSE;
-        alloc->type = 0;
-        alloc->flags = 0;
-        
-        alloc->previous = NULL;
-        alloc->next = NULL;
-    }
-    
-    struct m_allocation* stubFirstAlloc = allocs;
-    stubFirstAlloc->size = 1;
-    stubFirstAlloc->p = (void*)KERNEL_HEAP_START;
-    stubFirstAlloc->allocated = TRUE;
-    stubFirstAlloc->type = MEM_STUB;
-    stubFirstAlloc->flags = 0;
-    stubFirstAlloc->next = NULL;
-    stubFirstAlloc->previous = NULL;
-    
-    firstAlloc = stubFirstAlloc;
-    lastAlloc = stubFirstAlloc;
+
 }
 
 /**
@@ -92,36 +59,23 @@ void init_memory_manager()
  */
 void* kmalloc(uint32_t size)
 {
-    struct m_allocation* alloc = firstAlloc;
-    uint32_t beginningSpace = (uint32_t)alloc->p - KERNEL_HEAP_START;
-    if(beginningSpace >= size)
+    if(firstAlloc == NULL)
     {
-        // This case handles when the first allocated block is not aligned on 
-        // exact start of the heap zone. This should never happen since we have
-        // a stub alloc in place.
-        
-        struct m_allocation* newAlloc = mm_find_free_allocation();
-        
-        if(newAlloc == NULL)
-            return NULL;
-        
+        struct m_allocation* newAlloc = (struct m_allocation*)KERNEL_HEAP_START;
         newAlloc->size = size;
-        newAlloc->p = (void*)KERNEL_HEAP_START;
+        newAlloc->p = (void*)(&newAlloc + sizeof(struct m_allocation));
         newAlloc->allocated = TRUE;
         newAlloc->type = MEM_ALLOC;
         newAlloc->flags = 0;
-        
+
         #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
         mm_set_alloc_canary(newAlloc);
         #endif
-        
-        mm_link_allocs(newAlloc, firstAlloc);
-        newAlloc->previous = NULL;
 
         firstAlloc = newAlloc;
         lastAlloc = newAlloc;
         
-        return firstAlloc->p;
+        return newAlloc->p;
     }
     
     struct m_allocation* current = firstAlloc;
@@ -131,11 +85,11 @@ void* kmalloc(uint32_t size)
         
         if(next != NULL)
         {
-            if(mm_get_space(current, next) >= size)
+            if(mm_get_space(current, next) >= size + sizeof(struct m_allocation))
             {
-                struct m_allocation* newAlloc = mm_find_free_allocation();
+                struct m_allocation* newAlloc = (struct m_allocation*)mm_data_tail(current);
                 newAlloc->size = size;
-                newAlloc->p = (void*)mm_data_tail(current);
+                newAlloc->p = (void*)(&newAlloc + sizeof(struct m_allocation));
                 newAlloc->allocated = TRUE;
                 newAlloc->type = MEM_ALLOC;
                 newAlloc->flags = 0;
@@ -158,9 +112,9 @@ void* kmalloc(uint32_t size)
             uint32_t spaceToHeapEnd = mm_space_to_end(current);
             if(spaceToHeapEnd >= size)
             {
-                struct m_allocation* newAlloc = mm_find_free_allocation();
+                struct m_allocation* newAlloc = (struct m_allocation*)mm_data_tail(current);
                 newAlloc->size = size;
-                newAlloc->p = (void*)mm_data_tail(current);
+                newAlloc->p = (void*)(&newAlloc + sizeof(struct m_allocation));
                 newAlloc->allocated = TRUE;
                 newAlloc->type = MEM_ALLOC;
                 newAlloc->flags = 0;
@@ -224,13 +178,13 @@ void kfree(void* ptr)
             }
             
             #endif
-    
-            #ifdef MM_ZERO_ON_FREE
-            memset(current->p, 0, current->size);
-            #endif
             
             mm_link_allocs(current->previous, current->next);
             
+            #ifdef MM_ZERO_ON_FREE
+            memset(&current, 0, (uint32_t)current->p + current->size);
+            #endif
+
             // Keeping the other attributes of the allocation to maybe help with
             // debugging freed allocations.
             current->allocated = FALSE;
@@ -311,7 +265,8 @@ uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second)
  */
 uint32_t mm_data_head(struct m_allocation* target)
 {
-    return (uint32_t)target->p;
+    return (uint32_t)target;
+    //return (uint32_t)target->p;
 }
 
 /**
@@ -346,14 +301,20 @@ void mm_link_allocs(struct m_allocation* first, struct m_allocation* second)
  */
 struct m_allocation* mm_find_free_allocation()
 {
-    for(size_t i = 0; i < HEAP_ALLOCS_AMOUNT; i++)
+    return NULL;
+}
+struct m_allocation* mm_find_free_space(size_t bytes)
+{
+    struct m_allocation* current = firstAlloc;
+    while(current != NULL)
     {
-        struct m_allocation* alloc = allocs + i;
+        struct m_allocation* next = current->next;
         
-        if(alloc->allocated == FALSE)
+        if(mm_get_space(current, next) >= bytes)
         {
-            return alloc;
+            return (struct m_allocation*)mm_data_tail(current);
         }
+        
     }
     
     return NULL;

@@ -112,8 +112,6 @@ void pa_print_kpt(struct page_table_info* pt)
 
 void pa_test_paging()
 {
-    //Debugger();
-
     uint8_t* mybyte = (uint8_t*)(1024*1024*18);
 
     *mybyte = 0xFF;

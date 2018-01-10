@@ -78,11 +78,18 @@ void kernel_main(multiboot_info_t* arg1)
     setupIdt();
 
     kSetupLog(SERIAL_COM1_BASE);
+
+    Debugger();
+    init_page_allocator();
+    pa_test_paging();
+    
     init_memory_manager();
 
-    init_page_allocator();
-
-    pa_test_paging();
+    Debugger();
+    char* memTest = (char*)kmalloc(128);
+    char* memTest2 = (char*)kmalloc(128);
+    char* memTest3 = (char*)kmalloc(128);
+    char* memTest4 = (char*)kmalloc(128);
 
     setup_kernel_block();
 
