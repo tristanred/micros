@@ -94,14 +94,18 @@ void* kmemcpy( void *dest, const void *src, uint32_t count )
  */
 void* kmallocf(uint32_t size, enum mm_alloc_flags f)
 {
+    uint32_t allocTotalSize = size;
+    if((f | MEM_CHECKED) == f)
+        allocTotalSize += MM_HEAP_ALLOC_CANARY_SIZE;
+    
     if(firstAlloc == NULL)
     {
         struct m_allocation* newAlloc = (struct m_allocation*)KERNEL_HEAP_START;
-        newAlloc->size = size;
-        newAlloc->p = (void*)(&newAlloc + sizeof(struct m_allocation));
+        newAlloc->size = allocTotalSize;
+        newAlloc->p = (void*)(newAlloc + sizeof(struct m_allocation));
         newAlloc->allocated = TRUE;
         newAlloc->type = MEM_ALLOC;
-        newAlloc->flags = 0;
+        newAlloc->flags = f;
 
         if((f | MEM_CHECKED) == f)
         {
@@ -121,14 +125,14 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
         
         if(next != NULL)
         {
-            if(mm_get_space(current, next) >= size + sizeof(struct m_allocation))
+            if(mm_get_space(current, next) >= allocTotalSize + sizeof(struct m_allocation))
             {
                 struct m_allocation* newAlloc = (struct m_allocation*)mm_data_tail(current);
-                newAlloc->size = size;
-                newAlloc->p = (void*)(&newAlloc + sizeof(struct m_allocation));
+                newAlloc->size = allocTotalSize;
+                newAlloc->p = (void*)(newAlloc + sizeof(struct m_allocation));
                 newAlloc->allocated = TRUE;
                 newAlloc->type = MEM_ALLOC;
-                newAlloc->flags = 0;
+                newAlloc->flags = f;
                 
                 if((f | MEM_CHECKED) == f)
                 {
@@ -147,14 +151,14 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
         else
         {
             uint32_t spaceToHeapEnd = mm_space_to_end(current);
-            if(spaceToHeapEnd >= size)
+            if(spaceToHeapEnd >= allocTotalSize)
             {
                 struct m_allocation* newAlloc = (struct m_allocation*)mm_data_tail(current);
-                newAlloc->size = size;
-                newAlloc->p = (void*)(&newAlloc + sizeof(struct m_allocation));
+                newAlloc->size = allocTotalSize;
+                newAlloc->p = (void*)(newAlloc + sizeof(struct m_allocation));
                 newAlloc->allocated = TRUE;
                 newAlloc->type = MEM_ALLOC;
-                newAlloc->flags = 0;
+                newAlloc->flags = f;
                 
                 if((f | MEM_CHECKED) == f)
                 {
@@ -344,7 +348,7 @@ struct m_allocation* mm_find_free_space(size_t bytes)
  */
 void mm_set_alloc_canary(struct m_allocation* alloc)
 {
-    alloc->size += MM_HEAP_ALLOC_CANARY_SIZE;
+    //alloc->size += MM_HEAP_ALLOC_CANARY_SIZE;
     
     kmemplace(alloc->p, alloc->size - MM_HEAP_ALLOC_CANARY_SIZE, MM_HEAP_ALLOC_CANARY_VALUE, MM_HEAP_ALLOC_CANARY_SIZE);
 }

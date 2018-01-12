@@ -85,7 +85,9 @@ void kernel_main(multiboot_info_t* arg1)
     init_memory_manager();
 
     Debugger();
-    char* memTest = (char*)kmalloc(128);
+    char* memTest = (char*)kmallocf(128, MEM_CHECKED);
+    memTest[129] = 'b';
+    free(memTest); // Will detect overflow
     char* memTest2 = (char*)kmalloc(128);
     char* memTest3 = (char*)kmalloc(128);
     char* memTest4 = (char*)kmalloc(128);
