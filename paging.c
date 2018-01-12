@@ -275,7 +275,7 @@ uint32_t pa_pt_find_free_page(struct page_table_info* pt)
      * checking if the overseeing directory is present and then checking its 
      * pages. If we find one we immediately return the byte address of the page.
      */
-    for(int i = pa_module->min_page_alloc; i < pa_module->max_page_alloc; i++)
+    for(uint32_t i = pa_module->min_page_alloc; i < pa_module->max_page_alloc; i++)
     {
         int pde = pt->page_directory[i / 1024];
         
