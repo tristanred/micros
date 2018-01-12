@@ -47,10 +47,16 @@ void init_page_allocator()
     
     enablePaging();
     
-    // pa_pt_alloc_page(kpt, &ptr1);
-    // pa_pt_alloc_page(kpt, &ptr2);
-    // pa_pt_alloc_page(kpt, &ptr3);
-    // pa_pt_alloc_page(kpt, &ptr4);
+    pa_module = &pa_module_local;
+    pa_module->current_pt = kpt;
+    pa_module->kernelPagetable = kpt;
+    pa_module->min_page_alloc = 1024*3;
+    pa_module->max_page_alloc = 1024*64;
+
+    pa_pt_alloc_page(kpt, &ptr1);
+    pa_pt_alloc_page(kpt, &ptr2);
+    pa_pt_alloc_page(kpt, &ptr3);
+    pa_pt_alloc_page(kpt, &ptr4);
 
     pa_print_kpt(kpt);
 }
@@ -263,50 +269,34 @@ uint32_t pa_pt_find_free_page(struct page_table_info* pt)
         If we get to the end of the directory, check the next directory.
         If we get to the end of the pagetables, we need to open up a new
         directory.
-
-
-
     */
-
-    for(int i = 0; i < 1024; i++)
+    
+    /* Go through each frame to see if any of them is free. This is firt 
+     * checking if the overseeing directory is present and then checking its 
+     * pages. If we find one we immediately return the byte address of the page.
+     */
+    for(int i = pa_module->min_page_alloc; i < pa_module->max_page_alloc; i++)
     {
-        int pde = pt->page_directory[i];
-
-        if((pde & 0x1) == 0) // If not present
+        int pde = pt->page_directory[i / 1024];
+        
+        if(PD_PRESENT(pde) == TRUE)
         {
-            continue;
-        }
-
-        for(int k = 0; k < 1024; k++)
-        {
-            int pte = (i * 1024) + k;
-
-            if(pt->page_tables[pte] == 0)
+            int pte = pt->page_tables[i];
+            
+            if(PT_PRESENT(pte) == FALSE)
             {
-                // Found a free page ! Woohoo
-                return pte * PAGE_SIZE;
+                return i * PAGE_SIZE;
             }
         }
     }
 
-    // Need to allocate a new PDE to point to a new page of entries
-    // Means we need to allocate a new page and have our new PDE point to it
-
-    // Find a free page frame
-    uint32_t freeFrame = 0;
-    int res = pfm_find_free(&freeFrame);
-    // TODO : MARK AS ALLOCATED
-    if(res < 0)
-    {
-        // TODO : Out of memory
-        return 0;
-    }
-
-    // Find a free PDE
+    // At this point, we couldn't find any pages within the directories that are
+    //present.
 
     BOOL found = FALSE;
     uint32_t index = 0;
-    for(int i = 0; i < 1024; i++)
+    int minDirectory = pa_module->min_page_alloc / 1024;
+    for(int i = minDirectory; i < 1024; i++)
     {
         uint32_t pde = pt->page_directory[i];
 
@@ -320,17 +310,17 @@ uint32_t pa_pt_find_free_page(struct page_table_info* pt)
 
     if(found == FALSE)
     {
-        // No free PDE, wow, quite unlucky !
+        // No free PDE. Crash and burn.
+        ASSERT(FALSE, "NO DIRECTORIES AVAILABLE");
     }
+    
+    
+    // We can now allocate the new directory and give out an address of its
+    // first frame.
+    pa_directory_load(pt, index);
 
-    // Need to find a space in the virtual address space
+    // Since we opened a new PDE, its first page is definitely free
     uint32_t pdeFirstPageAddr = 1024 * PAGE_SIZE * index;
-
-    pt->page_directory[index] = pdeFirstPageAddr | 3;
-
-    // Now the page directory entry is loaded and points to a page that will
-    // contain all the page table entries. The first of which is free and can be
-    // returned from this function.
 
     return pdeFirstPageAddr;
 }
@@ -370,8 +360,6 @@ void pa_handle_pagefault(uint32_t addr, uint32_t code)
     uint32_t pte = 0;
     uint32_t off = 0;
     pa_decompose_vaddress(addr, &pde, &pte, &off);
-
-    Debugger();
 
     pa_directory_load(pa_get_current_pt(), pde);
 

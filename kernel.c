@@ -79,7 +79,6 @@ void kernel_main(multiboot_info_t* arg1)
 
     kSetupLog(SERIAL_COM1_BASE);
 
-    Debugger();
     init_page_allocator();
     pa_test_paging();
     

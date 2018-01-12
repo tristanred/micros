@@ -1,6 +1,81 @@
 #ifndef PAGING_H
 #define PAGING_H
 
+/**
+ * Page Allocator module
+ * 
+ * The Page Allocator is used to implement Virtual Memory. In a system with 
+ * virtual memory, each memory address can be mapped to an arbitrary address in
+ * physical RAM. This brings several advantages. One that the system can use 
+ * any memory address it wants, we can use addresses in the 3GB range even on a 
+ * system with 256MB of RAM. Secondly, we can protect memory ranges so that 
+ * usermode programs cannot access memory owned by the kernel and other 
+ * processes.
+ * 
+ * In Virtual Memory, the system memory is separated into pages. Each page is 
+ * 4096 bytes in size. Pages are mapped to Page Frames. Pages make reference to 
+ * a virtual block of memory and Page Frames are the actual location in physical
+ * RAM. A page is accessed by its virtual address with the intent that the 
+ * address will never change, this address is used by programs to access their 
+ * data. The page is mapped to a Page Frame by manipulating an entry in the 
+ * page table. The resulting address specifies where in physical ram the page 
+ * will point to. By changing the entry, a memory address can point to different
+ * blocks of data.
+ * 
+ * Each time a memory address is used (by dereferencing a pointer by example)
+ * the processor will check the page table to see where to go in physical ram to
+ * get the data. It has a few hops to go through so each memory access can be 
+ * 2-3x slower than just hitting the address directly. To speed things up, each
+ * time the processor finds the physical address it keeps a table of 
+ * virtual->physical addresses so it doesn't have to redo the pagetable lookups.
+ * 
+ * A page table entry (PTE) contains the target physical address and 12 bits of
+ * flags. Important flags include if the page is present, writable, accessible 
+ * by normal users and others. Pages can be marked as non-present, meaning that
+ * the data has been moved somewhere else (ex: to disk) or has not been 
+ * allocated yet. When the processor hits a PTE with the PRESENT flag (bit 0)
+ * set to 0 it will launch a PageFault exception with an interrupt. The kernel
+ * will receive the interrupt and the target address + error code, It then has 
+ * to work to read the data back from disk, set it somewhere in physical RAM 
+ * (anywhere) and link the virtual to the physical address in the PTE bits. When
+ * the interrupt returns, the faulting instruction will be re-ran but this time
+ * the page will have been marked as present and the memory can be accessed.
+ * 
+ * All the PTE entries are contained in a Page Directory (PDE for Page Directory
+ * Entry, all PDE are in the root pagetable structure) there are 1024 PDE so 
+ * each of them can oversee 1024 pages so 4 MB. Currently each PDE need to map
+ * to sequential 4MB segments. This is due to my pagetable structure being all
+ * in one struct. This avoids having to disable paging when handling a lookup
+ * due to having to read the PDE bytes directly in physical memory.
+ * 
+ * All this enables us to keep separate memory mappings for each process. This 
+ * way, when a process tries to access another process's memory the pages will 
+ * not be mapped and a PageFault will trigger. We can stop the access and kill 
+ * the faulting process. We can even give two processes access to the same 
+ * virtual address but pointing to a different page frame in RAM so they will
+ * have different data.
+ * 
+ * This Page Allocator initializes a kernel pagetable by mapping the first 4MB
+ * of data to the same physical addresses. This is done mostly for the BIOS 
+ * structures contained in the first 1MB of memory. 
+ * 
+ * The second MB is used to contain the kernel code stack and 
+ * initialized/uninitialized data segments.
+ * 
+ * The third MB contains the Page Frame Map (PFM). The PFM tracks the physical
+ * memory allocations. We can flag each 4KB segments to track if it is used
+ * or free. Only the kernel has access to this structure and is shared between
+ * all pagetables.
+ * 
+ * The fourth MB doesn't have anything right now. It is probable that the PFM
+ * will grow to 2MB because it is currently using 8bit entries and more might 
+ * be needed.
+ * 
+ * The kernel page table is located on the first page of the 5th MB followed by
+ * the first 2 page directories backing pages.
+ * 
+ */
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -56,18 +131,28 @@ enum page_frame_flags
     PG_DIRTY = 64
 };
 
-
-// Storing a default page table before I start getting multiple address mappings
-// TODO : Remove this & refs
-struct page_table_info* defaultPageTable;
-
-// Physical memory pages, this PT is not supposed to be loaded.
-// Each entry is not a PTE but some bits to mark each physical page
-// as occupied or other info.
-// TODO : Changed to pointer, todo allocate somewhere
-struct page_table_info* kernelPagetable;
-
+// Initial location of the kernel pagetable
+// 1024 is the first page of the second PDE at the 4MB mark.
 #define KPT_LOCATION (1024 * PAGE_SIZE)
+
+struct page_allocator_module
+{
+    // Page table currently loaded in CR3
+    struct page_table_info* current_pt;
+    
+    // Kernel page table
+    struct page_table_info* kernelPagetable;
+    
+    // Limits in page number of where the Page Allocator can allocate memory
+    // from. This range is checked in pa_pt_alloc_page where we don't care
+    // where the memory is from, it will always be between min and max.
+    uint32_t min_page_alloc;
+    uint32_t max_page_alloc;
+};
+struct page_allocator_module* pa_module;
+struct page_allocator_module pa_module_local;
+
+
 
 // Point to the page table currently loaded
 struct page_table_info* currentPageTable;
