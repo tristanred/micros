@@ -11,11 +11,6 @@
 #define KERNEL_HEAP_START (1024 * 1024 * 6)
 #define KERNEL_HEAP_LENGTH (25600 * PAGE_SIZE) // 100MB
 
-// Feature flags
-#define MM_ZERO_ON_FREE
-
-//#define MM_ENABLE_HEAP_ALLOC_CANARY
-
 #define MM_HEAP_ALLOC_CANARY_SIZE 5
 #define MM_HEAP_ALLOC_CANARY_VALUE "QUACK"
 
@@ -24,6 +19,20 @@ enum mm_alloc_types
     MEM_UNALLOC,
     MEM_ALLOC,
     MEM_STUB
+};
+
+enum mm_alloc_flags
+{
+    MEM_NOFLAGS = 0,
+    MEM_CHECKED = 1, // Alloc has a canary on the last 5 bytes
+    MEM_ZEROMEM = 2,
+    MEM_PLACEHOLDER = 4
+};
+
+enum mm_free_flags
+{
+    MEM_FREENONE = 0,
+    
 };
 
 struct m_allocation
@@ -63,6 +72,9 @@ void* krealloc( void *ptr, uint32_t new_size );
 // Extended methods
 void* kmemcpy( void *dest, const void *src, uint32_t count );
 
+void* kmallocf(uint32_t size, enum mm_alloc_flags f);
+void kfreef(void* ptr);
+
 void kmemplace(void* dest, uint32_t offset, const char* data, size_t count);
 void kmemget(void* src, char* dest, uint32_t offset, size_t count, size_t* readSize);
 
@@ -79,13 +91,8 @@ void mm_link_allocs(struct m_allocation* first, struct m_allocation* second);
 struct m_allocation* mm_find_free_allocation();
 struct m_allocation* mm_find_free_space(size_t bytes);
 
-#ifdef MM_ENABLE_HEAP_ALLOC_CANARY
 void  mm_set_alloc_canary(struct m_allocation* alloc);
-
 BOOL mm_verify_alloc_canary(struct m_allocation* alloc);
-
 BOOL mm_verify_all_allocs_canary();
-
-#endif
 
 #endif

@@ -59,6 +59,41 @@ void init_memory_manager()
  */
 void* kmalloc(uint32_t size)
 {
+    return kmallocf(size, MEM_NOFLAGS);
+}
+
+/**
+ * Release memory allocated by malloc.
+ */
+void kfree(void* ptr)
+{
+    kfreef(ptr);
+}
+
+/**
+ * Copy data from one pointer to another. Must specify a size to copy.
+ * Don't put a wrong size. Seriously, do not.
+ * TODO : Validate size of dest and src in the alloc list.
+ */
+void* kmemcpy( void *dest, const void *src, uint32_t count )
+{
+    uint8_t* ptrSrc = (uint8_t*)src;
+    uint8_t* ptrDest = (uint8_t*)dest;
+    
+    for(size_t i = 0; i < count; i++)
+    {
+        ptrDest[i] = ptrSrc[i];
+    }
+    
+    return dest;
+}
+
+/**
+ * Same as kmalloc but with upgraded functionalities. The current kmalloc calls
+ * are meant to be migrated over to this function eventually.
+ */
+void* kmallocf(uint32_t size, enum mm_alloc_flags f)
+{
     if(firstAlloc == NULL)
     {
         struct m_allocation* newAlloc = (struct m_allocation*)KERNEL_HEAP_START;
@@ -68,9 +103,10 @@ void* kmalloc(uint32_t size)
         newAlloc->type = MEM_ALLOC;
         newAlloc->flags = 0;
 
-        #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
-        mm_set_alloc_canary(newAlloc);
-        #endif
+        if((f | MEM_CHECKED) == f)
+        {
+            mm_set_alloc_canary(newAlloc);
+        }
 
         firstAlloc = newAlloc;
         lastAlloc = newAlloc;
@@ -94,9 +130,10 @@ void* kmalloc(uint32_t size)
                 newAlloc->type = MEM_ALLOC;
                 newAlloc->flags = 0;
                 
-                #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
-                mm_set_alloc_canary(newAlloc);
-                #endif
+                if((f | MEM_CHECKED) == f)
+                {
+                    mm_set_alloc_canary(newAlloc);
+                }
                 
                 // Node linking
                 mm_link_allocs(current, newAlloc);
@@ -119,9 +156,10 @@ void* kmalloc(uint32_t size)
                 newAlloc->type = MEM_ALLOC;
                 newAlloc->flags = 0;
                 
-                #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
-                mm_set_alloc_canary(newAlloc);
-                #endif
+                if((f | MEM_CHECKED) == f)
+                {
+                    mm_set_alloc_canary(newAlloc);
+                }
                 
                 mm_link_allocs(current, newAlloc);
                 
@@ -143,10 +181,7 @@ void* kmalloc(uint32_t size)
     return NULL;
 }
 
-/**
- * Release memory allocated by malloc.
- */
-void kfree(void* ptr)
+void kfreef(void* ptr)
 {
     if(ptr == NULL)
     {
@@ -168,22 +203,22 @@ void kfree(void* ptr)
                 return;
             }
             
-            #ifdef MM_ENABLE_HEAP_ALLOC_CANARY
-            
-            if(mm_verify_alloc_canary(current) == FALSE)
+            if((current->flags | MEM_CHECKED) == current->flags)
             {
-                kWriteLog_format1d("Overflow detected at address %d", (uint32_t)current->p);
-                
-                Debugger();
+                if(mm_verify_alloc_canary(current) == FALSE)
+                {
+                    kWriteLog_format1d("Overflow detected at address %d", (uint32_t)current->p);
+                    
+                    Debugger();
+                }
             }
-            
-            #endif
             
             mm_link_allocs(current->previous, current->next);
             
-            #ifdef MM_ZERO_ON_FREE
-            memset(&current, 0, (uint32_t)current->p + current->size);
-            #endif
+            if((current->flags | MEM_ZEROMEM) == current->flags)
+            {
+                memset(&current, 0, (uint32_t)current->p + current->size);
+            }
 
             // Keeping the other attributes of the allocation to maybe help with
             // debugging freed allocations.
@@ -196,24 +231,6 @@ void kfree(void* ptr)
         
         current = current->previous;
     }
-}
-
-/**
- * Copy data from one pointer to another. Must specify a size to copy.
- * Don't put a wrong size. Seriously, do not.
- * TODO : Validate size of dest and src in the alloc list.
- */
-void* kmemcpy( void *dest, const void *src, uint32_t count )
-{
-    uint8_t* ptrSrc = (uint8_t*)src;
-    uint8_t* ptrDest = (uint8_t*)dest;
-    
-    for(size_t i = 0; i < count; i++)
-    {
-        ptrDest[i] = ptrSrc[i];
-    }
-    
-    return dest;
 }
 
 /**
@@ -320,8 +337,6 @@ struct m_allocation* mm_find_free_space(size_t bytes)
     return NULL;
 }
 
-#ifdef MM_ENABLE_HEAP_ALLOC_CANARY
-
 /**
  * Set the last X bytes of an allocation to a specific sequence of bytes.
  * That sequence of bytes is checked when it is freed or called manually. If the 
@@ -370,5 +385,3 @@ BOOL mm_verify_all_allocs_canary()
     
     return FALSE;
 }
-
-#endif
