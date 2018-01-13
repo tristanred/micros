@@ -1,5 +1,8 @@
 #include "paging.h"
 
+#include "error.h"
+#include "kernel_log.h"
+
 extern void set_paging(uint32_t* pt);
 extern void enablePaging();
 extern void disablePaging();

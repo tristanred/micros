@@ -79,7 +79,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "common.h"
+#include "types.h"
 
 #define PAGE_SIZE 4096
 
@@ -89,7 +89,8 @@
 #define PAGEOFF_MASK 0xFFF
 
 #define PAGE_ALL_PRESENT
-#define PA_LOAD_ON_DEMAND 1
+//#define PA_LOAD_ON_DEMAND 1
+#define PA_LOAD_ON_DEMAND 0
 
 // PDE Flags
 #define PD_PRESENT(x)   ((x & 0x1)  == 0x1)

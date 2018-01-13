@@ -80,7 +80,7 @@ void kernel_main(multiboot_info_t* arg1)
     kSetupLog(SERIAL_COM1_BASE);
 
     init_page_allocator();
-    pa_test_paging();
+    //pa_test_paging();
     
     init_memory_manager();
 

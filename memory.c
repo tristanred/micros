@@ -48,7 +48,13 @@
  */
 void init_memory_manager()
 {
-
+    uint32_t startingHeapPage = KERNEL_HEAP_START;
+    uint32_t heapPageCount = KERNEL_HEAP_LENGTH / PAGE_SIZE;
+    
+    for(uint32_t i = 0; i < heapPageCount; i++)
+    {
+        pa_pt_alloc_pageaddr(pa_get_current_pt(), i * PAGE_SIZE);
+    }
 }
 
 /**
