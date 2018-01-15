@@ -26,7 +26,17 @@
     jmp irq_common_stub
 %endmacro
 
+%macro IRQ_CANSWITCH 2
+  global irq%1
+  irq%1:
+    cli
+    push byte 0
+    push byte %2
+    jmp irq_timer_stub
+%endmacro
+
 extern isr_handler
+extern should_switch_task
 
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
@@ -92,7 +102,7 @@ isr_common_stub:
 
 extern irq_handler
 
-IRQ     0,      32
+IRQ_CANSWITCH     0,      32
 IRQ     1,      33
 IRQ     2,      34
 IRQ     3,      35
@@ -137,3 +147,39 @@ irq_common_stub:
     add esp, 8     ; Cleans up the pushed error code and pushed ISR number
     sti
     iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+
+extern test_args
+
+irq_timer_stub:
+    pusha
+
+    mov ax, ds
+    push eax
+
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    call irq_handler
+
+    call should_switch_task
+
+    cmp eax, 1
+
+    jne normal
+    
+    call test_args
+
+normal:
+    pop ebx
+    mov ds, bx
+    mov es, bx
+    mov fs, bx
+    mov gs, bx
+
+    popa
+    add esp, 8
+    sti
+    iret

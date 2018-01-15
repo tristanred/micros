@@ -57,14 +57,106 @@ char* kBadErrorMessage;
 void kErrorBeforeInit(uint32_t errno, char* msg)
 {
     // Do something with the error code and gtfo
-
+ 
     kErrorBad = errno;
 
     kBadErrorMessage = msg;
-
 }
 
 extern void _cpu_idle();
+
+struct regs_t
+{
+    uint32_t other;
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+};
+
+enum task_state
+{
+    T_WAITING,
+    T_RUNNING,
+    T_SUSPENDED
+};
+
+struct task_t
+{
+    uint32_t entryAddr;
+    struct regs_t regs;
+    uint32_t stackAddr;
+    enum task_state state;
+};
+
+int currenttask;
+struct task_t tasks[2];
+
+extern void tswitch(struct task_t* to, struct task_t* from);
+
+void test_args(struct regs_t testregs)
+{
+    
+};
+
+void do_tswitch()
+{
+    
+}
+
+BOOL should_switch_task()
+{
+    return TRUE;
+}
+
+uint8_t t1_stack[1024*1];
+void task1()
+{
+    int incr = 0;
+    while(TRUE)
+    {
+        incr++;
+    }
+};
+
+uint8_t t2_stack[1024*1];
+void task2()
+{
+    int incr = 0;
+    while(TRUE)
+    {
+        incr++;
+    }
+};
+
+void setup_tasks()
+{
+    struct task_t t1 = tasks[0];
+    t1.regs.eax = 0;
+    t1.regs.ebp = 0;
+    t1.regs.ebx = 0;
+    t1.regs.ecx = 0;
+    t1.regs.edi = 0;
+    t1.regs.edx = 0;
+    t1.regs.esi = 0;
+    t1.regs.esp = 0;
+    t1.entryAddr = &task1;
+    t1.stackAddr = t1_stack;
+    t1.state = T_WAITING;
+    
+    struct task_t t2 = tasks[1];
+    t2.regs.eax = 0;
+    t2.regs.ebp = 0;
+    t2.regs.ebx = 0;
+    t2.regs.ecx = 0;
+    t2.regs.edi = 0;
+    t2.regs.edx = 0;
+    t2.regs.esi = 0;
+    t2.regs.esp = 0;
+    t2.entryAddr = &task2;
+    t2.stackAddr = t2_stack;
+    t2.state = T_WAITING;
+    
+    tswitch(&t1, &t2);
+};
+
 
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
@@ -82,9 +174,23 @@ void kernel_main(multiboot_info_t* arg1)
     init_page_allocator();
     //pa_test_paging();
     
-    init_memory_manager();
+    //init_memory_manager();
 
     Debugger();
+    
+    //      TEST ZONE
+    
+    setup_tasks();
+    init_timer(1000);
+    asm volatile("sti");
+    
+    while(TRUE)
+    {
+        cpu_idle();
+    }
+
+    //      TEST ZONE
+    
     char* memTest = (char*)kmallocf(128, MEM_CHECKED);
     memTest[129] = 'b';
     free(memTest); // Will detect overflow

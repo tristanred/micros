@@ -29,6 +29,7 @@ kernel: prepare agdt.asm
 	$(AS) aidt.asm -o $(BUILDDIR)aidt.o $(ASFLAGS)
 	$(AS) interrupts.asm -o $(BUILDDIR)interrupts.o $(ASFLAGS)
 	$(AS) memory.asm -o $(BUILDDIR)amemory.o $(ASFLAGS)
+	$(AS) task.asm -o $(BUILDDIR)atask.o $(ASFLAGS)
 	$(CC) -c *.c $(CFLAGS)
 	mv *.o $(BUILDDIR)
 
