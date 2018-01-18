@@ -67,7 +67,7 @@ extern void _cpu_idle();
 
 struct regs_t
 {
-    uint32_t other;
+    uint32_t flags;
     uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
 };
 
@@ -86,8 +86,9 @@ struct task_t
     enum task_state state;
 };
 
+#define TASK_LEN 2
 int currenttask;
-struct task_t tasks[2];
+struct task_t tasks[TASK_LEN];
 
 extern void tswitch(struct task_t* to, struct task_t* from);
 
@@ -95,6 +96,34 @@ void test_args(struct regs_t testregs)
 {
     
 };
+
+struct task_t* get_switch_state(registers_t* from)
+{
+    int currentTaskIndex = currenttask;
+    int nextTaskIndex = (currenttask + 1) % TASK_LEN;
+    
+    struct task_t* currentTask = &(tasks[currenttask]);
+    currentTask->state = T_SUSPENDED;
+    currentTask->regs.eax = from->eax;
+    currentTask->regs.ecx = from->ecx;
+    currentTask->regs.edx = from->edx;
+    currentTask->regs.ebx = from->ebx;
+    currentTask->regs.esp = from->esp;
+    currentTask->regs.ebp = from->ebp;
+    currentTask->regs.esi = from->esi;
+    currentTask->regs.edi = from->edi;
+    currentTask->regs.flags = from->eflags;
+    
+    struct task_t* nextTask = &(tasks[nextTaskIndex]);
+    nextTask->state = T_RUNNING;
+    
+    currenttask = nextTaskIndex;
+    from = currentTask;
+    
+    Debugger();
+    
+    return nextTask;
+}
 
 void do_tswitch()
 {
@@ -128,33 +157,37 @@ void task2()
 
 void setup_tasks()
 {
-    struct task_t t1 = tasks[0];
-    t1.regs.eax = 0;
-    t1.regs.ebp = 0;
-    t1.regs.ebx = 0;
-    t1.regs.ecx = 0;
-    t1.regs.edi = 0;
-    t1.regs.edx = 0;
-    t1.regs.esi = 0;
-    t1.regs.esp = 0;
-    t1.entryAddr = &task1;
-    t1.stackAddr = t1_stack;
-    t1.state = T_WAITING;
+    currenttask = 0;
     
-    struct task_t t2 = tasks[1];
-    t2.regs.eax = 0;
-    t2.regs.ebp = 0;
-    t2.regs.ebx = 0;
-    t2.regs.ecx = 0;
-    t2.regs.edi = 0;
-    t2.regs.edx = 0;
-    t2.regs.esi = 0;
-    t2.regs.esp = 0;
-    t2.entryAddr = &task2;
-    t2.stackAddr = t2_stack;
-    t2.state = T_WAITING;
+    struct task_t* t1 = &(tasks[0]);
+    t1->regs.eax = 0;
+    t1->regs.ebp = 0;
+    t1->regs.ebx = 0;
+    t1->regs.ecx = 0;
+    t1->regs.edi = 0;
+    t1->regs.edx = 0;
+    t1->regs.esi = 0;
+    t1->regs.esp = 0;
+    t1->regs.flags = 0;
+    t1->entryAddr = &task1;
+    t1->stackAddr = t1_stack;
+    t1->state = T_WAITING;
     
-    tswitch(&t1, &t2);
+    struct task_t* t2 = &(tasks[1]);
+    t2->regs.eax = 0;
+    t2->regs.ebp = 0;
+    t2->regs.ebx = 0;
+    t2->regs.ecx = 0;
+    t2->regs.edi = 0;
+    t2->regs.edx = 0;
+    t2->regs.esi = 0;
+    t2->regs.esp = 0;
+    t2->regs.flags = 0;
+    t2->entryAddr = &task2;
+    t2->stackAddr = t2_stack;
+    t2->state = T_WAITING;
+    
+    tswitch(t1, t2);
 };
 
 
@@ -176,8 +209,6 @@ void kernel_main(multiboot_info_t* arg1)
     
     //init_memory_manager();
 
-    Debugger();
-    
     //      TEST ZONE
     
     setup_tasks();

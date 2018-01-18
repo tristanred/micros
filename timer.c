@@ -26,7 +26,7 @@ static void timer_callback(registers_t regs)
         cpu_is_idle = FALSE;
     }
     
-    Debugger();
+    //Debugger();
 }
 
 void init_timer(uint32_t frequency)

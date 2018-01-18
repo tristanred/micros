@@ -149,6 +149,7 @@ irq_common_stub:
     iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 
 extern test_args
+extern get_switch_state
 
 irq_timer_stub:
     pusha
@@ -165,12 +166,33 @@ irq_timer_stub:
     call irq_handler
 
     call should_switch_task
-
     cmp eax, 1
-
     jne normal
     
     call test_args
+
+    push esp
+    push 0 ; to
+    call get_switch_state
+    ; mov eax, [eax]
+    
+    ; Pop old registers
+    ;pop ebx
+    ; mov ds, bx
+    ; mov es, bx
+    ; mov fs, bx
+    ; mov gs, bx
+    
+    ; TODO : Can't pop registers because it will
+    ; replace EAX. Instead just increment ESP and push
+    ; the new regs in.
+    ;popa
+    add esp, 64 ; <-- Size of registers
+    
+    push DWORD [eax]
+    push DWORD [eax+4]
+    push DWORD [eax+8]
+    push DWORD [eax+40]
 
 normal:
     pop ebx
