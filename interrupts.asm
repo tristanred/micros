@@ -150,8 +150,10 @@ irq_common_stub:
 
 extern test_args
 extern get_switch_state
+extern Debugger
 
 irq_timer_stub:
+    call Debugger
     pusha
 
     mov ax, ds
@@ -187,15 +189,34 @@ irq_timer_stub:
     ; replace EAX. Instead just increment ESP and push
     ; the new regs in.
     ;popa
-    add esp, 64 ; <-- Size of registers
+    add esp, 40 ; <-- Size of registers
     
-    push DWORD [eax]
+    ; Order Needed
+    ; Temp ← (ESP);
+    ; Push(EAX);
+    ; Push(ECX);
+    ; Push(EDX);
+    ; Push(EBX);
+    ; Push(Temp);
+    ; Push(EBP);
+    ; Push(ESI);
+    ; Push(EDI);
+
+    
     push DWORD [eax+4]
     push DWORD [eax+8]
+    push DWORD [eax+12]
+    push DWORD [eax+16]
+    push DWORD [eax+20]
+    push DWORD [eax+24]
+    push DWORD [eax+28]
+    push DWORD [eax+32]
+    push DWORD [eax+36]
     push DWORD [eax+40]
 
 normal:
     pop ebx
+    mov ebx, 16
     mov ds, bx
     mov es, bx
     mov fs, bx

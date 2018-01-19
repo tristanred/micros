@@ -161,13 +161,13 @@ void setup_tasks()
     
     struct task_t* t1 = &(tasks[0]);
     t1->regs.eax = 0;
-    t1->regs.ebp = 0;
+    t1->regs.ebp = t1_stack;
     t1->regs.ebx = 0;
     t1->regs.ecx = 0;
     t1->regs.edi = 0;
     t1->regs.edx = 0;
     t1->regs.esi = 0;
-    t1->regs.esp = 0;
+    t1->regs.esp = t1_stack;
     t1->regs.flags = 0;
     t1->entryAddr = &task1;
     t1->stackAddr = t1_stack;
@@ -175,13 +175,13 @@ void setup_tasks()
     
     struct task_t* t2 = &(tasks[1]);
     t2->regs.eax = 0;
-    t2->regs.ebp = 0;
+    t2->regs.ebp = t2_stack;
     t2->regs.ebx = 0;
     t2->regs.ecx = 0;
     t2->regs.edi = 0;
     t2->regs.edx = 0;
     t2->regs.esi = 0;
-    t2->regs.esp = 0;
+    t2->regs.esp = t2_stack;
     t2->regs.flags = 0;
     t2->entryAddr = &task2;
     t2->stackAddr = t2_stack;
