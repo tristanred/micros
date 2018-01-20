@@ -153,7 +153,7 @@ extern get_switch_state
 extern Debugger
 
 irq_timer_stub:
-    call Debugger
+    ; call Debugger
     pusha
 
     mov ax, ds
@@ -171,49 +171,77 @@ irq_timer_stub:
     cmp eax, 1
     jne normal
     
-    call test_args
-
     push esp
-    push 0 ; to
     call get_switch_state
-    ; mov eax, [eax]
-    
-    ; Pop old registers
-    ;pop ebx
-    ; mov ds, bx
-    ; mov es, bx
-    ; mov fs, bx
-    ; mov gs, bx
-    
-    ; TODO : Can't pop registers because it will
-    ; replace EAX. Instead just increment ESP and push
-    ; the new regs in.
-    ;popa
-    add esp, 40 ; <-- Size of registers
-    
-    ; Order Needed
-    ; Temp ← (ESP);
-    ; Push(EAX);
-    ; Push(ECX);
-    ; Push(EDX);
-    ; Push(EBX);
-    ; Push(Temp);
-    ; Push(EBP);
-    ; Push(ESI);
-    ; Push(EDI);
+    pop ebx
 
+    call Debugger
     
-    push DWORD [eax+4]
-    push DWORD [eax+8]
-    push DWORD [eax+12]
-    push DWORD [eax+16]
-    push DWORD [eax+20]
-    push DWORD [eax+24]
-    push DWORD [eax+28]
-    push DWORD [eax+32]
-    push DWORD [eax+36]
-    push DWORD [eax+40]
+    ; Load target stack addr in EBX
+   ; mov ebx, [eax+20]
+    
+    ; Copy EIP to new stack
+    ;mov ecx, [eax]
+    ;mov [ebx-8], ecx
+    
+    ; Copy CS to new stack
+    ;mov [ebx-4], DWORD 8
+    ; Copy eflags to new stack
+    ;mov ecx, [eax+4]
+    ;mov [ebx], ecx
 
+    ; Adjust target ESP to account for the 3 new DWORDs
+    ;sub ebx, 12
+    ;mov [eax+20], ebx
+    
+    add esp, 36 ; Holy fuck how did it work without this ??????
+
+    mov ebx, 16
+    mov ds, bx
+    mov es, bx
+    mov fs, bx
+    mov gs, bx
+
+    ; Emplace the EIP value to be popped by IRET
+    mov ebx, [eax]
+    mov [esp+8], ebx
+    
+    ; Emplace the CS value to be popped by IRET
+    mov [esp+12], DWORD 0x8 
+    
+    ; Emplace the EFLAGS value to be popped by IRET
+    mov ebx, [eax+4]
+    mov [esp+16], ebx
+
+    ; Restore the registers for the next task.
+    ; We cannot use POPA because of (I did this 10 minutes ago and I can't even
+    ; remember why I can't.) a reason.
+    ; So we restore register by register to avoid using the stack.
+    mov edi, [eax+8]
+    mov esi, [eax+12]
+    mov ebp, [eax+16]
+    
+    ; mov esp, [eax+20] 
+    ; Do NOT restore ESP. 
+    ; The stack needs to be popped by IRET for EIP, CS, EFLAGS. Therefore on
+    ; task switch, we must put EBP into ESP.
+    ; Conclusion is that the IRQ cannot fully restore into a task.
+    ; Must probably restore into a task switch procedure.
+    mov ebx, [eax+24]
+    mov edx, [eax+28]
+    mov ecx, [eax+32]
+    
+    ; Target the new stack
+    ;mov esp, [eax+20]
+    ; TODO : Clean up the IRQ bytes that are left
+    
+    ; Restore EAX last because we needed it to keep the new task struct ptr.
+    mov eax, [eax+36]
+
+    ; Skip the error code and 0 byte
+    add esp, 8
+    sti
+    iret
 normal:
     pop ebx
     mov ebx, 16
