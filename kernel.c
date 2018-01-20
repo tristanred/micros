@@ -108,7 +108,7 @@ struct task_t* get_switch_state(registers_t* from)
     currentTask->regs.ecx = from->ecx;
     currentTask->regs.edx = from->edx;
     currentTask->regs.ebx = from->ebx;
-    currentTask->regs.esp = from->esp;
+    currentTask->regs.esp = from->esp + 16;
     currentTask->regs.ebp = from->ebp;
     currentTask->regs.esi = from->esi;
     currentTask->regs.edi = from->edi;
@@ -216,13 +216,19 @@ void kernel_main(multiboot_info_t* arg1)
     
     setup_tasks();
     init_timer(1000);
+    
+    Debugger();
     asm volatile("sti");
+    
+    task1();
     
     while(TRUE)
     {
         cpu_idle();
     }
 
+    Debugger();
+    
     //      TEST ZONE
     
     char* memTest = (char*)kmallocf(128, MEM_CHECKED);

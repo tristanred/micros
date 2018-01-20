@@ -171,11 +171,12 @@ irq_timer_stub:
     cmp eax, 1
     jne normal
     
+    call Debugger
+    
     push esp
     call get_switch_state
     pop ebx
 
-    call Debugger
     
     ; Load target stack addr in EBX
     mov ebx, [eax+20]
@@ -244,7 +245,6 @@ irq_timer_stub:
     iret
 normal:
     pop ebx
-    mov ebx, 16
     mov ds, bx
     mov es, bx
     mov fs, bx
