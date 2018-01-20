@@ -178,21 +178,21 @@ irq_timer_stub:
     call Debugger
     
     ; Load target stack addr in EBX
-   ; mov ebx, [eax+20]
+    mov ebx, [eax+20]
     
     ; Copy EIP to new stack
-    ;mov ecx, [eax]
-    ;mov [ebx-8], ecx
+    mov ecx, [eax]
+    mov [ebx-8], ecx
     
     ; Copy CS to new stack
-    ;mov [ebx-4], DWORD 8
+    mov [ebx-4], DWORD 8
     ; Copy eflags to new stack
-    ;mov ecx, [eax+4]
-    ;mov [ebx], ecx
+    mov ecx, [eax+4]
+    mov [ebx], ecx
 
     ; Adjust target ESP to account for the 3 new DWORDs
-    ;sub ebx, 12
-    ;mov [eax+20], ebx
+    sub ebx, 16
+    mov [eax+20], ebx
     
     add esp, 36 ; Holy fuck how did it work without this ??????
 
@@ -232,7 +232,7 @@ irq_timer_stub:
     mov ecx, [eax+32]
     
     ; Target the new stack
-    ;mov esp, [eax+20]
+    mov esp, [eax+20]
     ; TODO : Clean up the IRQ bytes that are left
     
     ; Restore EAX last because we needed it to keep the new task struct ptr.
