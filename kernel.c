@@ -99,8 +99,6 @@ void test_args(struct regs_t testregs)
 
 struct task_t* get_switch_state(registers_t* from)
 {
-    //Debugger();
-    
     int currentTaskIndex = currenttask;
     int nextTaskIndex = (currenttask + 1) % TASK_LEN;
     
@@ -115,6 +113,7 @@ struct task_t* get_switch_state(registers_t* from)
     currentTask->regs.esi = from->esi;
     currentTask->regs.edi = from->edi;
     currentTask->regs.flags = from->eflags;
+    currentTask->entryAddr = from->eip;
     
     struct task_t* nextTask = &(tasks[nextTaskIndex]);
     nextTask->state = T_RUNNING;
