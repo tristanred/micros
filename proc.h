@@ -5,37 +5,36 @@
 #include "vector.h"
 #include "idt.h"
 
-struct proc;
-struct thread_info;
-
-enum proc_status
+enum task_state
 {
-    RUNNING,
-    STOPPED
+    T_WAITING,
+    T_RUNNING,
+    T_SUSPENDED
 };
 
-struct proc
+struct regs_t
 {
-    uint16_t pid;
-    char name[64];
-    struct vector* threadlist;
-    int current_thread_nb; // Index in threadlist of the current thread
-    enum proc_status current_status;
+    uint32_t flags;
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
 };
 
-enum thread_status
+struct task_t
 {
-    WAITING,
-    RUNNING,
-    SUSPENDED,
-    KILLED
+    uint32_t entryAddr;
+    struct regs_t regs;
+    uint32_t stackAddr;
+    enum task_state state;
 };
 
-struct thread_info
-{
-    uint16_t tid;
-    enum thread_status current_status;
-    registers_t saved_registers; // If a thread is suspended registers go here
-};
+regs_t ks_get_registers();
+
+struct task_t* ks_get_current();
+
+BOOL ks_should_preempt_current();
+
+struct task_t* ks_preempt_current(registers_t* from);
+
+void ks_switch_to(struct task_t* to);
+
 
 #endif
