@@ -212,9 +212,10 @@ void kernel_main(multiboot_info_t* arg1)
     struct task_t* t2 = ks_create_thread(&task2);
     
     ks_activate(t1);
+    Debugger();
     
     setup_tasks();
-    init_timer(1000);
+    //init_timer(1000);
     
     Debugger();
     asm volatile("sti");

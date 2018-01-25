@@ -22,5 +22,6 @@ symbol-file out/myos.bin
 break Debugger
 tui enable
 layout split
-focus src
+layout regs
+focus asm
 continue
