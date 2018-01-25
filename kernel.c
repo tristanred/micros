@@ -90,13 +90,6 @@ struct task_t
 int currenttask;
 struct task_t tasks[TASK_LEN];
 
-extern void tswitch(struct task_t* to, struct task_t* from);
-
-void test_args(struct regs_t testregs)
-{
-    
-};
-
 struct task_t* get_switch_state(registers_t* from)
 {
     int currentTaskIndex = currenttask;
@@ -126,11 +119,6 @@ struct task_t* get_switch_state(registers_t* from)
     return nextTask;
 }
 
-void do_tswitch()
-{
-    
-}
-
 BOOL should_switch_task()
 {
     return TRUE;
@@ -144,6 +132,11 @@ void task1()
     while(TRUE)
     {
         incr++;
+        
+        if(incr > 1000)
+        {
+            ks_suspend();
+        }
     }
 };
 
@@ -189,10 +182,9 @@ void setup_tasks()
     t2->entryAddr = &task2;
     t2->stackAddr = t2_stack + 1024;
     t2->state = T_WAITING;
-    
-    tswitch(t1, t2);
 };
 
+extern void ks_do_taskstuff();
 
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
@@ -210,9 +202,16 @@ void kernel_main(multiboot_info_t* arg1)
     init_page_allocator();
     //pa_test_paging();
     
-    //init_memory_manager();
+    init_memory_manager();
 
     //      TEST ZONE
+    init_kernel_scheduler();
+    
+    //Debugger();
+    struct task_t* t1 = ks_create_thread(&task1);
+    struct task_t* t2 = ks_create_thread(&task2);
+    
+    ks_activate(t1);
     
     setup_tasks();
     init_timer(1000);
