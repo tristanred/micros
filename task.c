@@ -46,6 +46,8 @@ void ks_suspend()
 
 void ks_activate(struct task_t* next)
 {
+    sched->current = next;
+    
     /* To activate a thread
      * 1. Mark as RUNNING
      * 2. Load the saved registers
@@ -83,7 +85,7 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
     newTask->regs.edi = 8;
     newTask->regs.eip = 9;
     newTask->regs.cs = 10;
-    newTask->regs.flags = 0x202;
+    newTask->regs.flags = 0;
     
     vector_add(sched->ts->list, newTask);
     
