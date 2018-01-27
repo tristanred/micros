@@ -16,6 +16,7 @@ struct task_t* ks_get_current()
 
 void ks_suspend()
 {
+    Debugger();
     BOOL returned = FALSE;
     
     struct task_t* t = ks_get_current();
