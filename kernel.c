@@ -121,13 +121,12 @@ struct task_t* get_switch_state(registers_t* from)
 
 BOOL should_switch_task()
 {
-    return TRUE;
+    return FALSE;
 }
 
 uint8_t t1_stack[1024*1];
 void task1()
 {
-    Debugger();
     int incr = 0;
     while(TRUE)
     {
