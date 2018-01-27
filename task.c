@@ -49,6 +49,11 @@ void ks_activate(struct task_t* next)
 {
     sched->current = next;
     
+    if(next->regs.eip == 0)
+    {
+        next->regs.eip = next->entryAddr;
+    }
+    
     /* To activate a thread
      * 1. Mark as RUNNING
      * 2. Load the saved registers
@@ -84,7 +89,7 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
     newTask->regs.ebp = newTask->regs.esp;
     newTask->regs.esi = 7;
     newTask->regs.edi = 8;
-    newTask->regs.eip = 9;
+    newTask->regs.eip = 0;
     newTask->regs.cs = 10;
     newTask->regs.flags = 0;
     
@@ -95,7 +100,7 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
 
 struct task_t* ks_get_next_thread()
 {
-    size_t nextIndex = sched->currentIndex % sched->ts->list->count;
+    size_t nextIndex = (sched->currentIndex + 1) % sched->ts->list->count;
     struct task_t* t = vector_get_at(sched->ts->list, nextIndex);
     
     sched->currentIndex = nextIndex;

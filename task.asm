@@ -130,7 +130,7 @@ ks_do_activate: ; p *(struct task_t*)$eax
     ; mov ecx, [eax+8] ; Emplace CS
     ; mov [ebx-52], ecx
 
-    mov ecx, [eax] ; Emplace EIP
+    mov ecx, [eax+4] ; Emplace EIP
     mov [ebx-4], ecx
 
     mov ebp, [eax+24] ; Use the new ebp

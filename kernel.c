@@ -142,11 +142,15 @@ void task1()
 uint8_t t2_stack[1024*1];
 void task2()
 {
-    Debugger();
     int incr = 0;
     while(TRUE)
     {
         incr++;
+        
+        if(incr > 1000)
+        {
+            ks_suspend();
+        }
     }
 };
 
