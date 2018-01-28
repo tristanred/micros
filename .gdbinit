@@ -17,11 +17,15 @@ define ln
     layout next
 end
 
+define sss
+    x/64wx $esp
+end
+
+set disassembly-flavor intel
 target remote localhost:1234
 symbol-file out/myos.bin
 break Debugger
 tui enable
 layout split
-layout regs
 focus asm
 continue
