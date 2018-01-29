@@ -57,7 +57,7 @@ char* kBadErrorMessage;
 void kErrorBeforeInit(uint32_t errno, char* msg)
 {
     // Do something with the error code and gtfo
- 
+
     kErrorBad = errno;
 
     kBadErrorMessage = msg;
@@ -94,7 +94,7 @@ struct task_t* get_switch_state(registers_t* from)
 {
     int currentTaskIndex = currenttask;
     int nextTaskIndex = (currenttask + 1) % TASK_LEN;
-    
+
     struct task_t* currentTask = &(tasks[currenttask]);
     currentTask->state = T_SUSPENDED;
     currentTask->regs.eax = from->eax;
@@ -107,15 +107,15 @@ struct task_t* get_switch_state(registers_t* from)
     currentTask->regs.edi = from->edi;
     currentTask->regs.flags = from->eflags;
     currentTask->entryAddr = from->eip;
-    
+
     struct task_t* nextTask = &(tasks[nextTaskIndex]);
     nextTask->state = T_RUNNING;
-    
+
     currenttask = nextTaskIndex;
     from = currentTask;
-    
+
     //Debugger();
-    
+
     return nextTask;
 }
 
@@ -131,9 +131,11 @@ void task1()
     while(TRUE)
     {
         incr++;
-        
+
         if(incr > 1000)
         {
+            Debugger();
+
             ks_suspend();
         }
     }
@@ -146,9 +148,11 @@ void task2()
     while(TRUE)
     {
         incr++;
-        
+
         if(incr > 1000)
         {
+            Debugger();
+
             ks_suspend();
         }
     }
@@ -157,7 +161,7 @@ void task2()
 void setup_tasks()
 {
     currenttask = 0;
-    
+
     struct task_t* t1 = &(tasks[0]);
     t1->regs.eax = 0;
     t1->regs.ebp = t1_stack + 1024;
@@ -171,7 +175,7 @@ void setup_tasks()
     t1->entryAddr = &task1;
     t1->stackAddr = t1_stack + 1024;
     t1->state = T_WAITING;
-    
+
     struct task_t* t2 = &(tasks[1]);
     t2->regs.eax = 0;
     t2->regs.ebp = t2_stack + 1024;
@@ -204,36 +208,36 @@ void kernel_main(multiboot_info_t* arg1)
 
     init_page_allocator();
     //pa_test_paging();
-    
+
     init_memory_manager();
 
     //      TEST ZONE
     init_kernel_scheduler();
-    
+
     //Debugger();
     struct task_t* t1 = ks_create_thread(&task1);
     struct task_t* t2 = ks_create_thread(&task2);
-    
+
     ks_activate(t1);
     Debugger();
-    
+
     setup_tasks();
     //init_timer(1000);
-    
+
     Debugger();
     asm volatile("sti");
-    
+
     task1();
-    
+
     while(TRUE)
     {
         cpu_idle();
     }
 
     Debugger();
-    
+
     //      TEST ZONE
-    
+
     char* memTest = (char*)kmallocf(128, MEM_CHECKED);
     memTest[129] = 'b';
     free(memTest); // Will detect overflow
