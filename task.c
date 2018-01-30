@@ -16,6 +16,8 @@ struct task_t* ks_get_current()
 
 void ks_suspend()
 {
+    struct regs_t myregs = ks_save_fix_registers();
+    
     BOOL returned = FALSE;
 
     struct task_t* t = ks_get_current();

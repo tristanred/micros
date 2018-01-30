@@ -55,6 +55,7 @@ struct kernel_scheduler_module* sched;
 
 void init_kernel_scheduler();
 
+extern struct regs_t ks_save_fix_registers();
 extern void ks_get_registers(struct regs_t* regs);
 
 // Get the EIP value of the call to this function

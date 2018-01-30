@@ -1,9 +1,37 @@
 global ks_get_registers
 global ks_do_activate
 
-global ks_do_taskstuff
+global ks_save_fix_registers
 
 extern Debugger
+
+ks_save_fix_registers:
+    push ebp
+    mov ebp, esp
+    sub esp, 48 ; 44 byte for struct and 4 for something
+    
+    push [ebp+144] ; esp
+    push [ebp+148] ; eip
+    pushf ; flags
+    push 0x8 ; cs
+    pusha ; regs
+    
+    mov eax, [ebp+8]
+    
+    mov edx, [ebp-76] ; ESP
+    mov [eax+24], edx
+    
+    mov edx, [ebp-72] ; EIP
+    mov [eax], edx
+    
+    mov edx, [ebp-68] ; EFLAGS
+    mov [eax+8], edx
+    
+    mov edx, [ebp-64] ; CS
+    mov [eax+4], edx
+    
+    pop ebp
+    ret
 
 ks_get_registers: ; p *(struct regs_t*)$ebx or [ebp+8]
     push ebp
@@ -152,8 +180,4 @@ ks_do_activate: ; p *(struct task_t*)$eax
     ; +4 byte to account for saved EIP
 
     ;pop ebp ; Prolly not need that
-    ret
-
-ks_do_taskstuff:
-    int 0x80
     ret
