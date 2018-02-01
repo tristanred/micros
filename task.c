@@ -14,30 +14,18 @@ struct task_t* ks_get_current()
     return sched->current;
 }
 
-void ks_suspend()
+void ks_suspend_stage2()
 {
-    struct regs_t myregs = ks_save_fix_registers();
+    struct regs_t myregs = ks_get_stacked_registers();
     
-    BOOL returned = FALSE;
-
     struct task_t* t = ks_get_current();
-
-    // This call represent the state at which the program will be
-    // restored to.
-    struct regs_t cr;
-    ks_get_registers(&cr);
-    
-    if(returned == TRUE)
-        return;
-
-    returned = TRUE;
 
     /* Few things to suspend a thread
      * 1. Save the registers
      * 2. Mark thread as suspended
      * 3. Put it ad the end of the waitlist
      */
-    t->regs = cr;
+    t->regs = myregs;
 
     t->state = T_SUSPENDED;
 

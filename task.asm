@@ -1,110 +1,94 @@
-global ks_get_registers
+global ks_suspend
+global ks_get_stacked_registers
 global ks_do_activate
 
-global ks_save_fix_registers
-
 extern Debugger
+extern ks_suspend_stage2
 
-ks_save_fix_registers:
+; Pushes all registers on the stack, this must be done early in the process so
+; we can save all register values before they are changed by the following code.
+; We get the ESP, EBP and EIP from the previous stack frame so that when we 
+; recover the task it will be on the next instruction right after ks_suspend.
+ks_suspend:
     push ebp
     mov ebp, esp
-    sub esp, 48 ; 44 byte for struct and 4 for something
+
+    pushf           ; EFLAGS
+    push DWORD 0x8  ; CS
+    pusha           ; regs 8 DW
+
+    push ebp            ; Previous frame ESP
+    add DWORD [esp], 8  ; Adjust for the 2 frames that we pushed ebp's on
     
-    push [ebp+144] ; esp
-    push [ebp+148] ; eip
-    pushf ; flags
-    push 0x8 ; cs
-    pusha ; regs
+    push DWORD [ebp+4]  ; Return addr (EIP) 
+    push DWORD [ebp]    ; Previous frame EBP
+
+    call ks_suspend_stage2
     
-    mov eax, [ebp+8]
+    ; Technically we will never reach this point because we call ks_activate
+    ; and go to another thread. The function ks_suspend never returns.
+    add esp, 52
+    pop esp
+    ret
+
+; This function should be called from ks_suspend_stage2, this is because 
+; this function goes up 2 stack frames in search of the saved registers.
+; We can't just get them here because they would have been changed by the time
+; we get here. The alternative is to write the whole pipeline of task transfer
+; in assemblyto avoid clobbering registers. We would still have to go back up
+; to grab the original EBP and ESP so meh.
+ks_get_stacked_registers:
+    push ebp
+    mov ebp, esp
+    sub esp, 48 ; 44 byte for struct and 4 for pushed eax(?)
+
+    ; Select two stackframes above, frame with the flags stacked
+    mov ebx, DWORD [ebp]
+    mov ebx, DWORD [ebx]
     
-    mov edx, [ebp-76] ; ESP
+    mov eax, [ebp+8] ; Where we drop the data
+    
+    mov edx, [ebx-44] ; ESP
     mov [eax+24], edx
     
-    mov edx, [ebp-72] ; EIP
+    mov edx, [ebx-48] ; EIP
     mov [eax], edx
     
-    mov edx, [ebp-68] ; EFLAGS
+    mov edx, [ebx-4] ; EFLAGS
     mov [eax+8], edx
     
-    mov edx, [ebp-64] ; CS
+    mov edx, [ebx-8] ; CS
     mov [eax+4], edx
     
-    pop ebp
-    ret
-
-ks_get_registers: ; p *(struct regs_t*)$ebx or [ebp+8]
-    push ebp
-    mov ebp, esp
-    push eax
-
-    pusha
-    pushf ; Eflags
-    push 0x8 ; CS
-    call ks_get_eip
-    push eax ; EIP
+    mov edx, [ebx-40] ; EDI
+    mov [eax+12], edx
     
-    ; mov ebx, [ebp+12]
-    ; cmp ebx, 1
-    ; je 
-
-    ; Moving the parameter into ebx after we push the regs so we save the
-    ; old value of ebx.
-    mov ebx, [ebp+8]
-
-    ; mov eax, [esp+12] ; [REG] - Where we take the value from the stack
-    ; mov [ebx+12], eax ; Where we place the value in the structure
-
-    mov eax, [esp+12] ; EDI
-    mov [ebx+12], eax
-
-    mov eax, [esp+16] ; ESI
-    mov [ebx+16], eax
-
-    mov eax, [esp+20] ; EBP
-    mov [ebx+20], eax
-
-    mov eax, [esp+24] ; ESP
-    mov [ebx+24], eax
-
-    mov eax, [esp+28] ; EBX
-    mov [ebx+28], eax
-
-    mov eax, [esp+32] ; EDX
-    mov [ebx+32], eax
-
-    mov eax, [esp+36] ; ECX
-    mov [ebx+36], eax
-
-    ; For EAX we select the one that was pushed in the beginning
-    ; This is because EAX is used to return the value of ks_get_eip
-    mov eax, [esp+44] ; EAX
-    mov [ebx+40], eax
-
-    mov eax, [esp+8] ; EFLAGS
-    mov [ebx+8], eax
-
-    mov eax, [esp+4] ; CS
-    mov [ebx+4], eax
-
-    mov eax, [esp]
-    mov [ebx], eax ; EIP
-
-    mov [ebp - 4], eax ; 4-byte Spill
-    add esp, 48 ; Roll back our pushes
-
+    mov edx, [ebx-36] ; ESI
+    mov [eax+16], edx
+    
+    mov edx, [ebx-52] ; EBP
+    mov [eax+20], edx
+    
+    mov edx, [ebx-24] ; EBX
+    mov [eax+28], edx
+    
+    mov edx, [ebx-20] ; EDX
+    mov [eax+32], edx
+    
+    mov edx, [ebx-16] ; ECX
+    mov [eax+36], edx
+    
+    mov edx, [ebx-12] ; EAX
+    mov [eax+40], edx
+    
+    add esp, 48
+    
     pop ebp
     ret
 
-ks_get_eip:
-    mov eax, [esp]
-    ret
-
-ks_do_activate: ; p *(struct task_t*)$eax
+ks_do_activate: ; void (struct task_t*)
     push ebp
     mov ebp, esp
-
-    ;call Debugger
 
     mov eax, [ebp+8]
 
@@ -136,7 +120,9 @@ ks_do_activate: ; p *(struct task_t*)$eax
     mov [ebx-24], ecx
 
     mov ecx, [eax+28] ; Emplace ESP STUB
-    mov [ebx-28], DWORD 0
+    mov [ebx-28], DWORD 0 
+    ; ESP not needed because we manually switch ESP rather than using the
+    ; popped value.
 
     mov ecx, [eax+24] ; Emplace EBP
     mov [ebx-32], ecx
@@ -146,17 +132,6 @@ ks_do_activate: ; p *(struct task_t*)$eax
 
     mov ecx, [eax+16] ; Emplace EDI
     mov [ebx-40], ecx
-
-   ; Order of POPA
-;    EDI ← Pop();
-;    ESI ← Pop();
-;    EBP ← Pop();
-;    Increment ESP by 4; (* Skip next 4 bytes of stack *)
-;    EBX ← Pop();
-;    EDX ← Pop();
-;    ECX ← Pop();
-;    EAX ← Pop();
-    ;call Debugger
 
     mov ecx, [eax+12] ; Emplace EFLAGS
     mov [ebx-8], ecx
@@ -175,9 +150,6 @@ ks_do_activate: ; p *(struct task_t*)$eax
 
     popa
     popfd
-    ;pop cs
-    ;mov cs, 0x8
-    ; +4 byte to account for saved EIP
 
-    ;pop ebp ; Prolly not need that
+    ;pop ebp ; Not needed because we manually place it back
     ret
