@@ -152,7 +152,6 @@ extern Debugger
 extern ks_should_preempt_current
 
 irq_timer_stub:
-    ; call Debugger
     pusha
 
     mov ax, ds
@@ -170,29 +169,26 @@ irq_timer_stub:
     cmp eax, 1
     jne normal
     
-    call Debugger
-    
     push esp
     call ks_preempt_current
     pop ebx
-
     
     ; Load target stack addr in EBX
-    mov ebx, [eax+20]
+    mov ebx, [eax+28]
     
     ; Copy EIP to new stack
-    mov ecx, [eax]
+    mov ecx, [eax] ; Currently selecting entryAddr, eax+4 for eip but need init
     mov [ebx-8], ecx
     
     ; Copy CS to new stack
     mov [ebx-4], DWORD 8
     ; Copy eflags to new stack
-    mov ecx, [eax+4]
+    mov ecx, [eax+12]
     mov [ebx], ecx
 
     ; Adjust target ESP to account for the 3 new DWORDs
     sub ebx, 16
-    mov [eax+20], ebx
+    mov [eax+28], ebx
     
     add esp, 36 ; Holy fuck how did it work without this ??????
 
@@ -210,16 +206,16 @@ irq_timer_stub:
     mov [esp+12], DWORD 0x8 
     
     ; Emplace the EFLAGS value to be popped by IRET
-    mov ebx, [eax+4]
+    mov ebx, [eax+12]
     mov [esp+16], ebx
 
     ; Restore the registers for the next task.
     ; We cannot use POPA because of (I did this 10 minutes ago and I can't even
     ; remember why I can't.) a reason.
     ; So we restore register by register to avoid using the stack.
-    mov edi, [eax+8]
-    mov esi, [eax+12]
-    mov ebp, [eax+16]
+    mov edi, [eax+16]
+    mov esi, [eax+20]
+    mov ebp, [eax+24]
     
     ; mov esp, [eax+20] 
     ; Do NOT restore ESP. 
@@ -227,16 +223,16 @@ irq_timer_stub:
     ; task switch, we must put EBP into ESP.
     ; Conclusion is that the IRQ cannot fully restore into a task.
     ; Must probably restore into a task switch procedure.
-    mov ebx, [eax+24]
-    mov edx, [eax+28]
-    mov ecx, [eax+32]
+    mov ebx, [eax+32]
+    mov edx, [eax+36]
+    mov ecx, [eax+40]
     
     ; Target the new stack
-    mov esp, [eax+20]
+    mov esp, [eax+28]
     ; TODO : Clean up the IRQ bytes that are left
     
     ; Restore EAX last because we needed it to keep the new task struct ptr.
-    mov eax, [eax+36]
+    mov eax, [eax+44]
 
     ; Skip the error code and 0 byte
     add esp, 8

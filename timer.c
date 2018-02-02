@@ -20,8 +20,6 @@ static void timer_callback(registers_t regs)
         
         ks_update_task();
         
-        Debugger();
-        
         if(cpu_is_idle == TRUE)
         {
             regs.eip++;

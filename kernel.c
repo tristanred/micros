@@ -69,6 +69,8 @@ extern void _cpu_idle();
 uint8_t t1_stack[1024*1];
 void task1()
 {
+    asm volatile("sti");
+    
     int incr = 0;
     while(TRUE)
     {
@@ -76,7 +78,7 @@ void task1()
 
         if(incr > 1000)
         {
-            Debugger();
+            //Debugger();
 
             ks_suspend();
         }
@@ -86,6 +88,8 @@ void task1()
 uint8_t t2_stack[1024*1];
 void task2()
 {
+    asm volatile("sti");
+    
     int incr = 0;
     while(TRUE)
     {
@@ -93,7 +97,7 @@ void task2()
 
         if(incr > 1000)
         {
-            Debugger();
+            //Debugger();
 
             ks_suspend();
         }
@@ -126,6 +130,7 @@ void kernel_main(multiboot_info_t* arg1)
     init_timer(TIMER_FREQ_1MS);
     asm volatile("sti");
 
+    ks_activate(t1);
     while(TRUE)
     {
         cpu_idle();

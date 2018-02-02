@@ -40,6 +40,9 @@ void ks_suspend_stage2()
 
 void ks_activate(struct task_t* next)
 {
+    sched->current->state = T_SUSPENDED;
+    sched->current->ms_count_running = 0;
+    
     sched->current = next;
 
     if(next->regs.eip == 0)
@@ -66,6 +69,8 @@ void ks_activate(struct task_t* next)
 struct task_t* ks_create_thread(uint32_t entrypoint)
 {
     struct task_t* newTask = (struct task_t*)kmalloc(sizeof(struct task_t));
+    newTask->ms_count_running = 0;
+    newTask->ms_count_total = 0;
 
     newTask->entryAddr = entrypoint;
     newTask->state = T_WAITING;
@@ -112,8 +117,6 @@ void ks_update_task()
 
 BOOL ks_should_preempt_current()
 {
-    return FALSE; // Currently deactivate the preempt mechanism.
-    
     struct task_t* c = ks_get_current();
     
     BOOL timeout = c->ms_count_running > sched->max_run_time;
@@ -123,6 +126,8 @@ BOOL ks_should_preempt_current()
         timeout && 
         hasOtherTasks)
     {
+        Debugger();
+        
         return TRUE;
     }
     
@@ -142,7 +147,9 @@ struct task_t* ks_preempt_current(registers_t* from)
     currentTask->regs.esi = from->esi;
     currentTask->regs.edi = from->edi;
     currentTask->regs.flags = from->eflags;
-    currentTask->entryAddr = from->eip;
+    currentTask->entryAddr = from->eip; // TODO : Replace
+    
+    currentTask->ms_count_running = 0;
 
     uint32_t nextIndex = 0;
     struct task_t* nextTask = ks_get_next_thread(&nextIndex);
