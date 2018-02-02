@@ -5,28 +5,29 @@
 #include "framebuffer.h"
 #include "keyboard.h"
 #include "kernel.h"
+#include "task.h"
 
 uint32_t tick = 0;
 
 static void timer_callback(registers_t regs)
 {
-    (void)regs;
-
     tick++;
-    
-    if(tick >= timer_div / 1000)
+    if(tick >= 1000)
     {
-        mscounter++;
         tick = 0;
+        
+        mscounter++;
+        
+        ks_update_task();
+        
+        Debugger();
+        
+        if(cpu_is_idle == TRUE)
+        {
+            regs.eip++;
+            cpu_is_idle = FALSE;
+        }
     }
-    
-    if(cpu_is_idle == TRUE)
-    {
-        regs.eip++;
-        cpu_is_idle = FALSE;
-    }
-    
-    //Debugger();
 }
 
 void init_timer(uint32_t frequency)
@@ -68,4 +69,9 @@ void sleep(uint32_t t)
 uint32_t getmscount()
 {
     return mscounter;
+}
+
+uint32_t get_timer_rate()
+{
+    return timer_div;
 }
