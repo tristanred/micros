@@ -50,6 +50,7 @@
 #include "array_utils.h"
 #include "ezfs.h"
 #include "ksh.h"
+#include "task.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -64,65 +65,6 @@ void kErrorBeforeInit(uint32_t errno, char* msg)
 }
 
 extern void _cpu_idle();
-
-struct regs_t
-{
-    uint32_t flags;
-    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
-};
-
-enum task_state
-{
-    T_WAITING,
-    T_RUNNING,
-    T_SUSPENDED
-};
-
-struct task_t
-{
-    uint32_t entryAddr;
-    struct regs_t regs;
-    uint32_t stackAddr;
-    enum task_state state;
-};
-
-#define TASK_LEN 2
-int currenttask;
-struct task_t tasks[TASK_LEN];
-
-struct task_t* get_switch_state(registers_t* from)
-{
-    int currentTaskIndex = currenttask;
-    int nextTaskIndex = (currenttask + 1) % TASK_LEN;
-
-    struct task_t* currentTask = &(tasks[currenttask]);
-    currentTask->state = T_SUSPENDED;
-    currentTask->regs.eax = from->eax;
-    currentTask->regs.ecx = from->ecx;
-    currentTask->regs.edx = from->edx;
-    currentTask->regs.ebx = from->ebx;
-    currentTask->regs.esp = from->esp + 16;
-    currentTask->regs.ebp = from->ebp;
-    currentTask->regs.esi = from->esi;
-    currentTask->regs.edi = from->edi;
-    currentTask->regs.flags = from->eflags;
-    currentTask->entryAddr = from->eip;
-
-    struct task_t* nextTask = &(tasks[nextTaskIndex]);
-    nextTask->state = T_RUNNING;
-
-    currenttask = nextTaskIndex;
-    from = currentTask;
-
-    //Debugger();
-
-    return nextTask;
-}
-
-BOOL should_switch_task()
-{
-    return FALSE;
-}
 
 uint8_t t1_stack[1024*1];
 void task1()
@@ -158,41 +100,6 @@ void task2()
     }
 };
 
-void setup_tasks()
-{
-    currenttask = 0;
-
-    struct task_t* t1 = &(tasks[0]);
-    t1->regs.eax = 0;
-    t1->regs.ebp = t1_stack + 1024;
-    t1->regs.ebx = 0;
-    t1->regs.ecx = 0;
-    t1->regs.edi = 0;
-    t1->regs.edx = 0;
-    t1->regs.esi = 0;
-    t1->regs.esp = t1_stack + 1024;
-    t1->regs.flags = 0x202;
-    t1->entryAddr = &task1;
-    t1->stackAddr = t1_stack + 1024;
-    t1->state = T_WAITING;
-
-    struct task_t* t2 = &(tasks[1]);
-    t2->regs.eax = 0;
-    t2->regs.ebp = t2_stack + 1024;
-    t2->regs.ebx = 0;
-    t2->regs.ecx = 0;
-    t2->regs.edi = 0;
-    t2->regs.edx = 0;
-    t2->regs.esi = 0;
-    t2->regs.esp = t2_stack + 1024;
-    t2->regs.flags = 0x202;
-    t2->entryAddr = &task2;
-    t2->stackAddr = t2_stack + 1024;
-    t2->state = T_WAITING;
-};
-
-extern void ks_do_taskstuff();
-
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
 #endif
@@ -207,43 +114,27 @@ void kernel_main(multiboot_info_t* arg1)
     kSetupLog(SERIAL_COM1_BASE);
 
     init_page_allocator();
-    //pa_test_paging();
 
     init_memory_manager();
 
     //      TEST ZONE
     init_kernel_scheduler();
 
-    //Debugger();
-    struct task_t* t1 = ks_create_thread(&task1);
-    struct task_t* t2 = ks_create_thread(&task2);
+    struct task_t* t1 = ks_create_thread((uint32_t)&task1);
+    struct task_t* t2 = ks_create_thread((uint32_t)&task2);
 
-    ks_activate(t1);
-    Debugger();
-
-    setup_tasks();
-    //init_timer(1000);
-
-    Debugger();
+    init_timer(TIMER_FREQ_1MS);
     asm volatile("sti");
-
-    task1();
 
     while(TRUE)
     {
         cpu_idle();
     }
 
-    Debugger();
+    //ks_activate(t1);
+    //Debugger();
 
     //      TEST ZONE
-
-    char* memTest = (char*)kmallocf(128, MEM_CHECKED);
-    memTest[129] = 'b';
-    free(memTest); // Will detect overflow
-    char* memTest2 = (char*)kmalloc(128);
-    char* memTest3 = (char*)kmalloc(128);
-    char* memTest4 = (char*)kmalloc(128);
 
     setup_kernel_block();
 
@@ -298,19 +189,17 @@ void kernel_main(multiboot_info_t* arg1)
     // asm volatile ("int $0x3");
     // asm volatile ("int $0x4");
 
-    init_timer(1000);
+    init_timer(TIMER_FREQ_1MS);
     SetupKeyboardDriver(SCANCODE_SET1);
 
     ksh_take_fb_control();
 
-#ifdef MM_ENABLE_HEAP_ALLOC_CANARY
     BOOL res = mm_verify_all_allocs_canary();
 
     if(res == FALSE)
     {
         Debugger();
     }
-#endif
 
     while(TRUE)
     {

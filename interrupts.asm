@@ -36,7 +36,6 @@
 %endmacro
 
 extern isr_handler
-extern should_switch_task
 
 ISR_NOERRCODE 0
 ISR_NOERRCODE 1
@@ -148,9 +147,9 @@ irq_common_stub:
     sti
     iret           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 
-extern test_args
-extern get_switch_state
+extern ks_preempt_current
 extern Debugger
+extern ks_should_preempt_current
 
 irq_timer_stub:
     ; call Debugger
@@ -167,14 +166,14 @@ irq_timer_stub:
 
     call irq_handler
 
-    call should_switch_task
+    call ks_should_preempt_current
     cmp eax, 1
     jne normal
     
     call Debugger
     
     push esp
-    call get_switch_state
+    call ks_preempt_current
     pop ebx
 
     

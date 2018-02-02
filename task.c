@@ -1,4 +1,5 @@
 #include "task.h"
+#include "timer.h"
 
 void init_kernel_scheduler()
 {
@@ -7,6 +8,8 @@ void init_kernel_scheduler()
     sched->ts->list = vector_create();
     sched->current = NULL;
     sched->currentIndex = 0;
+    
+    sched->max_run_time = 200;
 }
 
 struct task_t* ks_get_current()
@@ -30,7 +33,8 @@ void ks_suspend_stage2()
     t->state = T_SUSPENDED;
 
     // Tell scheduler to pull up the next thread
-    struct task_t* next = ks_get_next_thread();
+    uint32_t nextIndex = 0;
+    struct task_t* next = ks_get_next_thread(&nextIndex);
     ks_activate(next);
 }
 
@@ -87,12 +91,65 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
     return newTask;
 }
 
-struct task_t* ks_get_next_thread()
+struct task_t* ks_get_next_thread(uint32_t* nextIndex)
 {
-    size_t nextIndex = (sched->currentIndex + 1) % sched->ts->list->count;
-    struct task_t* t = vector_get_at(sched->ts->list, nextIndex);
+    size_t next = (sched->currentIndex + 1) % sched->ts->list->count;
+    struct task_t* t = vector_get_at(sched->ts->list, next);
 
-    sched->currentIndex = nextIndex;
+    *nextIndex = next;
 
     return t;
+}
+
+void ks_update_task()
+{
+    struct task_t* c = ks_get_current();
+    
+    uint32_t timer_tickrate = get_timer_rate();
+    c->ms_count_total += timer_tickrate;
+    c->ms_count_running += timer_tickrate;
+}
+
+BOOL ks_should_preempt_current()
+{
+    return FALSE; // Currently deactivate the preempt mechanism.
+    
+    struct task_t* c = ks_get_current();
+    
+    BOOL timeout = c->ms_count_running > sched->max_run_time;
+    BOOL hasOtherTasks = sched->ts->list->count > 1;
+    
+    if(
+        timeout && 
+        hasOtherTasks)
+    {
+        return TRUE;
+    }
+    
+    return FALSE;
+}
+
+struct task_t* ks_preempt_current(registers_t* from)
+{
+    struct task_t* currentTask = ks_get_current();
+    currentTask->state = T_SUSPENDED;
+    currentTask->regs.eax = from->eax;
+    currentTask->regs.ecx = from->ecx;
+    currentTask->regs.edx = from->edx;
+    currentTask->regs.ebx = from->ebx;
+    currentTask->regs.esp = from->esp + 16;
+    currentTask->regs.ebp = from->ebp;
+    currentTask->regs.esi = from->esi;
+    currentTask->regs.edi = from->edi;
+    currentTask->regs.flags = from->eflags;
+    currentTask->entryAddr = from->eip;
+
+    uint32_t nextIndex = 0;
+    struct task_t* nextTask = ks_get_next_thread(&nextIndex);
+    nextTask->state = T_RUNNING;
+
+    sched->current = nextTask;
+    sched->currentIndex = nextIndex;
+
+    return nextTask;
 }

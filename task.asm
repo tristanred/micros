@@ -9,7 +9,7 @@ extern ks_suspend_stage2
 ; we can save all register values before they are changed by the following code.
 ; We get the ESP, EBP and EIP from the previous stack frame so that when we 
 ; recover the task it will be on the next instruction right after ks_suspend.
-ks_suspend:
+ks_suspend: ; void ks_suspend(void)
     push ebp
     mov ebp, esp
 
@@ -37,7 +37,7 @@ ks_suspend:
 ; we get here. The alternative is to write the whole pipeline of task transfer
 ; in assemblyto avoid clobbering registers. We would still have to go back up
 ; to grab the original EBP and ESP so meh.
-ks_get_stacked_registers:
+ks_get_stacked_registers: ; struct regs_t ks_get_stacked_registers(void)
     push ebp
     mov ebp, esp
     sub esp, 48 ; 44 byte for struct and 4 for pushed eax(?)
@@ -86,7 +86,7 @@ ks_get_stacked_registers:
     pop ebp
     ret
 
-ks_do_activate: ; void (struct task_t*)
+ks_do_activate: ; void ks_do_activate(struct task_t*)
     push ebp
     mov ebp, esp
 

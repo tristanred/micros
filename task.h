@@ -36,6 +36,11 @@ struct task_t // Size is 56 Bytes (unsure about task_state)
     struct regs_t regs;
     uint32_t stackAddr;
     enum task_state state;
+    // Do not modify the order of the members above.
+    // Assembly code depends on the correct ordering of the fields
+    
+    uint32_t ms_count_total; // Lifetime of the task
+    uint32_t ms_count_running; // MS count since last suspended
 };
 
 // List of threads managed by the kernel
@@ -46,14 +51,21 @@ struct threadset
 
 struct kernel_scheduler_module
 {
+    // Threads info
     struct threadset* ts;
     struct task_t* current;
     uint32_t currentIndex;
+    
+    // Scheduling info
+    uint32_t max_run_time; // Time in ms given to a thread before we preempt it
 };
 
 struct kernel_scheduler_module* sched;
 
 void init_kernel_scheduler();
+
+void ks_enable_scheduling();
+void ks_disable_scheduling();
 
 /**
  * Returns the current task that is running.
@@ -96,13 +108,19 @@ extern void ks_do_activate(struct task_t* next);
 /**
  * Get the next thread that is scheduled to run.
  */
-struct task_t* ks_get_next_thread();
+struct task_t* ks_get_next_thread(uint32_t* nextIndex);
 
 /**
  * Create a new thread with the provided entry point. The entrypoint should be
  * the address of a function.
  */
 struct task_t* ks_create_thread(uint32_t entrypoint);
+
+/**
+ * Update function called every timer tick. This updates the scheduler and adds
+ * running time to the current process.
+ */
+void ks_update_task();
 
 // Preempt functions. These functions get called from the timer IRQ and can stop
 // the current thread and pass execution to another.
