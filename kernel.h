@@ -10,6 +10,7 @@
 
 BOOL cpu_is_idle;
 void cpu_idle();
+extern void _cpu_idle();
 
 struct kernel_features;
 struct memory_manager;

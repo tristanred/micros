@@ -51,6 +51,7 @@
 #include "ezfs.h"
 #include "ksh.h"
 #include "task.h"
+#include "kernel_task_idle.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -63,46 +64,6 @@ void kErrorBeforeInit(uint32_t errno, char* msg)
 
     kBadErrorMessage = msg;
 }
-
-extern void _cpu_idle();
-
-uint8_t t1_stack[1024*1];
-void task1()
-{
-    asm volatile("sti");
-    
-    int incr = 0;
-    while(TRUE)
-    {
-        incr++;
-
-        if(incr > 1000)
-        {
-            //Debugger();
-
-            ks_suspend();
-        }
-    }
-};
-
-uint8_t t2_stack[1024*1];
-void task2()
-{
-    asm volatile("sti");
-    
-    int incr = 0;
-    while(TRUE)
-    {
-        incr++;
-
-        if(incr > 1000)
-        {
-            //Debugger();
-
-            ks_suspend();
-        }
-    }
-};
 
 #if defined(__cplusplus)
 extern "C" /* Use C linkage for kernel_main. */
@@ -124,20 +85,15 @@ void kernel_main(multiboot_info_t* arg1)
     //      TEST ZONE
     init_kernel_scheduler();
 
-    struct task_t* t1 = ks_create_thread((uint32_t)&task1);
-    struct task_t* t2 = ks_create_thread((uint32_t)&task2);
-
     init_timer(TIMER_FREQ_1MS);
     asm volatile("sti");
 
-    ks_activate(t1);
+    ks_create_thread((uint32_t)&kernel_task_idle_main);
+
     while(TRUE)
     {
         cpu_idle();
     }
-
-    //ks_activate(t1);
-    //Debugger();
 
     //      TEST ZONE
 
