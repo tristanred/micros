@@ -11,14 +11,14 @@ uint32_t tick = 0;
 
 static void timer_callback(registers_t regs)
 {
+    mscounter++;
+    
+    ks_update_task();
+    
     tick++;
-    if(tick >= 1000)
+    if(tick >= CPU_WAKEUP_FREQ)
     {
         tick = 0;
-        
-        mscounter++;
-        
-        ks_update_task();
         
         if(cpu_is_idle == TRUE)
         {

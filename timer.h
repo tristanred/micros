@@ -10,6 +10,7 @@ uint32_t timer_div;
 uint32_t mscounter;
 
 #define TIMER_FREQ_1MS 1193
+#define CPU_WAKEUP_FREQ 10
 
 void init_timer(uint32_t frequency);
 
