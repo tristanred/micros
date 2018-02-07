@@ -3,34 +3,17 @@
 #include "kernel_log.h"
 
 /**
- * The heap manager manages two areas of memory. All this is for managing 
- * memory allocations. 
+ * The heap manager manages heaps of memory.
  *
- * The first block of memory is internal and used to store a big list of 
- * pre-allocated 'm_allocation' structures. These structures get initialized
- * when 'malloc' is called.
- *
- * The second block is the heap memory. There resides the blocks of data that 
- * are allocated by malloc. 
- *
- * When malloc is called, a new entry 'm_allocation' is registered and setup
- * with the values needed to manage the heap memory block.
- *
- * Each 'm_allocation's are linked together sorted by start address of the 
- * memory. Each time a new allocation is initialized, it must be linked
- * at the right place in the linked list to keep the addresses sorted. This way
- * the space-searching algorithm can check each allocation together with the 
- * next to check if they have space in-between.
- *
- * One problem is that when deallocating memory, the 'm_allocation' struct stays
- * in memory but the fields are erased and the previous node is linked with the 
- * next after. This keeps the linked list in-order but creates holes in the 
- * first block of memory holding the 'm_allocation' structures. 
- *
- * This problem isn't going anywhere. Need to scan the entire list of allocation
- * everytime we need to get a new struct. One thing that is not so bad is that
- * checking the entire list serially will benefit from cache locality and branch
- * prediction.
+ * Blocks of memory are reserved by calling 'kmalloc'. That will create an
+ * instance of m_allocation and place it on the heap. Following that data will
+ * be the actual bytes of the allocation.
+ * 
+ * All allocations are kept in a linked list. We keep the first and last nodes
+ * in the kernel module structure (todo). The linked list is kept ordered in
+ * order of ascending addresses.  When a new allocation is placed between 
+ * blocks of memory, the allocation will be linked with the proper next and 
+ * previous.
  *
 */
 
@@ -38,13 +21,7 @@
  * Module init function.
  *
  * Must be called before any memory calls are done. 
- * This creates the two areas, the allocation block and the heap.
- *
- * There is an allocation of 1 byte at first in order to init the firstAlloc and
- * lastAlloc to a value. This avoids having to check for NULL values in those at
- * every calls to malloc. Instead of doing this, we could just assign that first
- * allocation to something that will remain for the entire duration of the 
- * kernel.
+ * 
  */
 void init_memory_manager()
 {
@@ -59,9 +36,6 @@ void init_memory_manager()
 
 /**
  * Allocate memory on the heap.
- *
- * Allocations can be configured to set 'canary bytes' at the end of the memory
- * area to detect buffer overflows.
  */
 void* kmalloc(uint32_t size)
 {
@@ -95,8 +69,10 @@ void* kmemcpy( void *dest, const void *src, uint32_t count )
 }
 
 /**
- * Same as kmalloc but with upgraded functionalities. The current kmalloc calls
- * are meant to be migrated over to this function eventually.
+ * Same as kmalloc but with upgraded functionalities.
+ * 
+ * The kmalloc function is meant to call this one with the default flag values.
+ * 
  */
 void* kmallocf(uint32_t size, enum mm_alloc_flags f)
 {
@@ -191,6 +167,11 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
     return NULL;
 }
 
+/**
+ * Release of pointer of memory. Meant to be called from 'kfree' with default 
+ * flags. This version of the function currently does not take any flags but 
+ * it might at some point.
+ */
 void kfreef(void* ptr)
 {
     if(ptr == NULL)
@@ -330,6 +311,16 @@ struct m_allocation* mm_find_free_allocation()
 {
     return NULL;
 }
+
+/**
+ * Find a section of the heap big enough to contain the amount of bytes.
+ *
+ * Will start with the first allocations to try and find space in between
+ * existing allocations first.
+ * 
+ * TODO : Looks like the function won't check if space exist between the last
+ * allocation and the end of memory. FIXME
+ */
 struct m_allocation* mm_find_free_space(size_t bytes)
 {
     struct m_allocation* current = firstAlloc;
@@ -354,13 +345,14 @@ struct m_allocation* mm_find_free_space(size_t bytes)
  */
 void mm_set_alloc_canary(struct m_allocation* alloc)
 {
-    //alloc->size += MM_HEAP_ALLOC_CANARY_SIZE;
-    
     kmemplace(alloc->p, alloc->size - MM_HEAP_ALLOC_CANARY_SIZE, MM_HEAP_ALLOC_CANARY_VALUE, MM_HEAP_ALLOC_CANARY_SIZE);
 }
 
 /**
- * Returns true if the canary was untouched, so no buffer overflow.
+ * Returns true if the canary was untouched, so no buffer overflow (detected).
+ * A buffer overflow can still happen if it skips the X canary bytes before 
+ * writing bad data.
+ * 
 */
 BOOL mm_verify_alloc_canary(struct m_allocation* alloc)
 {
@@ -378,7 +370,8 @@ BOOL mm_verify_alloc_canary(struct m_allocation* alloc)
 
 /**
  * Trigger a search of all allocations and returns FALSE as soon as a buffer 
- * overflow is detected.
+ * overflow is detected. This indicates that some data somewhere have an 
+ * overflow.
  */
 BOOL mm_verify_all_allocs_canary()
 {
