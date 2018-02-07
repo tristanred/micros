@@ -337,7 +337,7 @@ uint32_t pa_pt_find_free_page(struct page_table_info* pt)
     {
         kWriteLog("pa_directory_load_at invalid argument.");
         
-        return;
+        return 0;
     }
 
     /*
