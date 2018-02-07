@@ -2,6 +2,6 @@
 #define SCHEDULER_H
 
 #include "common.h"
-#include "proc.h"
+#include "task.h"
 
 #endif
