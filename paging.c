@@ -6,23 +6,16 @@
 extern void set_paging(uint32_t* pt);
 extern void enablePaging();
 extern void disablePaging();
-// extern void invalidateEntry(uint32_t address);
 
 void init_page_allocator()
 {
     int res = pfm_setup_map(PFM_LOCATION);
 
-    if(res != 0)
-    {
-        // Can't setup PFM, we're fucked.
-    }
+    ASSERT(res != 0, "PFM Setup Error.");
 
     struct page_table_info* kpt = pa_build_kernel_pagetable(KPT_LOCATION);
 
-    if(kpt == NULL)
-    {
-
-    }
+    ASSERT(kpt != NULL, "Kernel Pagetable build error.");
     
     // Start with 2 directories. One for the first 4MB that is identity-mapped
     // And another for the second 4MB segment where the KPT resides.
@@ -43,6 +36,7 @@ void init_page_allocator()
     
     pa_set_current_pagetable(kpt);
     
+    // Allocate a bunch of pages for testing.
     uint32_t ptr1 = 0;
     uint32_t ptr2 = 0;
     uint32_t ptr3 = 0;
@@ -66,6 +60,13 @@ void init_page_allocator()
 
 void pa_print_kpt(struct page_table_info* pt)
 {
+    if(pt == NULL)
+    {
+        kWriteLog("pa_print_kpt invalid argument.");
+        
+        return;
+    }
+    
     kWriteLog("----------------------------------------");
     kWriteLog("Printing Kernel Page table");
     kWriteLog_format1d_stacksafe("KPT param stack address : %d", (uint32_t)&pt);
@@ -157,6 +158,13 @@ struct page_table_info* pa_create_pagetable()
 
 void pa_pt_alloc_page(struct page_table_info* pt, uint32_t* addr)
 {
+    if(pt == NULL || addr == NULL)
+    {
+        kWriteLog("pa_pt_alloc_page invalid argument.");
+        
+        return;
+    }
+    
     uint32_t allocAddress = pa_pt_find_free_page(pt);
 
     pa_pt_alloc_pageaddr(pt, allocAddress);
@@ -166,11 +174,19 @@ void pa_pt_alloc_page(struct page_table_info* pt, uint32_t* addr)
 
 void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
 {
+    if(pt == NULL)
+    {
+        kWriteLog("pa_pt_alloc_pageaddr invalid argument.");
+        
+        return;
+    }
+
     uint32_t frameAddress = 0;
     int res = pfm_find_free(&frameAddress);
 
     if(res < 0)
     {
+        kWriteLog("Failed to find a free Page Frame.");
         // No free memory in RAM.
         // TODO
         return;
@@ -181,6 +197,13 @@ void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
 
 void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t physaddr)
 {
+    if(pt == NULL || addr == 0 || physaddr == 0)
+    {
+        kWriteLog("pa_pt_alloc_pageaddr_at invalid argument.");
+        
+        return;
+    }
+
     /* To allocate the page containing addr, we must first find a free page
      * frame in physical memory. Also must check if the page is not already
      * mapped.
@@ -199,10 +222,11 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
     {
         int res = pfm_alloc_frame(physaddr);
 
-        if(res < 0)
+        if(res != 0)
         {
             // Unable to reserve the frame.
             // TODO
+            kWriteLog_format1d_stacksafe("Unable to reserve frame %d.", physaddr);
             return;
         }
 
@@ -212,6 +236,7 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
     }
     else
     {
+        kWriteLog("Cannot allocate frame, page is present.");
         // Cannot allocate, already allocated.
         // TODO : Inform.
         // TODO : What if current address is different from new address.
@@ -220,6 +245,18 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
 
 void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex)
 {
+    if(pt == NULL)
+    {
+        kWriteLog("pa_directory_load invalid argument.");
+        
+        return;
+    }
+    
+    if(pdeIndex > 1024)
+    {
+        PanicQuit("PDE Index out of bounds.");
+    }
+    
     uint32_t pde = pt->page_directory[pdeIndex];
 
     if(PD_PRESENT(pde) == FALSE)
@@ -240,6 +277,20 @@ void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex)
 
             asm volatile("invlpg (%0)" ::"r" (frameAddr) : "memory");
         }
+        else
+        {
+            kWriteLog("Failed to find free page frame to load directory.");
+            
+            return;
+            // No free page frames
+            // TODO
+        }
+    }
+    else
+    {
+        kWriteLog("Cannot load directory, page is present.");
+        
+        return;
     }
 
 
@@ -249,6 +300,18 @@ void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex)
 
 void pa_directory_load_at(struct page_table_info* pt, uint32_t pdeIndex, uint32_t physAddr)
 {
+    if(pt == NULL)
+    {
+        kWriteLog("pa_directory_load_at invalid argument.");
+        
+        return;
+    }
+    
+    if(pdeIndex > 1024)
+    {
+        PanicQuit("PDE Index out of bounds.");
+    }
+    
     uint32_t pde = pt->page_directory[pdeIndex];
 
     if(PD_PRESENT(pde) == FALSE)
@@ -260,10 +323,23 @@ void pa_directory_load_at(struct page_table_info* pt, uint32_t pdeIndex, uint32_
 
         asm volatile("invlpg (%0)" ::"r" (physAddr) : "memory");
     }
+    else
+    {
+        kWriteLog("Cannot load directory, page is present.");
+        
+        return;
+    }
 }
 
 uint32_t pa_pt_find_free_page(struct page_table_info* pt)
 {
+    if(pt == NULL)
+    {
+        kWriteLog("pa_directory_load_at invalid argument.");
+        
+        return;
+    }
+
     /*
         Finding a free page :
         Iterate through the page directory entries
@@ -313,10 +389,11 @@ uint32_t pa_pt_find_free_page(struct page_table_info* pt)
 
     if(found == FALSE)
     {
+        kWriteLog("No free PDE. Out of memory.");
+        
         // No free PDE. Crash and burn.
         ASSERT(FALSE, "NO DIRECTORIES AVAILABLE");
     }
-    
     
     // We can now allocate the new directory and give out an address of its
     // first frame.
@@ -330,6 +407,13 @@ uint32_t pa_pt_find_free_page(struct page_table_info* pt)
 
 void pa_set_current_pagetable(struct page_table_info* pt)
 {
+    if(pt == NULL)
+    {
+        kWriteLog("pa_set_current_pagetable invalid argument.");
+        
+        return;
+    }
+    
     currentPageTable = pt;
 
     set_paging(pt->page_directory);
@@ -342,6 +426,13 @@ struct page_table_info* pa_get_current_pt()
 
 void pa_decompose_vaddress(uint32_t vaddr, uint32_t* pde, uint32_t* pte, uint32_t* off)
 {
+    if(pde == NULL || pte == NULL || off == NULL)
+    {
+        kWriteLog("pa_decompose_vaddress invalid argument.");
+        
+        return;
+    }
+    
     uint32_t upper10 = vaddr & PAGEDIR_MASK;
     uint32_t pdeIndex = upper10 >> 22;
 
@@ -376,6 +467,7 @@ void pa_handle_pagefault(uint32_t addr, uint32_t code)
     }
     else
     {
+        PanicQuit("Access to unallocated page in PF Handler.");
         // Crash the system, reference to unallocated page.
     }
 
@@ -436,7 +528,7 @@ int pfm_find_free(uint32_t* frame)
         }
     }
 
-    return -1;
+    return ENOMEM;
 }
 
 int pfm_find_list(uint32_t amount, uint32_t** list)
@@ -449,7 +541,7 @@ int pfm_find_list(uint32_t amount, uint32_t** list)
         if(res < 0)
         {
             // If we can't get all the required pages, return failure.
-            return -1;
+            return ENOMEM;
         }
         else
         {

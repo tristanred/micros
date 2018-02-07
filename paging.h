@@ -119,11 +119,15 @@ struct page_table_info
     uint32_t page_tables[1024*1024] __attribute__((aligned(4096)));
 } __attribute__((aligned(4096)));
 
+// General structure that can be used to represent a range of bytes in a page.
+// Not used for the moment.
 struct page
 {
     uint8_t data[4096] __attribute__((aligned(4096)));
 }__attribute__((aligned(4096)));
 
+// Flags of a PDE. These are organized by CPU architecture so refer to the
+// Intel - System Programming Guide guide for the other values.
 enum page_frame_flags
 {
     PG_PRESENT = 1,
@@ -168,7 +172,9 @@ struct page_table_info* currentPageTable;
 void init_page_allocator();
 
 /**
- * Just a test function to allow debugging.
+ * Just a test function to reference an unloaded page. If the system is 
+ * allocating pages freely it won't crash the system but if not and the page
+ * was not allocated beforehand it will crash.
  */
 void pa_test_paging();
 
@@ -213,10 +219,16 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
  */
 void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex);
 
+/**
+ * Load a page directory using a specified page frame. This will allocate a new
+ * page and point the directory to it, that page will contain the 1024 PTE.
+ * If the directory is already loaded, this function will not do anything.
+ */
 void pa_directory_load_at(struct page_table_info* pt, uint32_t pdeIndex, uint32_t physAddr);
 
 /**
  * Find an unallocated page in the pagetable.
+ * Returns the 4kb aligned address of the page.
  */
 uint32_t pa_pt_find_free_page(struct page_table_info* pt);
 
@@ -238,18 +250,37 @@ struct page_table_info* pa_get_current_pt();
  */
 void pa_alloc_map_page(struct page_table_info* pt, uint32_t page);
 
+/**
+ * Extract the information from a virtual address. A virtual address is composed
+ * of 3 information. 
+ * First 10 bits are the index of the PDE.
+ * Second 10 bits are the index of the PTE inside the PDE of the first 10 bits.
+ * Last 12 bits are the offset into a page of size 4096 bytes.
+ */
 void pa_decompose_vaddress(uint32_t vaddr, uint32_t* pde, uint32_t* pte, uint32_t* off);
 
+/**
+ * Function called when a pagefault is raised. Currently does not crash the 
+ * system if we reference a page that was not allocated. The faulting
+ * instruction will be repeated indefinitely.
+ */
 void pa_handle_pagefault(uint32_t addr, uint32_t code);
 
+/**
+ * Invalidate the processor TLB cache.
+ */
 void pa_invalidate_tlb(uint32_t vaddr, uint32_t paddr);
 
+/**
+ * Print the kernel page table to the serial OUT port. Used for debugging.
+ */
 void pa_print_kpt(struct page_table_info* pt);
 
 // # Page Frame Functions #
 #define PAGE_ALIGN(x) (x & 0xFFFFF000)
 #define FRAME_INDX(x) (PAGE_ALIGN(x) / 4096)
 
+// Meant to occupy one full page.
 struct page_frame_map
 {
     uint8_t frames[1024*1024];
