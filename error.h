@@ -9,6 +9,7 @@
 BOOL panic;
 
 // If c is NOT true, panic.
+// TRUE = good, FALSE = panic
 #define ASSERT(c, m) if((c) == FALSE) PanicQuit(m)
 
 // Dummy function that gdb breaks into
