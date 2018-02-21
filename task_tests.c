@@ -2,7 +2,7 @@
 
 void task1()
 {
-    asm volatile("sti");
+    enable_interrupts();
     
     int incr = 0;
     while(TRUE)
@@ -20,7 +20,7 @@ void task1()
 
 void task2()
 {
-    asm volatile("sti");
+    enable_interrupts();
     
     int incr = 0;
     while(TRUE)

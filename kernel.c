@@ -86,7 +86,7 @@ void kernel_main(multiboot_info_t* arg1)
     init_kernel_scheduler();
 
     init_timer(TIMER_FREQ_1MS);
-    asm volatile("sti");
+    enable_interrupts();
 
     ks_create_thread((uint32_t)&kernel_task_idle_main);
 
@@ -144,7 +144,7 @@ void kernel_main(multiboot_info_t* arg1)
     // ASSERT(bytesWritten == readBytes, "WRONG SIZE WRITTEN.");
 
     // Enable interrupts
-    asm volatile("sti");
+    enable_interrupts();
 
     // Example of interrupts calls.
     // asm volatile ("int $0x3");

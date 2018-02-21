@@ -162,3 +162,13 @@ void register_interrupt_handler(uint8_t n, isr_t handler)
 {
     interrupt_handlers[n] = handler;
 }
+
+void enable_interrupts()
+{
+    asm volatile("sti");
+}
+
+void disable_interrupts()
+{
+    asm volatile("cli");
+}
