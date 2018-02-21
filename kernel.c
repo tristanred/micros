@@ -1,16 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Check if the compiler thinks we are targeting the wrong operating system. */
-#if defined(__linux__)
-#error "You are not using a cross-compiler, you will most certainly run into trouble"
-#endif
-
-#if !defined(__i386__)
-#error "This tutorial needs to be compiled with a ix86-elf compiler"
-#endif
-
-
 /**
  * These are the default includes in GCC. These headers are always available
  * even when compiling in --freestanding mode.
