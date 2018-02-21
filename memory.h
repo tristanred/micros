@@ -6,10 +6,7 @@
 
 #include "common.h"
 #include "paging.h"
-
-// Heap sizes flags
-#define KERNEL_HEAP_START (1024 * 1024 * 6)
-#define KERNEL_HEAP_LENGTH (25600 * PAGE_SIZE) // 100MB
+#include "memory_zones.h"
 
 #define MM_HEAP_ALLOC_CANARY_SIZE 5
 #define MM_HEAP_ALLOC_CANARY_VALUE "QUACK"
@@ -56,7 +53,7 @@ struct m_allocation* lastAlloc;
 
 // Internal methods
 
-void init_memory_manager();
+void init_memory_manager(struct kernel_info_block* kinfo);
 
 // Public API
 

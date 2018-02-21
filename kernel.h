@@ -6,8 +6,6 @@
 
 #include "types.h"
 
-#define KIBLOCK_ADDR_START 1024 * 1024 * 2 // 2MB
-
 BOOL cpu_is_idle;
 void cpu_idle();
 extern void _cpu_idle();
@@ -15,6 +13,8 @@ extern void _cpu_idle();
 struct kernel_features;
 struct memory_manager;
 struct ata_driver_info;
+struct kernel_scheduler_module;
+struct page_allocator_module;
 
 /**
  * The Kernel Info Block is the root structure of the kernel. This structure
@@ -32,6 +32,9 @@ struct kernel_info_block {
     struct kernel_features* m_kernel_features;
     struct memory_manager* m_memory_manager;
     struct ata_driver_info* m_ata_driver; // ATA Driver is temporarily a kernel module
+    struct kernel_scheduler_module* m_scheduler;
+    struct page_allocator_module* m_page_alloc;
+    
 };
 struct kernel_info_block* kernel_info;
 

@@ -2,16 +2,20 @@
 
 #include "error.h"
 #include "kernel_log.h"
+#include "kernel.h"
 
 extern void set_paging(uint32_t* pt);
 extern void enablePaging();
 extern void disablePaging();
 
-void init_page_allocator()
+void init_page_allocator(struct kernel_info_block* kinfo)
 {
+    pa_module = alloc_kernel_module(sizeof(struct page_allocator_module));
+    kinfo->m_page_alloc = pa_module;
+    
     int res = pfm_setup_map(PFM_LOCATION);
 
-    ASSERT(res != 0, "PFM Setup Error.");
+    ASSERT(res == 0, "PFM Setup Error.");
 
     struct page_table_info* kpt = pa_build_kernel_pagetable(KPT_LOCATION);
 
@@ -21,10 +25,11 @@ void init_page_allocator()
     // And another for the second 4MB segment where the KPT resides.
     pa_directory_load_at(kpt, 0, 1025 * PAGE_SIZE);
     pa_directory_load_at(kpt, 1, 1026 * PAGE_SIZE);
+    pa_directory_load_at(kpt, 2, 1027 * PAGE_SIZE);
+    pa_directory_load_at(kpt, 3, 1028 * PAGE_SIZE);
     
-    // Identity-map the first 4MB. This will contain the BIOS 1MB, PFM 1 MB
-    // text, data, rodata sections in 1MB with the last MB free but mapped.
-    for(int i = 0; i < 1024; i++)
+    // Identity-map the first 16MB.
+    for(int i = 0; i < 4096; i++)
     {
         uint32_t addr = i * 0x1000;
         pa_pt_alloc_pageaddr_at(kpt, addr, addr);
@@ -44,7 +49,6 @@ void init_page_allocator()
     
     enablePaging();
     
-    pa_module = &pa_module_local;
     pa_module->current_pt = kpt;
     pa_module->kernelPagetable = kpt;
     pa_module->min_page_alloc = 1024*3;

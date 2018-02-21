@@ -62,7 +62,7 @@ struct kernel_scheduler_module
 
 struct kernel_scheduler_module* sched;
 
-void init_kernel_scheduler();
+void init_kernel_scheduler(struct kernel_info_block* kinfo);
 
 void ks_enable_scheduling();
 void ks_disable_scheduling();

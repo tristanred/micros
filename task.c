@@ -1,9 +1,13 @@
 #include "task.h"
-#include "timer.h"
 
-void init_kernel_scheduler()
+#include "timer.h"
+#include "kernel.h"
+
+void init_kernel_scheduler(struct kernel_info_block* kinfo)
 {
-    sched = kmalloc(sizeof(struct kernel_scheduler_module));
+    sched = alloc_kernel_module(sizeof(struct kernel_scheduler_module));
+    kinfo->m_scheduler = sched;
+    
     sched->ts = kmalloc(sizeof(struct threadset));
     sched->ts->list = vector_create();
     sched->current = NULL;

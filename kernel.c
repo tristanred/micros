@@ -78,12 +78,14 @@ void kernel_main(multiboot_info_t* arg1)
 
     kSetupLog(SERIAL_COM1_BASE);
 
-    init_page_allocator();
+    setup_kernel_block();
 
-    init_memory_manager();
+    init_page_allocator(kernel_info);
+
+    init_memory_manager(kernel_info);
 
     //      TEST ZONE
-    init_kernel_scheduler();
+    init_kernel_scheduler(kernel_info);
 
     init_timer(TIMER_FREQ_1MS);
     enable_interrupts();
@@ -97,13 +99,12 @@ void kernel_main(multiboot_info_t* arg1)
 
     //      TEST ZONE
 
-    setup_kernel_block();
 
     fbInitialize();
 
     kSetupLog(SERIAL_COM1_BASE);
 
-    init_memory_manager();
+    init_memory_manager(kernel_info);
 
     //setup_paging();
 
@@ -174,21 +175,22 @@ void kernel_main(multiboot_info_t* arg1)
 
 void setup_kernel_block()
 {
-    kernel_info = (struct kernel_info_block*)(KIBLOCK_ADDR_START);
+    kernel_info = (struct kernel_info_block*)(MODULES_LOCATION);
 
-    kernel_info->modules_start_address = (uint32_t)(kernel_info + sizeof(struct kernel_info_block));
-    kernel_info->modules_end_address = (uint32_t)(kernel_info + (1024*1024*5)); // 5MB
-    kernel_info->modules_current_offset = kernel_info->modules_start_address;
+    kernel_info->modules_start_address = (uint32_t)((uint32_t)kernel_info + sizeof(struct kernel_info_block));
+    kernel_info->modules_end_address = (uint32_t)((uint32_t)kernel_info + MODULES_LENGTH); // 1MB
+    kernel_info->modules_current_offset = 0;
 }
 
 void* alloc_kernel_module(size_t size)
 {
-    //return malloc(size);
-
     if(!has_free_modules_space())
-        return NULL; // TODO : Panic instead, unrecoverable situation
+    {
+        PanicQuit("Failed to allocate kernel module.");
+        return NULL;
+    }
 
-    uint32_t nextModuleAddress = kernel_info->modules_current_offset + size;
+    uint32_t nextModuleAddress = kernel_info->modules_start_address + kernel_info->modules_current_offset + size;
     kernel_info->modules_current_offset += size;
 
     return (void*)nextModuleAddress;

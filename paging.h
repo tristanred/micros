@@ -80,6 +80,8 @@
 #include <stdint.h>
 
 #include "types.h"
+#include "kernel.h"
+#include "memory_zones.h"
 
 #define PAGE_SIZE 4096
 
@@ -136,10 +138,6 @@ enum page_frame_flags
     PG_DIRTY = 64
 };
 
-// Initial location of the kernel pagetable
-// 1024 is the first page of the second PDE at the 4MB mark.
-#define KPT_LOCATION (1024 * PAGE_SIZE)
-
 struct page_allocator_module
 {
     // Page table currently loaded in CR3
@@ -169,7 +167,7 @@ struct page_table_info* currentPageTable;
  * build and install a pagetable to the MMU and activate it. After
  * a call to this function, paging will be ONLINE.
  */
-void init_page_allocator();
+void init_page_allocator(struct kernel_info_block* kinfo);
 
 /**
  * Just a test function to reference an unloaded page. If the system is 
@@ -286,8 +284,6 @@ struct page_frame_map
     uint8_t frames[1024*1024];
 
 } __attribute__((aligned(4096)));
-
-#define PFM_LOCATION (512 * PAGE_SIZE)
 
 enum physical_frame_flags
 {
