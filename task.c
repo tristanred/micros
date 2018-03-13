@@ -21,6 +21,25 @@ struct task_t* ks_get_current()
     return sched->current;
 }
 
+BOOL ks_get_task_index(struct task_t* task, size_t* index)
+{
+    struct vector* tasks = sched->ts->list;
+    
+    for(size_t i = 0; i < tasks->count; i++)
+    {
+        struct task_t* t = (struct task_t*)vector_get_at(tasks, i);
+        
+        if(t == task)
+        {
+            *index = i;
+            
+            return TRUE;
+        }
+    }
+    
+    return FALSE;
+}
+
 void ks_suspend_stage2()
 {
     struct regs_t myregs = ks_get_stacked_registers();
@@ -102,6 +121,20 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
 
 struct task_t* ks_get_next_thread(uint32_t* nextIndex)
 {
+    if(ks_has_asleep_tasks())
+    {
+        struct task_t* t = ks_get_sleeping_task();
+        
+        size_t next = 0;
+        BOOL foundTask = ks_get_task_index(t, &next);
+
+        ASSERT(foundTask, "Sleeping task is not in the threadlist.");
+        
+        *nextIndex = next;
+        
+        return t;
+    }
+    
     size_t next = (sched->currentIndex + 1) % sched->ts->list->count;
     struct task_t* t = vector_get_at(sched->ts->list, next);
 
@@ -163,4 +196,36 @@ struct task_t* ks_preempt_current(registers_t* from)
     sched->currentIndex = nextIndex;
 
     return nextTask;
+}
+
+BOOL ks_has_asleep_tasks()
+{
+    struct vector* tasks = sched->ts->list;
+    
+    for(size_t i = 0; i < tasks->count; i++)
+    {
+        struct task_t* t = (struct task_t*)vector_get_at(tasks, i);
+        
+        size_t currentSystemTime = getmscount();
+        if(t->state == T_SLEEPING && t->ms_sleep_until > currentSystemTime)
+            return TRUE;
+    }
+    
+    return FALSE;
+}
+
+struct task_t* ks_get_sleeping_task()
+{
+    struct vector* tasks = sched->ts->list;
+    
+    for(size_t i = 0; i < tasks->count; i++)
+    {
+        struct task_t* t = (struct task_t*)vector_get_at(tasks, i);
+        
+        size_t currentSystemTime = getmscount();
+        if(t->state == T_SLEEPING && t->ms_sleep_until > currentSystemTime)
+            return t;
+    }
+    
+    return NULL;
 }

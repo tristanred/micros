@@ -8,9 +8,11 @@
 
 enum task_state
 {
-    T_WAITING,
-    T_RUNNING,
-    T_SUSPENDED
+    T_WAITING,          // Has not been run yet
+    T_RUNNING,          // Currently running on the CPU
+    T_SUSPENDED,        // Was stopped by another thread
+    T_SLEEPING,         // Waiting for a specific time to wake up
+    T_UNINTERRUPTIBLE   // Thread will not be preempted
 };
 
 struct regs_t
@@ -41,6 +43,8 @@ struct task_t // Size is 56 Bytes (unsure about task_state)
     
     uint32_t ms_count_total; // Lifetime of the task
     uint32_t ms_count_running; // MS count since last suspended
+    
+    uint32_t ms_sleep_until; // Task will sleep until system hits this tick
 };
 
 // List of threads managed by the kernel
@@ -71,6 +75,11 @@ void ks_disable_scheduling();
  * Returns the current task that is running.
  */
 struct task_t* ks_get_current();
+
+/**
+ * Get the index of a task from the threadset index.
+ */
+BOOL ks_get_task_index(struct task_t* task, size_t* index);
 
 /**
  * Suspend the current thread and schedule another thread to run.
@@ -126,5 +135,9 @@ void ks_update_task();
 // the current thread and pass execution to another.
 BOOL ks_should_preempt_current();
 struct task_t* ks_preempt_current(registers_t* from);
+
+// Sleep functions
+BOOL ks_has_asleep_tasks();
+struct task_t* ks_get_sleeping_task();
 
 #endif
