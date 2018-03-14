@@ -1,0 +1,23 @@
+Ideas for a scheduling algorithm to switch between tasks
+
+Timer IRQ fires :
+
+Any threads SLEEPING thread need to wake up on that tick ? If there is a 
+higher priority thread that is sleeping, we wake it up and switch to it.
+
+If no sleeps, we check if the current task's time is out, if it is, select 
+another task to switch to.
+
+Q: Do we imply that waking sleeping threads preempt current threads from their 
+allocated time ?
+
+A: Depend on the sleeping thread priority (TODO Task priorities). If there is
+a time sensitive (T_PCRITICAL) task. Tasks of higher priorities preempt current
+thread at a lower priority.
+
+
+Task priorities
+T_PLOW
+T_PNORMAL
+T_PHIGH
+T_PCRITICAL
