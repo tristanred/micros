@@ -15,6 +15,14 @@ enum task_state
     T_UNINTERRUPTIBLE   // Thread will not be preempted
 };
 
+enum task_prio
+{
+    T_PLOW,
+    T_PNORMAL,
+    T_PHIGH,
+    T_PCRITICAL
+};
+
 struct regs_t
 {
     uint32_t eip, cs, flags; // Added eip and cs
@@ -41,6 +49,9 @@ struct task_t // Size is 56 Bytes (unsure about task_state)
     // Do not modify the order of the members above.
     // Assembly code depends on the correct ordering of the fields
     
+    //TODO : ensure project runs with new fields in this struct
+    enum task_prio priority;
+    
     uint32_t ms_count_total; // Lifetime of the task
     uint32_t ms_count_running; // MS count since last suspended
     
@@ -51,6 +62,9 @@ struct task_t // Size is 56 Bytes (unsure about task_state)
 struct threadset
 {
     struct vector* list;
+    struct vector* critical_list;
+    
+    struct task_t* next_task;
 };
 
 struct kernel_scheduler_module
@@ -139,5 +153,14 @@ struct task_t* ks_preempt_current(registers_t* from);
 // Sleep functions
 BOOL ks_has_asleep_tasks();
 struct task_t* ks_get_sleeping_task();
+
+BOOL ks_can_wake_task(struct task_t* task);
+
+// Priority functions
+
+void ks_criticalize_task(struct task_t* task);
+void ks_decriticalize_task(struct task_t* task);
+
+struct task_t* ks_priority_task_waiting();
 
 #endif

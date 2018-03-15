@@ -10,6 +10,7 @@ void init_kernel_scheduler(struct kernel_info_block* kinfo)
     
     sched->ts = kmalloc(sizeof(struct threadset));
     sched->ts->list = vector_create();
+    sched->ts->critical_list = vector_create();
     sched->current = NULL;
     sched->currentIndex = 0;
     
@@ -97,6 +98,7 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
 
     newTask->entryAddr = entrypoint;
     newTask->state = T_WAITING;
+    newTask->priority = T_PNORMAL;
 
     size_t stackSize = 4096;
     newTask->stackAddr = (uint32_t)malloc(stackSize); // Create a stack
@@ -121,6 +123,26 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
 
 struct task_t* ks_get_next_thread(uint32_t* nextIndex)
 {
+    // Main scheduling function
+    
+    // If an critical task has been found in ks_should_preempt_current
+    // switch to it
+    if(sched->ts->next_task != NULL)
+    {
+        struct task_t* t = sched->ts->next_task;
+        sched->ts->next_task = NULL;
+        
+        size_t next = 0;
+        BOOL foundTask = ks_get_task_index(t, &next);
+        
+        ASSERT(foundTask, "Sleeping task is not in the threadlist.");
+        
+        *nextIndex = next;
+        
+        return t;
+    }
+    
+    // If any threads are sleeping, find one to wake up
     if(ks_has_asleep_tasks())
     {
         struct task_t* t = ks_get_sleeping_task();
@@ -135,6 +157,8 @@ struct task_t* ks_get_next_thread(uint32_t* nextIndex)
         return t;
     }
     
+    // If no critical tasks are waiting or sleeping threads pending
+    // just take the next index from the list.
     size_t next = (sched->currentIndex + 1) % sched->ts->list->count;
     struct task_t* t = vector_get_at(sched->ts->list, next);
 
@@ -158,6 +182,15 @@ BOOL ks_should_preempt_current()
     
     BOOL timeout = c->ms_count_running > sched->max_run_time;
     BOOL hasOtherTasks = sched->ts->list->count > 1;
+    
+    struct task_t* more_important_task = ks_priority_task_waiting();
+    
+    if(hasOtherTasks && more_important_task != NULL)
+    {
+        sched->ts->next_task = more_important_task;
+        
+        return TRUE;
+    }
     
     if(
         timeout && 
@@ -225,6 +258,46 @@ struct task_t* ks_get_sleeping_task()
         size_t currentSystemTime = getmscount();
         if(t->state == T_SLEEPING && t->ms_sleep_until > currentSystemTime)
             return t;
+    }
+    
+    return NULL;
+}
+
+BOOL ks_can_wake_task(struct task_t* task)
+{
+    return task->state == T_SLEEPING && task->ms_sleep_until > getmscount();
+}
+
+void ks_criticalize_task(struct task_t* task)
+{
+    task->priority = T_PCRITICAL;
+    
+    vector_add(sched->ts->critical_list, task);
+}
+
+void ks_decriticalize_task(struct task_t* task)
+{
+    task->priority = T_PNORMAL; // TODO : Arbitrary conversion
+    
+    vector_remove(sched->ts->critical_list, task);
+}
+
+struct task_t* ks_priority_task_waiting()
+{
+    struct vector* tasks = sched->ts->critical_list;
+    
+    struct task_t* c = ks_get_current();
+    
+    for(size_t i = 0; i < tasks->count; i++)
+    {
+        struct task_t* t = (struct task_t*)vector_get_at(tasks, i);
+        
+        if(c->priority != T_PCRITICAL &&
+            ks_can_wake_task(t) == TRUE)
+        {
+            return t;
+        }
+        
     }
     
     return NULL;
