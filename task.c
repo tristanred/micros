@@ -2,6 +2,7 @@
 
 #include "timer.h"
 #include "kernel.h"
+#include "program_idle.h"
 
 void init_kernel_scheduler(struct kernel_info_block* kinfo)
 {
@@ -143,10 +144,9 @@ struct task_t* ks_get_next_thread(uint32_t* nextIndex)
     }
     
     // If any threads are sleeping, find one to wake up
-    if(ks_has_asleep_tasks())
+    struct task_t* t = ks_get_sleeping_task();
+    if(t != NULL)
     {
-        struct task_t* t = ks_get_sleeping_task();
-        
         size_t next = 0;
         BOOL foundTask = ks_get_task_index(t, &next);
 
@@ -229,6 +229,17 @@ struct task_t* ks_preempt_current(registers_t* from)
     sched->currentIndex = nextIndex;
 
     return nextTask;
+}
+
+void ks_create_idle_task()
+{
+    if(sched->ts->idle_task != NULL)
+        return;
+    
+    struct task_t* t = ks_create_thread(&program_idle_main);
+    t->priority = T_PLOW;
+    
+    sched->ts->idle_task = t;
 }
 
 BOOL ks_has_asleep_tasks()

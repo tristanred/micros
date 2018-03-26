@@ -49,7 +49,7 @@ struct task_t // Size is 56 Bytes (unsure about task_state)
     // Do not modify the order of the members above.
     // Assembly code depends on the correct ordering of the fields
     
-    //TODO : ensure project runs with new fields in this struct
+    //TODO : ensure project runs with new fields in this struct (task.asm)
     enum task_prio priority;
     
     uint32_t ms_count_total; // Lifetime of the task
@@ -65,6 +65,8 @@ struct threadset
     struct vector* critical_list;
     
     struct task_t* next_task;
+    
+    struct task_t* idle_task;
 };
 
 struct kernel_scheduler_module
@@ -136,6 +138,7 @@ struct task_t* ks_get_next_thread(uint32_t* nextIndex);
 /**
  * Create a new thread with the provided entry point. The entrypoint should be
  * the address of a function.
+ * This function will schedule the task for execution.
  */
 struct task_t* ks_create_thread(uint32_t entrypoint);
 
@@ -150,7 +153,8 @@ void ks_update_task();
 BOOL ks_should_preempt_current();
 struct task_t* ks_preempt_current(registers_t* from);
 
-// Sleep functions
+// Sleep functions TODO: Classify and document
+void ks_create_idle_task();
 BOOL ks_has_asleep_tasks();
 struct task_t* ks_get_sleeping_task();
 
