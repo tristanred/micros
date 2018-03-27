@@ -160,7 +160,7 @@ struct task_t* ks_get_next_thread(uint32_t* nextIndex)
     // If no critical tasks are waiting or sleeping threads pending
     // just take the next index from the list.
     size_t next = (sched->currentIndex + 1) % sched->ts->list->count;
-    struct task_t* t = vector_get_at(sched->ts->list, next);
+    t = vector_get_at(sched->ts->list, next);
 
     *nextIndex = next;
 
