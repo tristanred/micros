@@ -1,4 +1,16 @@
-I. Memory
+I. Processes & Threads
+  1. Create structure to store processes.
+  2. Create syncronisation primitives.
+  3. Create some methods where the current thread get preempted if others are 
+     waiting.
+  4. Figure out how to name "threads" that are reffered as "tasks" currently.
+
+II. Kernel Modules
+  1. Rework and formalize the Kernel module architecture.
+  2. Add a MODULE_PRELUDE macro to auto insert required properties in kernel
+     modules.
+
+III. Memory
   1. Paging
     a. Implement PageTables management. Curently doing with the PageAllocator
        module.
@@ -7,52 +19,39 @@ I. Memory
     c. Implementation of the disk paging functions.
     d. Page allocation optimization.
     e. Copy On Write implementation
-    
   2. Memory Manager
     a. Integrate the PageAllocator to the memory manager.
 
-II. Boot Sequence
-  1. When booting, write load sequence on the screen and log.
-  2. When system is ready, show MICROS logo until user input.
-  3. Start shell after input
-
-III. Kernel Shell
-  1. Create a fullscreen line-view functionality.
-
-IV. Keyboard Driver
-  1. Investigate the arrow key problem.
-
-V. Filesystem
+IV. Filesystem
   1. Return error values when FS operations fail.
   2. Find out why reading a file result in a File Not Found after X times.
 
-VI. Disk IO
+V. Disk IO
   1. Create helper methods for zeroing blocks of bytes. Or patterns.
   2. Create an interface for the ATA Tester. See the docs/ata_tester.txt for 
      a mockup of the interface.
   3. Setup DMA functionality for disk reading.
-  
-VII. String Functions Review
+
+VI. Boot Sequence
+  1. When booting, write load sequence on the screen and log.
+  2. When system is ready, show MICROS logo until user input.
+  3. Start shell after input
+
+VII. Kernel Shell
+  1. Create a fullscreen line-view functionality.
+
+VIII. Keyboard Driver
+  1. Investigate the arrow key problem.
+
+IX. String Functions Review
   1. Some strings functions have problem with null termination. Find them and 
      fix them.
      
-VIII. Kernel Modules
-  1. Rework and formalize the Kernel module architecture.
-  2. Add a MODULE_PRELUDE macro to auto insert required properties in kernel
-     modules.
-     
-IX. General Improvement
+X. General Improvement
   1. GDT and IDT are loaded at an address near 5MB and this area is close to the
      area where the OS stores a bunch of stuff. I had a bug where the GDT and 
      IDT tables were getting overwritten and caused a GPF. Memory manager is 
      loaded at 6MB to fix the problem. Find a better place for those tables.
-
-X. Processes & Threads
-  1. Create structure to store threads and threads. Store registers and switch
-     them when passing from thread to another.
-  2. Create syncronisation primitives.
-  3. Create some methods where the current thread get preempted if others are 
-     waiting.
     
 XI. ARM Build
   1. Mad research. 
