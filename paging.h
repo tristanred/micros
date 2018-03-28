@@ -153,9 +153,6 @@ struct page_allocator_module
     uint32_t max_page_alloc;
 };
 struct page_allocator_module* pa_module;
-struct page_allocator_module pa_module_local;
-
-
 
 // Point to the page table currently loaded
 struct page_table_info* currentPageTable;

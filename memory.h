@@ -45,11 +45,38 @@ struct m_allocation
     struct m_allocation* next;
 };
 
-size_t allocs_count;
-struct m_allocation* allocs;
+enum heap_flags
+{
+    FHEAP_NONE = 0
+};
 
-struct m_allocation* firstAlloc;
-struct m_allocation* lastAlloc;
+struct m_heap
+{
+    enum heap_flags hflags;
+    
+    uint32_t startAddress;
+    uint32_t endAddress;
+    
+    size_t allocs_count;
+    struct m_allocation* firstAlloc;
+    struct m_allocation* lastAlloc;
+};
+
+#define HEAP ks_get_current()->task_heap
+
+// size_t allocs_count;
+// struct m_allocation* firstAlloc;
+// struct m_allocation* lastAlloc;
+
+struct memory_manager_module
+{
+    size_t allocs_count;
+    struct m_allocation* allocs;
+
+    struct m_allocation* firstAlloc;
+    struct m_allocation* lastAlloc;
+};
+struct memory_manager_module* mm_module;
 
 // Internal methods
 
@@ -74,6 +101,8 @@ void kfreef(void* ptr);
 
 void kmemplace(void* dest, uint32_t offset, const char* data, size_t count);
 void kmemget(void* src, char* dest, uint32_t offset, size_t count, size_t* readSize);
+
+struct m_heap* mm_create_heap(enum heap_flags flags);
 
 // Private Methods
 

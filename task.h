@@ -6,6 +6,8 @@
 #include "idt.h"
 #include "vector.h"
 
+struct m_heap;
+
 enum task_state
 {
     T_WAITING,          // Has not been run yet
@@ -56,6 +58,8 @@ struct task_t // Size is 56 Bytes (unsure about task_state)
     uint32_t ms_count_running; // MS count since last suspended
     
     uint32_t ms_sleep_until; // Task will sleep until system hits this tick
+    
+    struct m_heap* task_heap;
 };
 
 // List of threads managed by the kernel

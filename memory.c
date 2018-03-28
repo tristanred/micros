@@ -1,6 +1,7 @@
 #include "memory.h"
 
 #include "kernel_log.h"
+#include "task.h"
 
 /**
  * The heap manager manages heaps of memory.
@@ -25,6 +26,9 @@
  */
 void init_memory_manager(struct kernel_info_block* kinfo)
 {
+    mm_module = alloc_kernel_module(sizeof(struct memory_manager_module));
+    kinfo->m_memory_manager = mm_module;
+    
     uint32_t startingHeapPage = KERNEL_HEAP_START;
     uint32_t heapPageCount = KERNEL_HEAP_LENGTH / PAGE_SIZE;
     
@@ -80,7 +84,7 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
     if((f | MEM_CHECKED) == f)
         allocTotalSize += MM_HEAP_ALLOC_CANARY_SIZE;
     
-    if(firstAlloc == NULL)
+    if(HEAP->firstAlloc == NULL)
     {
         struct m_allocation* newAlloc = (struct m_allocation*)KERNEL_HEAP_START;
         newAlloc->size = allocTotalSize;
@@ -94,13 +98,13 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
             mm_set_alloc_canary(newAlloc);
         }
 
-        firstAlloc = newAlloc;
-        lastAlloc = newAlloc;
+        HEAP->firstAlloc = newAlloc;
+        HEAP->lastAlloc = newAlloc;
         
         return newAlloc->p;
     }
     
-    struct m_allocation* current = firstAlloc;
+    struct m_allocation* current = HEAP->firstAlloc;
     while(current != NULL)
     {
         struct m_allocation* next = current->next;
@@ -125,7 +129,7 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
                 mm_link_allocs(current, newAlloc);
                 mm_link_allocs(newAlloc, next);
                 
-                lastAlloc = newAlloc;
+                HEAP->lastAlloc = newAlloc;
                 
                 return newAlloc->p;
             }
@@ -149,7 +153,7 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
                 
                 mm_link_allocs(current, newAlloc);
                 
-                lastAlloc = newAlloc;
+                HEAP->lastAlloc = newAlloc;
                 
                 return newAlloc->p;
             }
@@ -181,7 +185,7 @@ void kfreef(void* ptr)
         return;
     }
     
-    struct m_allocation* current = lastAlloc;
+    struct m_allocation* current = HEAP->lastAlloc;
     while(current != NULL)
     {
         if(current->p == ptr)
@@ -237,6 +241,17 @@ void kmemplace(void* dest, uint32_t offset, const char* data, size_t count)
     }
 }
 
+struct m_heap* mm_create_heap(enum heap_flags flags)
+{
+    // TODO : find storage for new heap struct
+    struct m_heap* new_heap = (struct m_heap*)kmalloc(sizeof(struct m_heap));
+    
+    new_heap->hflags = flags;
+    
+    // TODO : link heap somewhere.
+    return new_heap;
+}
+
 /**
  * Get some bytes from the buffer at a specific offset. The returning buffer
  * 'dest' must be provided as an out parameter. This was done because this 
@@ -274,7 +289,6 @@ uint32_t mm_get_space(struct m_allocation* first, struct m_allocation* second)
 uint32_t mm_data_head(struct m_allocation* target)
 {
     return (uint32_t)target;
-    //return (uint32_t)target->p;
 }
 
 /**
@@ -323,7 +337,7 @@ struct m_allocation* mm_find_free_allocation()
  */
 struct m_allocation* mm_find_free_space(size_t bytes)
 {
-    struct m_allocation* current = firstAlloc;
+    struct m_allocation* current = HEAP->firstAlloc;
     while(current != NULL)
     {
         struct m_allocation* next = current->next;
@@ -375,7 +389,7 @@ BOOL mm_verify_alloc_canary(struct m_allocation* alloc)
  */
 BOOL mm_verify_all_allocs_canary()
 {
-    struct m_allocation* current = firstAlloc;
+    struct m_allocation* current = HEAP->firstAlloc;
     while(current != NULL)
     {
         if(mm_verify_alloc_canary(current) == FALSE)
