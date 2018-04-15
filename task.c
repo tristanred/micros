@@ -100,6 +100,9 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
     newTask->entryAddr = entrypoint;
     newTask->state = T_WAITING;
     newTask->priority = T_PNORMAL;
+    
+    // Set the task to use the kernel heap.
+    newTask->task_heap = kernel_info->m_memory_manager->kernel_heap;
 
     size_t stackSize = 4096;
     newTask->stackAddr = (uint32_t)malloc(stackSize); // Create a stack

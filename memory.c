@@ -26,16 +26,45 @@
  */
 void init_memory_manager(struct kernel_info_block* kinfo)
 {
-    mm_module = alloc_kernel_module(sizeof(struct memory_manager_module));
+    mm_module = (struct memory_manager_module*)alloc_kernel_module(sizeof(struct memory_manager_module));
     kinfo->m_memory_manager = mm_module;
     
-    uint32_t startingHeapPage = KERNEL_HEAP_START;
-    uint32_t heapPageCount = KERNEL_HEAP_LENGTH / PAGE_SIZE;
+    uint32_t startingHeapPage = KERNEL_HEAP_START; // TODO
+    uint32_t heapPageCount = KERNEL_HEAP_LENGTH / PAGE_SIZE; // TODO
     
     for(uint32_t i = 0; i < heapPageCount; i++)
     {
         pa_pt_alloc_pageaddr(pa_get_current_pt(), startingHeapPage + (i * PAGE_SIZE));
     }
+    
+    // Find largest memory zone
+    uint32_t zone_start = 0;
+    uint32_t zone_length = 0;
+    mm_zone_find_largest(&zone_start, &zone_length);
+    
+    struct m_heap* kheap = (struct m_heap*)zone_start;
+    kheap->hflags = FHEAP_NONE;
+    kheap->startAddress = zone_start;
+    kheap->endAddress = zone_start + zone_length;
+    kheap->allocs_count = 0;
+    kheap->firstAlloc = NULL;
+    kheap->lastAlloc = NULL;
+    
+    mm_module->kernel_heap = kheap;
+    
+    // Create the allocation to track the m_heap allocated memory.
+    struct m_allocation* alloc = (struct m_allocation*)(zone_start + zone_length);
+    alloc->size = sizeof(struct m_heap);
+    alloc->p = kheap;
+    alloc->allocated = TRUE;
+    alloc->type = MEM_ALLOC;
+    alloc->flags = MEM_NOFLAGS;
+    alloc->previous = NULL;
+    alloc->next = NULL;
+    
+    kheap->firstAlloc = alloc;
+    kheap->lastAlloc = alloc;
+    
 }
 
 /**
@@ -86,7 +115,7 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
     
     if(HEAP->firstAlloc == NULL)
     {
-        struct m_allocation* newAlloc = (struct m_allocation*)KERNEL_HEAP_START;
+        struct m_allocation* newAlloc = (struct m_allocation*)HEAP->startAddress;
         newAlloc->size = allocTotalSize;
         newAlloc->p = (void*)(newAlloc + sizeof(struct m_allocation));
         newAlloc->allocated = TRUE;
@@ -243,13 +272,25 @@ void kmemplace(void* dest, uint32_t offset, const char* data, size_t count)
 
 struct m_heap* mm_create_heap(enum heap_flags flags)
 {
-    // TODO : find storage for new heap struct
-    struct m_heap* new_heap = (struct m_heap*)kmalloc(sizeof(struct m_heap));
+    (void)flags;
+    return NULL;
     
-    new_heap->hflags = flags;
     
-    // TODO : link heap somewhere.
-    return new_heap;
+    
+    // // TODO : find storage for new heap struct
+    // struct m_heap new_heap;
+    // memset(&new_heap, 0, sizeof(struct m_heap));
+    
+    // new_heap.hflags = flags;
+    
+    // // TODO : link heap somewhere.
+    // return new_heap;
+}
+
+void mm_zone_find_largest(uint32_t* start, uint32_t* length)
+{
+    *start = 0;
+    *length = 0;
 }
 
 /**
@@ -304,7 +345,7 @@ uint32_t mm_data_tail(struct m_allocation* target)
  */
 uint32_t mm_space_to_end(struct m_allocation* target)
 {
-    return (KERNEL_HEAP_START +  KERNEL_HEAP_LENGTH) - mm_data_tail(target);
+    return (HEAP->startAddress + HEAP_LENGTH) - mm_data_tail(target);
 }
 
 /**

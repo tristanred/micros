@@ -11,7 +11,7 @@
 #define MM_HEAP_ALLOC_CANARY_SIZE 5
 #define MM_HEAP_ALLOC_CANARY_VALUE "QUACK"
 
-enum mm_alloc_types
+enum mm_alloc_types // TODO DOCUMENT
 {
     MEM_UNALLOC,
     MEM_ALLOC,
@@ -63,6 +63,7 @@ struct m_heap
 };
 
 #define HEAP ks_get_current()->task_heap
+#define HEAP_LENGTH (ks_get_current()->task_heap->endAddress - ks_get_current()->task_heap->startAddress)
 
 // size_t allocs_count;
 // struct m_allocation* firstAlloc;
@@ -70,6 +71,8 @@ struct m_heap
 
 struct memory_manager_module
 {
+    struct m_heap* kernel_heap;
+    
     size_t allocs_count;
     struct m_allocation* allocs;
 
@@ -102,7 +105,11 @@ void kfreef(void* ptr);
 void kmemplace(void* dest, uint32_t offset, const char* data, size_t count);
 void kmemget(void* src, char* dest, uint32_t offset, size_t count, size_t* readSize);
 
+// Heap methods
 struct m_heap* mm_create_heap(enum heap_flags flags);
+
+// Memory zones
+void mm_zone_find_largest(uint32_t* start, uint32_t* length);
 
 // Private Methods
 

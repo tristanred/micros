@@ -42,7 +42,7 @@ typedef struct registers
 */
 
 // TODO : Convert regs to struct registers_t (change task switch ASM)
-struct task_t // Size is 56 Bytes (unsure about task_state)
+struct task_t // Size is 56 Bytes (TODO change) (unsure about task_state)
 {
     uint32_t entryAddr;
     struct regs_t regs;
