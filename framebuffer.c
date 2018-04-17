@@ -1,6 +1,7 @@
 #include "framebuffer.h"
 #include "string.h"
 #include "io_func.h"
+#include "runflags.h"
 
 /*
  * Framebuffer data format
@@ -30,6 +31,10 @@ void fbInitialize()
             fb[offset] = fbGetVGAEntry(' ', fbColorFront, fbColorBack);
         }
     }
+    
+#if ENV_TMUX == 1
+    fbColPos = 1;
+#endif
 }
 
 void fbMoveCursor(uint8_t col, uint8_t row)
@@ -99,6 +104,10 @@ void fbClear()
     {
         fbPutChar(' ');
     }
+    
+#if ENV_TMUX == 1
+    fbMoveCursor(0, 1);
+#endif
 }
 
 uint8_t fbGetColor(enum VGACOLOR front, enum VGACOLOR back)
