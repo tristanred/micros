@@ -72,7 +72,7 @@ void kernel_main(multiboot_info_t* arg1)
 
     init_page_allocator(kernel_info);
 
-    init_memory_manager(kernel_info);
+    init_memory_manager(kernel_info, arg1);
 
     //      TEST ZONE
     init_kernel_scheduler(kernel_info);
@@ -94,7 +94,7 @@ void kernel_main(multiboot_info_t* arg1)
 
     kSetupLog(SERIAL_COM1_BASE);
 
-    init_memory_manager(kernel_info);
+    //init_memory_manager(kernel_info);
 
     //setup_paging();
 

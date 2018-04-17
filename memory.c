@@ -2,6 +2,7 @@
 
 #include "kernel_log.h"
 #include "task.h"
+#include "bootmem.h"
 
 /**
  * The heap manager manages heaps of memory.
@@ -24,7 +25,7 @@
  * Must be called before any memory calls are done. 
  * 
  */
-void init_memory_manager(struct kernel_info_block* kinfo)
+void init_memory_manager(struct kernel_info_block* kinfo, multiboot_info_t* mbi)
 {
     mm_module = (struct memory_manager_module*)alloc_kernel_module(sizeof(struct memory_manager_module));
     kinfo->m_memory_manager = mm_module;
@@ -36,6 +37,10 @@ void init_memory_manager(struct kernel_info_block* kinfo)
     {
         pa_pt_alloc_pageaddr(pa_get_current_pt(), startingHeapPage + (i * PAGE_SIZE));
     }
+    
+    mbt_print(mbi);
+    
+    return;
     
     // Find largest memory zone
     uint32_t zone_start = 0;

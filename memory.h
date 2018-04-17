@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "paging.h"
+#include "multiboot.h"
 #include "memory_zones.h"
 
 #define MM_HEAP_ALLOC_CANARY_SIZE 5
@@ -83,7 +84,7 @@ struct memory_manager_module* mm_module;
 
 // Internal methods
 
-void init_memory_manager(struct kernel_info_block* kinfo);
+void init_memory_manager(struct kernel_info_block* kinfo, multiboot_info_t* mbi);
 
 // Public API
 

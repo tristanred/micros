@@ -6,8 +6,8 @@
 
 #include "multiboot.h"
 
-multiboot_info_t* mtbInfo;
+void mbt_print(multiboot_info_t* mbi);
 
-void btmConfigureMemoryRanges(multiboot_info_t* mbi);
+void mbt_print_zones(multiboot_info_t* mbi);
 
 #endif
