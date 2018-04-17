@@ -3,6 +3,7 @@
 #include "error.h"
 #include "kernel_log.h"
 #include "kernel.h"
+#include "runflags.h"
 
 extern void set_paging(uint32_t* pt);
 extern void enablePaging();
@@ -64,9 +65,10 @@ void init_page_allocator(struct kernel_info_block* kinfo)
 
 void pa_print_kpt(struct page_table_info* pt)
 {
+#if PRINT_PAGETABLES == 1
     if(pt == NULL)
     {
-        kWriteLog("pa_print_kpt invalid argument.");
+        WARN_PARAM("pa_print_kpt invalid argument.");
         
         return;
     }
@@ -122,6 +124,8 @@ void pa_print_kpt(struct page_table_info* pt)
     kWriteLog_format1d_stacksafe("Final Addr = %d", addr);
     kWriteLog("Printing KPT done");
     kWriteLog("----------------------------------------");
+    
+#endif
 }
 
 void pa_test_paging()
@@ -164,7 +168,7 @@ void pa_pt_alloc_page(struct page_table_info* pt, uint32_t* addr)
 {
     if(pt == NULL || addr == NULL)
     {
-        kWriteLog("pa_pt_alloc_page invalid argument.");
+        WARN_PARAM("pa_pt_alloc_page invalid argument.");
         
         return;
     }
@@ -180,7 +184,7 @@ void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
 {
     if(pt == NULL)
     {
-        kWriteLog("pa_pt_alloc_pageaddr invalid argument.");
+        WARN_PARAM("pa_pt_alloc_pageaddr invalid argument.");
         
         return;
     }
@@ -203,7 +207,7 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
 {
     if(pt == NULL || addr == 0 || physaddr == 0)
     {
-        kWriteLog("pa_pt_alloc_pageaddr_at invalid argument.");
+        WARN_PARAM("pa_pt_alloc_pageaddr_at invalid argument.");
         
         return;
     }
@@ -251,7 +255,7 @@ void pa_directory_load(struct page_table_info* pt, uint32_t pdeIndex)
 {
     if(pt == NULL)
     {
-        kWriteLog("pa_directory_load invalid argument.");
+        WARN_PARAM("pa_directory_load invalid argument.");
         
         return;
     }
@@ -306,7 +310,7 @@ void pa_directory_load_at(struct page_table_info* pt, uint32_t pdeIndex, uint32_
 {
     if(pt == NULL)
     {
-        kWriteLog("pa_directory_load_at invalid argument.");
+        WARN_PARAM("pa_directory_load_at invalid argument.");
         
         return;
     }
@@ -339,7 +343,7 @@ uint32_t pa_pt_find_free_page(struct page_table_info* pt)
 {
     if(pt == NULL)
     {
-        kWriteLog("pa_directory_load_at invalid argument.");
+        WARN_PARAM("pa_directory_load_at invalid argument.");
         
         return 0;
     }
@@ -413,7 +417,7 @@ void pa_set_current_pagetable(struct page_table_info* pt)
 {
     if(pt == NULL)
     {
-        kWriteLog("pa_set_current_pagetable invalid argument.");
+        WARN_PARAM("pa_set_current_pagetable invalid argument.");
         
         return;
     }
@@ -432,7 +436,7 @@ void pa_decompose_vaddress(uint32_t vaddr, uint32_t* pde, uint32_t* pte, uint32_
 {
     if(pde == NULL || pte == NULL || off == NULL)
     {
-        kWriteLog("pa_decompose_vaddress invalid argument.");
+        WARN_PARAM("pa_decompose_vaddress invalid argument.");
         
         return;
     }

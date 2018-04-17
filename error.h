@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "errorcodes.h"
+#include "runflags.h"
 
 // This value is set to true when the kernel panic'd and bailed out of 
 // execution.
@@ -18,6 +19,8 @@ void Debugger();
 void PanicQuit(char* message);
 
 void ShowErrorMessage(char* errorType, char* message);
+
+void WARN_PARAM(char* message);
 
 void TemplateFault(char* msg);
 
