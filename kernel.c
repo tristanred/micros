@@ -73,6 +73,14 @@ void kernel_main(multiboot_info_t* arg1)
     init_page_allocator(kernel_info);
 
     init_memory_manager(kernel_info, arg1);
+    fbInitialize();
+    fbClear();
+    fbPutString("Done.");
+    
+    while(TRUE)
+    {
+        cpu_idle();
+    }
 
     //      TEST ZONE
     init_kernel_scheduler(kernel_info);
