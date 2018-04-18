@@ -205,7 +205,7 @@ void pa_pt_alloc_pageaddr(struct page_table_info* pt, uint32_t addr)
 
 void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t physaddr)
 {
-    if(pt == NULL || addr == 0 || physaddr == 0)
+    if(pt == NULL)
     {
         WARN_PARAM("pa_pt_alloc_pageaddr_at invalid argument.");
         
