@@ -30,13 +30,13 @@ void init_memory_manager(struct kernel_info_block* kinfo, multiboot_info_t* mbi)
     mm_module = (struct memory_manager_module*)alloc_kernel_module(sizeof(struct memory_manager_module));
     kinfo->m_memory_manager = mm_module;
     
-    uint32_t startingHeapPage = KERNEL_HEAP_START; // TODO
-    uint32_t heapPageCount = KERNEL_HEAP_LENGTH / PAGE_SIZE; // TODO
+    // uint32_t startingHeapPage = KERNEL_HEAP_START; // TODO
+    // uint32_t heapPageCount = KERNEL_HEAP_LENGTH / PAGE_SIZE; // TODO
     
-    for(uint32_t i = 0; i < heapPageCount; i++)
-    {
-        pa_pt_alloc_pageaddr(pa_get_current_pt(), startingHeapPage + (i * PAGE_SIZE));
-    }
+    // for(uint32_t i = 0; i < heapPageCount; i++)
+    // {
+    //     pa_pt_alloc_pageaddr(pa_get_current_pt(), startingHeapPage + (i * PAGE_SIZE));
+    // }
     
     mbt_print(mbi);
     

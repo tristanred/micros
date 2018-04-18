@@ -29,8 +29,13 @@ void init_page_allocator(struct kernel_info_block* kinfo)
     pa_directory_load_at(kpt, 2, 1027 * PAGE_SIZE);
     pa_directory_load_at(kpt, 3, 1028 * PAGE_SIZE);
     
-    // Identity-map the first 16MB.
-    for(int i = 0; i < 4096; i++)
+    for(int i = 0; i < 1024; i++)
+    {
+        uint32_t addr = i * 0x1000;
+        pa_pt_alloc_pageaddr_at(kpt, addr, addr);
+    }
+    
+    for(int i = 1029; i < 4096; i++)
     {
         uint32_t addr = i * 0x1000;
         pa_pt_alloc_pageaddr_at(kpt, addr, addr);
