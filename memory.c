@@ -39,6 +39,7 @@ void init_memory_manager(struct kernel_info_block* kinfo, multiboot_info_t* mbi)
     // }
     
     mbt_print(mbi);
+    mbt_pretty_print_info(mbi);
     
     return;
     
