@@ -39,6 +39,11 @@ void fbInitialize()
 
 void fbMoveCursor(uint8_t col, uint8_t row)
 {
+#if ENV_TMUX == 1
+    if(row == 0)
+        row = 1;
+#endif
+
     fbColPos = col;
     fbRowPos = row;
     
