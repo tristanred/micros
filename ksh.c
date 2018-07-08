@@ -130,9 +130,9 @@ void ksh_process_command(char* commandline)
                 char* pattern = parts[2];
                 char* address = parts[3];
                 
-                uint32_t amountAsDWord = (uint32_t)s_to_d(bytesAmount);
-                uint8_t patternAsByte = (uint8_t)s_to_d(pattern);
-                int addressAsQWord = (int)s_to_d(address);
+                uint32_t amountAsDWord = (uint32_t)atoi(bytesAmount);
+                uint8_t patternAsByte = (uint8_t)atoi(pattern);
+                int addressAsQWord = (int)atoi(address);
                 
                 uint8_t* writeData = (uint8_t*)malloc(amountAsDWord * sizeof(uint8_t));
                 

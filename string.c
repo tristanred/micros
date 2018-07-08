@@ -314,16 +314,16 @@ void strdigits(uint64_t number, char* buf)
     strrev(result, buf);
 }
 
-uint64_t s_to_d(char* number)
+int atoi( const char *str )
 {
-    size_t numberLen = strlen(number);
+    int numberLen = strlen(str);
     
-    uint64_t result = 0;
+    int result = 0;
     
-    size_t magnitude = 1;
+    int magnitude = 1;
     for(int i = numberLen - 1; i >= 0; i--)
     {
-        result += (number[i] - 48) * magnitude;
+        result += (str[i] - 48) * magnitude;
         
         magnitude *= 10;
     }

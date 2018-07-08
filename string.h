@@ -40,6 +40,6 @@ void strrev(char* str, char* out);
 void strdigits(uint64_t number, char* buf);
 
 // Convert a string to a number
-uint64_t s_to_d(char* number);
+int atoi( const char *str );
 
 #endif
