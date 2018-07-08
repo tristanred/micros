@@ -80,8 +80,8 @@ void pa_print_kpt(struct page_table_info* pt)
     
     kWriteLog("----------------------------------------");
     kWriteLog("Printing Kernel Page table");
-    kWriteLog_format1d_stacksafe("KPT param stack address : %d", (uint32_t)&pt);
-    kWriteLog_format1d_stacksafe("KPT Pointer : %d", (uint32_t)pt);
+    kWriteLog("KPT param stack address : %d", (uint32_t)&pt);
+    kWriteLog("KPT Pointer : %d", (uint32_t)pt);
 
     int a = 0;
     int addr = 0;
@@ -89,14 +89,14 @@ void pa_print_kpt(struct page_table_info* pt)
     {
         if(PD_PRESENT(pt->page_directory[k]))
         {
-            kWriteLog_format1d_stacksafe("[PDE #%d]", k);
+            kWriteLog("[PDE #%d]", k);
         }
         else
         {
-            kWriteLog_format1d_stacksafe("PDE #%d EMPTY", k);
+            kWriteLog("PDE #%d EMPTY", k);
         }
 
-        kWriteLog_format1d_stacksafe("Bits : %d", pt->page_directory[k]);
+        kWriteLog("Bits : %d", pt->page_directory[k]);
 
         if(PD_PRESENT(pt->page_directory[k]))
         {
@@ -105,15 +105,15 @@ void pa_print_kpt(struct page_table_info* pt)
                 int ptIndex = i + (k * 1024);
                 if(PT_PRESENT(pt->page_tables[ptIndex]))
                 {
-                    kWriteLog_format1d_stacksafe("  [PTE #%d] ***", ptIndex);
+                    kWriteLog("  [PTE #%d] ***", ptIndex);
                 }
                 else
                 {
-                    kWriteLog_format1d_stacksafe("  [PTE #%d]", ptIndex);
+                    kWriteLog("  [PTE #%d]", ptIndex);
                 }
 
-                kWriteLog_format1d_stacksafe("  Bits = %d", pt->page_tables[ptIndex]);
-                kWriteLog_format1d_stacksafe("  Addr = %d", addr);
+                kWriteLog("  Bits = %d", pt->page_tables[ptIndex]);
+                kWriteLog("  Addr = %d", addr);
 
                 addr += 0x1000;
             }
@@ -125,8 +125,8 @@ void pa_print_kpt(struct page_table_info* pt)
         }
     }
 
-    kWriteLog_format1d_stacksafe("Final PTE count = %d", a);
-    kWriteLog_format1d_stacksafe("Final Addr = %d", addr);
+    kWriteLog("Final PTE count = %d", a);
+    kWriteLog("Final Addr = %d", addr);
     kWriteLog("Printing KPT done");
     kWriteLog("----------------------------------------");
     
@@ -239,7 +239,7 @@ void pa_pt_alloc_pageaddr_at(struct page_table_info* pt, uint32_t addr, uint32_t
         {
             // Unable to reserve the frame.
             // TODO
-            kWriteLog_format1d_stacksafe("Unable to reserve frame %d.", physaddr);
+            kWriteLog("Unable to reserve frame %d.", physaddr);
             return;
         }
 

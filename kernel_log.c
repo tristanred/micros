@@ -7,29 +7,18 @@ void kSetupLog(COMPRT loggingPort)
     keLogPort = seSetupCOMPort(loggingPort);
 }
 
-void kWriteLog(const char* str)
+void kWriteLog(const char* str, ...)
 {
     if(keLogPort != 0)
     {
-        seWriteString(keLogPort, str);
+        char outbuf[256];
+        
+        va_list formats;
+        va_start(formats, str);
+        vsprintf(outbuf, str, formats);
+        va_end(formats);
+        
+        seWriteString(keLogPort, outbuf);
         seWriteByte(keLogPort, '\n');
     }
-}
-
-void kWriteLog_format1d(const char* str, uint64_t number)
-{
-    char outBuf[256];
-    
-    sprintf_1d(outBuf, str, number);
-    
-    kWriteLog(outBuf);
-}
-
-void kWriteLog_format1d_stacksafe(const char* str, uint64_t number)
-{
-    char outBuf[256];
-    
-    sprintf_1d_buf(outBuf, str, number);
-    
-    kWriteLog(outBuf);
 }

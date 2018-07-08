@@ -223,7 +223,7 @@ void driver_ata_wait_for_clear_bit(unsigned char statusBits)
         {
             char msg[256];
             
-            sprintf_1d(msg, "IO STUCK WAITING FOR STATUS %d TO CLEAR.", statusBits);
+            sprintf(msg, "IO STUCK WAITING FOR STATUS %d TO CLEAR.", statusBits);
             
             fbPutString(msg);
         }
@@ -253,7 +253,7 @@ void driver_ata_wait_for_set_bit(unsigned char statusBits)
         {
             char msg[256];
             
-            sprintf_1d(msg, "IO STUCK WAITING FOR STATUS %d TO SET.", statusBits);
+            sprintf(msg, "IO STUCK WAITING FOR STATUS %d TO SET.", statusBits);
             
             fbPutString(msg);
         }
@@ -284,7 +284,7 @@ void driver_ata_wait_for_only_set_bit(unsigned char statusBits)
         {
             char msg[256];
             
-            sprintf_1d(msg, "IO STUCK WAITING FOR STATUS %d TO ONLY SET.", statusBits);
+            sprintf(msg, "IO STUCK WAITING FOR STATUS %d TO ONLY SET.", statusBits);
             
             fbPutString(msg);
         }

@@ -237,7 +237,7 @@ void kfreef(void* ptr)
             {
                 if(mm_verify_alloc_canary(current) == FALSE)
                 {
-                    kWriteLog_format1d("Overflow detected at address %d", (uint32_t)current->p);
+                    kWriteLog("Overflow detected at address %d", (uint32_t)current->p);
                     
                     Debugger();
                 }

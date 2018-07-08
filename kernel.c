@@ -122,7 +122,7 @@ void kernel_main(multiboot_info_t* arg1)
     for(int i = 0; i < total; i++)
     {
         kWriteLog("");
-        kWriteLog_format1d("Device #%d", i);
+        kWriteLog("Device #%d", i);
         print_pci_device_info(set->deviceList[i]);
     }
 

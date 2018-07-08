@@ -2,7 +2,6 @@
 
 #include "memory.h"
 #include "vector.h"
-#include <stdarg.h>
 
 // Return the amount of characters of the string, not counting the 
 // null terminator.
@@ -31,54 +30,21 @@ size_t strlen_s(const char* str, size_t strsz)
     return len;
 }
 
-int sprintf_1d(char* buffer, const char* format, uint64_t number)
-{
-    size_t formatSize = strlen(format);
-    char* numberString = strdigits(number);
-    size_t numberStringSize = strlen(numberString);
-    
-    size_t formatCounter = 0;
-    size_t bufferCounter = 0;
-    
-    size_t stopPoint = formatSize - 2 + numberStringSize;
-    
-    int go = 0;
-    while(go == 0)
-    {
-        if(format[bufferCounter] == '%' && format[bufferCounter + 1] == 'd')
-        {
-            formatCounter += 2;
-            
-            size_t numberCounter = 0;
-            for(numberCounter = 0; numberCounter < numberStringSize; numberCounter++)
-            {
-                buffer[bufferCounter++] = numberString[numberCounter];
-            }
-        }
-        else
-        {
-            buffer[bufferCounter++] = format[formatCounter++];
-        }
-        
-        if(bufferCounter >= stopPoint)
-        {
-            go = 1;
-        }
-    }
-    
-    buffer[stopPoint] = '\0';
-    
-    free(numberString);
-    
-    return stopPoint;
-}
-
 int sprintf( char *buffer, const char *format, ...)
 {
     // Initialize the vadiaric argument structure
     va_list formatlist;
     va_start(formatlist, format);
     
+    int resultLength = vsprintf(buffer, format, formatlist);
+    
+    va_end(formatlist);
+    
+    return resultLength;
+}
+
+int vsprintf( char *buffer, const char *format, va_list vlist )
+{
     size_t sourceLength = strlen(format); // Maximum length we are going to read from 'format'
     size_t sourceIndex = 0; // Position in the input buffer.
     size_t bufferIndex = 0; // Position in the result buffer.
@@ -93,8 +59,9 @@ int sprintf( char *buffer, const char *format, ...)
             sourceIndex += 2;
             
             // Get the number we're going to place in 'buffer'
-            uint32_t numberArgument = va_arg(formatlist, uint32_t);
-            char* numberDigits = strdigits(numberArgument);
+            uint32_t numberArgument = va_arg(vlist, uint32_t);
+            char numberDigits[256];
+            strdigits(numberArgument, numberDigits);
             size_t digitsLen = strlen(numberDigits);
             
             // Place the number string to the target buffer.
@@ -103,8 +70,6 @@ int sprintf( char *buffer, const char *format, ...)
             {
                 buffer[bufferIndex++] = numberDigits[numberCounter];
             }
-            
-            free(numberDigits);
         }
         else
         {
@@ -120,9 +85,7 @@ int sprintf( char *buffer, const char *format, ...)
         }
     }
     
-    buffer[bufferIndex+1] = '\0'; // Needed or not ?
-    
-    va_end(formatlist);
+    buffer[bufferIndex] = '\0'; // Needed or not ?
     
     return sourceLength;
 }
@@ -226,21 +189,6 @@ void *memset( void *dest, int ch, size_t count )
     return dest;
 }
 
-char* alloc_sprintf_1d(char* buffer, const char* format, uint64_t number, int* nbWritten)
-{
-    // Hacky calculation. 64 bit max number is 20 digits.
-    int bufMaxLength = strlen(format) + 20; 
-    
-    buffer = (char*)malloc(sizeof(char) * bufMaxLength);
-    
-    int bytesWritten = sprintf_1d(buffer, format, number);
-    
-    if(nbWritten != NULL)
-        *nbWritten = bytesWritten;
-    
-    return buffer;
-}
-
 BOOL mcmp(uint8_t* lhs, uint8_t* rhs, size_t count)
 {
     size_t i = 0;
@@ -326,22 +274,19 @@ void splfree(char** splitParts, size_t parts)
     free(splitParts);
 }
 
-char* strrev(char* str)
+void strrev(char* str, char* out)
 {
     size_t len = strlen(str);
-    char* reverse = (char*)malloc(sizeof(char) * len + 1);
     
     for(size_t i = 0; i < len; i++)
     {
-        reverse[i] = str[(len - 1) - i];
+        out[i] = str[(len - 1) - i];
     }
     
-    reverse[len] = '\0';
-    
-    return reverse;
+    out[len] = '\0';
 }
 
-char* strdigits(uint64_t number)
+void strdigits(uint64_t number, char* buf)
 {
     char result[256];
     uint64_t digitCounter = 0;
@@ -366,14 +311,7 @@ char* strdigits(uint64_t number)
     
     result[digitCounter] = '\0';
     
-    char* reversedResult = strrev(result);
-    
-    char* outResult = (char*)malloc(sizeof(char) * digitCounter + 1);
-    strcpy(outResult, reversedResult);
-    
-    free(reversedResult);
-    
-    return outResult;
+    strrev(result, buf);
 }
 
 uint64_t s_to_d(char* number)
@@ -391,92 +329,4 @@ uint64_t s_to_d(char* number)
     }
     
     return result;
-}
-
-int sprintf_1d_buf(char* buffer, const char* format, uint64_t number)
-{
-    size_t formatSize = strlen(format);
-    
-    char numberString[64];
-    strdigits_buf(number, numberString);
-    size_t numberStringSize = strlen(numberString);
-    
-    size_t formatCounter = 0;
-    size_t bufferCounter = 0;
-    
-    size_t stopPoint = formatSize - 2 + numberStringSize;
-    
-    int go = 0;
-    while(go == 0)
-    {
-        if(format[bufferCounter] == '%' && format[bufferCounter + 1] == 'd')
-        {
-            formatCounter += 2;
-            
-            size_t numberCounter = 0;
-            for(numberCounter = 0; numberCounter < numberStringSize; numberCounter++)
-            {
-                buffer[bufferCounter++] = numberString[numberCounter];
-            }
-        }
-        else
-        {
-            buffer[bufferCounter++] = format[formatCounter++];
-        }
-        
-        if(bufferCounter >= stopPoint)
-        {
-            go = 1;
-        }
-    }
-    
-    buffer[stopPoint] = '\0';
-        
-    return stopPoint;
-}
-
-void strdigits_buf(uint64_t number, char* buf)
-{
-    char result[256];
-    uint64_t digitCounter = 0;
-    uint64_t divider = number;
-    
-    if(divider == 0)
-    {
-        result[0] = '0';
-        digitCounter++;
-    }
-    
-    while(divider != 0)
-    {
-        uint64_t remainder = divider % 10;
-        
-        char digitCode = remainder + 48;
-        
-        divider = divider / 10;
-        
-        result[digitCounter++] = digitCode;
-    }
-    
-    result[digitCounter] = '\0';
-    
-    char reversedResult[64];
-    strrev_buf(result, reversedResult);
-    
-    strcpy(buf, reversedResult);
-}
-
-void strrev_buf(char* str, char* buf)
-{
-    size_t len = strlen(str);
-    char reverse[256];
-    
-    for(size_t i = 0; i < len; i++)
-    {
-        reverse[i] = str[(len - 1) - i];
-    }
-    
-    reverse[len] = '\0';
-    
-    strcpy(buf, reverse);
 }
