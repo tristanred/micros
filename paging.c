@@ -70,6 +70,7 @@ void init_page_allocator(struct kernel_info_block* kinfo)
 
 void pa_print_kpt(struct page_table_info* pt)
 {
+    (void)pt;
 #if PRINT_PAGETABLES == 1
     if(pt == NULL)
     {

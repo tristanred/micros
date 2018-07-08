@@ -25,6 +25,7 @@ void ShowErrorMessage(char* errorType, char* message)
 
 void WARN_PARAM(char* message)
 {
+    (void)message;
 #if CHECK_PARAMS == 1
     kWriteLog(message);
 #endif
