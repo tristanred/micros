@@ -2,6 +2,7 @@
 
 #include "memory.h"
 #include "vector.h"
+#include <stdarg.h>
 
 // Return the amount of characters of the string, not counting the 
 // null terminator.
@@ -70,6 +71,60 @@ int sprintf_1d(char* buffer, const char* format, uint64_t number)
     free(numberString);
     
     return stopPoint;
+}
+
+int sprintf( char *buffer, const char *format, ...)
+{
+    // Initialize the vadiaric argument structure
+    va_list formatlist;
+    va_start(formatlist, format);
+    
+    size_t sourceLength = strlen(format); // Maximum length we are going to read from 'format'
+    size_t sourceIndex = 0; // Position in the input buffer.
+    size_t bufferIndex = 0; // Position in the result buffer.
+    
+    int go = 0;
+    while(go == 0)
+    {
+        // Detect if we're reading in a format specifier
+        if(format[sourceIndex] == '%' && format[sourceIndex + 1] == 'd')
+        {
+            // We take in the format and skip after it in the reading.
+            sourceIndex += 2;
+            
+            // Get the number we're going to place in 'buffer'
+            uint32_t numberArgument = va_arg(formatlist, uint32_t);
+            char* numberDigits = strdigits(numberArgument);
+            size_t digitsLen = strlen(numberDigits);
+            
+            // Place the number string to the target buffer.
+            size_t numberCounter = 0;
+            for(numberCounter = 0; numberCounter < digitsLen; numberCounter++)
+            {
+                buffer[bufferIndex++] = numberDigits[numberCounter];
+            }
+            
+            free(numberDigits);
+        }
+        else
+        {
+            // If not reading a format specifier, continue placing source
+            // characters into buffer.
+            buffer[bufferIndex++] = format[sourceIndex++];
+        }
+        
+        // When we're done reading from 'format' get out !
+        if(sourceIndex >= sourceLength)
+        {
+            go = 1;
+        }
+    }
+    
+    buffer[bufferIndex+1] = '\0'; // Needed or not ?
+    
+    va_end(formatlist);
+    
+    return sourceLength;
 }
 
 char* strcpy(char* dest, const char* src)
