@@ -9,13 +9,64 @@ void init_kernel_scheduler(struct kernel_info_block* kinfo)
     sched = alloc_kernel_module(sizeof(struct kernel_scheduler_module));
     kinfo->m_scheduler = sched;
     
+    
+    sched->processes = vector_create();
+    sched->lastpid = 1;
+    
     sched->ts = kmalloc(sizeof(struct threadset));
     sched->ts->list = vector_create();
     sched->ts->critical_list = vector_create();
     sched->current = NULL;
     sched->currentIndex = 0;
     
+    sched->idle_thread = NULL;
+    
     sched->max_run_time = 200;
+}
+
+struct proc_t* ks_create_proc(const char* name, uint32_t entrypoint)
+{
+    struct proc_t* proc = (struct proc_t*)kmalloc(sizeof(struct proc_t));
+    
+    strncpy(proc->name, name, 32);
+    proc->pid = ks_gen_pid();
+    proc->threadsList = vector_create();
+    
+    struct task_t* t = ks_create_thread(entrypoint);
+    vector_add(proc->threadsList, t);
+    
+    vector_add(sched->processes, proc);
+    
+    return proc;
+}
+
+void ks_create_system_proc()
+{
+    if(sched->sys_proc != NULL)
+    {
+        BUG("System proc called to initialize twice.");
+        
+        return;
+    }
+    
+    struct proc_t* proc = (struct proc_t*)kmalloc(sizeof(struct proc_t));
+    
+    strncpy(proc->name, "System", 7);
+    proc->pid = 0;
+    proc->threadsList = vector_create();
+    
+    // Get the idle thread and create the thread
+    struct task_t* idle_thread = ks_create_idle_task();
+    vector_add(proc->threadsList, idle_thread);
+    
+    sched->sys_proc = proc;
+}
+
+uint32_t ks_gen_pid()
+{
+    sched->lastpid++;
+    
+    return sched->lastpid;
 }
 
 struct task_t* ks_get_current()
@@ -120,6 +171,7 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
     newTask->regs.cs = 10;
     newTask->regs.flags = 0;
 
+    // Add the thread to the scheduler list.
     vector_add(sched->ts->list, newTask);
 
     return newTask;
@@ -234,15 +286,17 @@ struct task_t* ks_preempt_current(registers_t* from)
     return nextTask;
 }
 
-void ks_create_idle_task()
+struct task_t* ks_create_idle_task()
 {
     if(sched->ts->idle_task != NULL)
-        return;
+        return NULL;
     
-    struct task_t* t = ks_create_thread(&program_idle_main);
+    struct task_t* t = ks_create_thread((uint32_t)&program_idle_main);
     t->priority = T_PLOW;
     
     sched->ts->idle_task = t;
+    
+    return t;
 }
 
 BOOL ks_has_asleep_tasks()

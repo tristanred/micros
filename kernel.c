@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 /**
  * These are the default includes in GCC. These headers are always available
@@ -66,29 +67,40 @@ void kernel_main(multiboot_info_t* arg1)
     setupGdt();
     setupIdt();
 
-    kSetupLog(SERIAL_COM1_BASE);
+    Debugger();
 
+    kSetupLog(SERIAL_COM1_BASE);
+    fbInitialize();
+    fbClear();
+    
     setup_kernel_block();
 
     init_page_allocator(kernel_info);
 
     init_memory_manager(kernel_info, arg1);
-    fbInitialize();
-    fbClear();
-    fbPutString("Done.");
+    init_kernel_scheduler(kernel_info);
     
-    while(TRUE)
-    {
-        cpu_idle();
-    }
+    
+    char buf[256];
+    sprintf(buf, "Hello testies %d abcde %d aaa", 1024, 999);
+    
+    // fbPutString("Done.");
+    
+    // while(TRUE)
+    // {
+    //     cpu_idle();
+    // }
 
     //      TEST ZONE
-    init_kernel_scheduler(kernel_info);
 
     init_timer(TIMER_FREQ_1MS);
     enable_interrupts();
 
-    ks_create_thread((uint32_t)&kernel_task_idle_main);
+    Debugger();
+    ks_create_system_proc();
+    fbPutString("Just done the system proc !");
+
+    //ks_create_thread((uint32_t)&kernel_task_idle_main);
 
     while(TRUE)
     {
@@ -109,7 +121,7 @@ void kernel_main(multiboot_info_t* arg1)
     //test_paging();
 
     init_module_kernel_features(kernel_info);
-    // init_module_memory_manager(kernel_info);
+    //init_module_memory_manager(kernel_info);
     init_module_ata_driver(kernel_info);
 
     kfDetectFeatures(arg1);

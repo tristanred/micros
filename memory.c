@@ -40,13 +40,18 @@ void init_memory_manager(struct kernel_info_block* kinfo, multiboot_info_t* mbi)
     
     mbt_print(mbi);
     mbt_pretty_print_info(mbi);
-    
-    return;
-    
+    mbt_print_zones(mbi);
+        
     // Find largest memory zone
     uint32_t zone_start = 0;
     uint32_t zone_length = 0;
-    mm_zone_find_largest(&zone_start, &zone_length);
+    mm_zone_find_largest(mbi, &zone_start, &zone_length);
+    
+    mm_module->memory_start = zone_start;
+    mm_module->memory_length = zone_length;
+    
+    ASSERT(zone_start != 0, "Invalid zone start");
+    ASSERT(zone_start != 0, "Invalid zone end");
     
     struct m_heap* kheap = (struct m_heap*)zone_start;
     kheap->hflags = FHEAP_NONE;
@@ -56,20 +61,27 @@ void init_memory_manager(struct kernel_info_block* kinfo, multiboot_info_t* mbi)
     kheap->firstAlloc = NULL;
     kheap->lastAlloc = NULL;
     
+    // Cap the kernel
+    if(KERNEL_HEAP_START > zone_start)
+        kheap->startAddress = KERNEL_HEAP_START;
+        
+    if(zone_length > KERNEL_HEAP_LENGTH)
+        kheap->endAddress = KERNEL_HEAP_END;
+    
     mm_module->kernel_heap = kheap;
     
     // Create the allocation to track the m_heap allocated memory.
-    struct m_allocation* alloc = (struct m_allocation*)(zone_start + zone_length);
-    alloc->size = sizeof(struct m_heap);
-    alloc->p = kheap;
-    alloc->allocated = TRUE;
-    alloc->type = MEM_ALLOC;
-    alloc->flags = MEM_NOFLAGS;
-    alloc->previous = NULL;
-    alloc->next = NULL;
+    // struct m_allocation* alloc = (struct m_allocation*)zone_start + sizeof(struct m_heap);
+    // alloc->size = sizeof(struct m_heap);
+    // alloc->p = kheap;
+    // alloc->allocated = TRUE;
+    // alloc->type = MEM_ALLOC;
+    // alloc->flags = MEM_NOFLAGS;
+    // alloc->previous = NULL;
+    // alloc->next = NULL;
     
-    kheap->firstAlloc = alloc;
-    kheap->lastAlloc = alloc;
+    // kheap->firstAlloc = alloc;
+    // kheap->lastAlloc = alloc;
     
 }
 
@@ -293,10 +305,28 @@ struct m_heap* mm_create_heap(enum heap_flags flags)
     // return new_heap;
 }
 
-void mm_zone_find_largest(uint32_t* start, uint32_t* length)
+void mm_zone_find_largest(multiboot_info_t* mbi, uint32_t* start, uint32_t* length)
 {
-    *start = 0;
-    *length = 0;
+    multiboot_uint32_t len = mbi->mmap_length;
+    void* addr = (void*)mbi->mmap_addr;
+
+    multiboot_uint32_t zone_length = 0;
+    multiboot_uint32_t zone_addr = 0;
+    
+    // Find the largest zone of memory, type 1 memory is available memory
+    for(multiboot_uint32_t i = 0; i < len / sizeof(multiboot_memory_map_t); i++)
+    {
+        multiboot_memory_map_t* x = (multiboot_memory_map_t*)addr + i;
+        
+        if(x->len > zone_length && x->type == 1)
+        {
+            zone_length = x->len;
+            zone_addr = x->addr;
+        }
+    }
+
+    *start = zone_addr;
+    *length = zone_length;
 }
 
 /**

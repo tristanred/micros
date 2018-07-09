@@ -1,0 +1,58 @@
+Algorithm to divide the usable memory available.
+
+Here is a reference of the memory reported by the BIOS at boot on QEMU.
+
+*** Memory Ranges ***
+Multiboot Info length 144.
+Multiboot address 36864.
+Memory range 0 memory map.
+    Size=20
+    Address=0
+    Length=654336   (640 KB)
+    Type=1
+Memory range 1 memory map.
+    Size=20
+    Address=654336
+    Length=1024     (1 KB)
+    Type=2
+Memory range 2 memory map.
+    Size=20
+    Address=983040
+    Length=65536    (64 KB)
+    Type=2
+Memory range 3 memory map.
+    Size=20
+    Address=1048576
+    Length=133038080    (126.875 MB)
+    Type=1
+Memory range 4 memory map.
+    Size=20
+    Address=134086656
+    Length=131072       (128 KB)
+    Type=2
+Memory range 5 memory map.
+    Size=20
+    Address=4294705152
+    Length=262144       (256 KB)
+    Type=2
+
+Type 1 is usable memory. First first 640 KB is reserved to the BIOS, then 1KB
+reserved (type 2) for something I don't know. Another 64 KB reserved.
+
+Range #3 is our main available RAM, 128 MB configured on QEMU.
+Range #4 and #5 I don't know about. Maybe for the disk IO ranges.
+
+1) The strategy starts by taking the biggest range, I'm hoping to avoid having
+to deal with fragmented RAM ranges. We stick with the biggest range and place
+the kernel in there.
+
+2) We identity-map the first 4MB. The BIOS memory occupies kind of the first MB
+of RAM so we'll just reserve the first 1 MB and never touch it. The second MB
+contains the kernel code(.text) and data(.rodata) sections. That means we need
+to relocate this part if the code AND stack combined take more than 1 MB.
+
+The third MB contains the PFM, each byte maps one 4KB page frame so we need all
+of 1 MB to contain the mappings of the pagetable (see paging.h).
+
+In the fourth MB we have the kernel pagetable, with a 1 MB data structure we can
+have all 4GB mapped in.

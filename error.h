@@ -13,6 +13,10 @@ BOOL panic;
 // TRUE = good, FALSE = panic
 #define ASSERT(c, m) if((c) == FALSE) PanicQuit(m)
 
+// Used to indicate that we are currently in a bug. Basically BUG
+// should never be called and will result in a Panic.
+#define BUG(m) PanicQuit(m)
+
 // Dummy function that gdb breaks into
 void Debugger();
 

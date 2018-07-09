@@ -63,8 +63,9 @@ struct m_heap
     struct m_allocation* lastAlloc;
 };
 
-#define HEAP ks_get_current()->task_heap
-#define HEAP_LENGTH (ks_get_current()->task_heap->endAddress - ks_get_current()->task_heap->startAddress)
+#define HEAP kernel_info->m_memory_manager->kernel_heap
+//#define HEAP ks_get_current()->task_heap
+#define HEAP_LENGTH (HEAP->endAddress - HEAP->startAddress)
 
 // size_t allocs_count;
 // struct m_allocation* firstAlloc;
@@ -72,6 +73,9 @@ struct m_heap
 
 struct memory_manager_module
 {
+    uint32_t memory_start;
+    uint32_t memory_length;
+    
     struct m_heap* kernel_heap;
     
     size_t allocs_count;
@@ -110,7 +114,7 @@ void kmemget(void* src, char* dest, uint32_t offset, size_t count, size_t* readS
 struct m_heap* mm_create_heap(enum heap_flags flags);
 
 // Memory zones
-void mm_zone_find_largest(uint32_t* start, uint32_t* length);
+void mm_zone_find_largest(multiboot_info_t* mbi, uint32_t* start, uint32_t* length);
 
 // Private Methods
 

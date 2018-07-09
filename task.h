@@ -62,6 +62,22 @@ struct task_t // Size is 56 Bytes (TODO change) (unsure about task_state)
     struct m_heap* task_heap;
 };
 
+struct proc_t
+{
+    // Parentage information
+    struct proc_t* parent;
+    void* children;
+    
+    // Proc identity and stats
+    uint32_t pid;
+    char name[32];
+    uint32_t starttime;
+    
+    // Threads
+    uint32_t threadsCount;
+    struct vector* threadsList; // todo type
+};
+
 // List of threads managed by the kernel
 struct threadset
 {
@@ -75,10 +91,19 @@ struct threadset
 
 struct kernel_scheduler_module
 {
+    // Processe
+    struct vector* processes;
+    uint32_t lastpid; // PID of the last process launched
+    
+    struct proc_t* sys_proc; // Special kernel process
+    
     // Threads info
     struct threadset* ts;
     struct task_t* current;
     uint32_t currentIndex;
+    
+    // Special threads
+    struct task_t* idle_thread;
     
     // Scheduling info
     uint32_t max_run_time; // Time in ms given to a thread before we preempt it
@@ -91,15 +116,38 @@ void init_kernel_scheduler(struct kernel_info_block* kinfo);
 void ks_enable_scheduling();
 void ks_disable_scheduling();
 
+// ***** Public API *****
+
+//    Processes
+
+struct proc_t* ks_create_proc(const char* name, uint32_t entrypoint);
+
+/**
+ * Create and engages the System Process. This runs the kernel code and 
+ * runs important stuff.
+ */
+void ks_create_system_proc();
+
+/**
+ * Generate a new PID and returns it.
+ * Each PID returned should be unique between all active processes.
+ */
+uint32_t ks_gen_pid();
+
+
+//    Threads
+
+/**
+ * Create a new thread with the provided entry point. The entrypoint should be
+ * the address of a function.
+ * This function will schedule the task for execution.
+ */
+struct task_t* ks_create_thread(uint32_t entrypoint);
+
 /**
  * Returns the current task that is running.
  */
 struct task_t* ks_get_current();
-
-/**
- * Get the index of a task from the threadset index.
- */
-BOOL ks_get_task_index(struct task_t* task, size_t* index);
 
 /**
  * Suspend the current thread and schedule another thread to run.
@@ -109,6 +157,13 @@ BOOL ks_get_task_index(struct task_t* task, size_t* index);
  * stage 2 method.
  */
 extern void ks_suspend();
+
+// ***** Private API *****
+
+/**
+ * Get the index of a task from the threadset index.
+ */
+BOOL ks_get_task_index(struct task_t* task, size_t* index);
 
 /**
  * Finishes the thread switching operation. Must not be called by any other 
@@ -140,13 +195,6 @@ extern void ks_do_activate(struct task_t* next);
 struct task_t* ks_get_next_thread(uint32_t* nextIndex);
 
 /**
- * Create a new thread with the provided entry point. The entrypoint should be
- * the address of a function.
- * This function will schedule the task for execution.
- */
-struct task_t* ks_create_thread(uint32_t entrypoint);
-
-/**
  * Update function called every timer tick. This updates the scheduler and adds
  * running time to the current process.
  */
@@ -158,7 +206,7 @@ BOOL ks_should_preempt_current();
 struct task_t* ks_preempt_current(registers_t* from);
 
 // Sleep functions TODO: Classify and document
-void ks_create_idle_task();
+struct task_t* ks_create_idle_task();
 BOOL ks_has_asleep_tasks();
 struct task_t* ks_get_sleeping_task();
 
