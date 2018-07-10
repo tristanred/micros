@@ -63,6 +63,27 @@ struct m_heap
     struct m_allocation* lastAlloc;
 };
 
+struct mm_zonedata
+{
+    uint32_t bios_start;
+    uint32_t bios_end;
+    
+    uint32_t sections_start;
+    uint32_t sections_end;
+    
+    uint32_t pfm_start;
+    uint32_t pfm_end;
+    
+    uint32_t kpt_start;
+    uint32_t kpt_end;
+    
+    uint32_t modules_start;
+    uint32_t modules_end;
+    
+    uint32_t kheap_start;
+    uint32_t kheap_end;
+};
+
 #define HEAP kernel_info->m_memory_manager->kernel_heap
 //#define HEAP ks_get_current()->task_heap
 #define HEAP_LENGTH (HEAP->endAddress - HEAP->startAddress)
@@ -75,6 +96,8 @@ struct memory_manager_module
 {
     uint32_t memory_start;
     uint32_t memory_length;
+    
+    struct mm_zonedata zones;
     
     struct m_heap* kernel_heap;
     
@@ -115,6 +138,7 @@ struct m_heap* mm_create_heap(enum heap_flags flags);
 
 // Memory zones
 void mm_zone_find_largest(multiboot_info_t* mbi, uint32_t* start, uint32_t* length);
+void mm_calculate_zones(uint32_t start, uint32_t length, struct mm_zonedata* data);
 
 // Private Methods
 

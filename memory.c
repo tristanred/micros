@@ -53,6 +53,10 @@ void init_memory_manager(struct kernel_info_block* kinfo, multiboot_info_t* mbi)
     ASSERT(zone_start != 0, "Invalid zone start");
     ASSERT(zone_start != 0, "Invalid zone end");
     
+    // Calculate how big our memory zones are. Mostly used for the heap.
+    memset(&mm_module->zones, 0, sizeof(struct mm_zonedata));
+    mm_calculate_zones(zone_start, zone_length, &mm_module->zones);
+    
     struct m_heap* kheap = (struct m_heap*)zone_start;
     kheap->hflags = FHEAP_NONE;
     kheap->startAddress = zone_start;
@@ -327,6 +331,68 @@ void mm_zone_find_largest(multiboot_info_t* mbi, uint32_t* start, uint32_t* leng
 
     *start = zone_addr;
     *length = zone_length;
+}
+
+void mm_calculate_zones(uint32_t start, uint32_t length, struct mm_zonedata* data)
+{
+    (void)start;
+    int32_t amountLeft = length;
+    
+    // Bios area is always the first 640k, extended to 1MB.
+    // Also we don't count the BIOS in the memory left.
+    data->bios_start = 0;
+    data->bios_end = 1024*1024;
+    
+    // Code and data sections. Takes one MB
+    uint32_t sections_size = 1024*1024;
+    data->sections_start = data->bios_end;
+    data->sections_end = data->sections_start + sections_size;
+    amountLeft -= sections_size;
+    
+    uint32_t pfm_size = 1024*1024;
+    data->pfm_start = data->sections_end;
+    data->pfm_end = data->pfm_start + pfm_size;
+    amountLeft -= pfm_size;
+    
+    uint32_t kernel_pagetable_size = 1024*1024*4;
+    data->kpt_start = data->pfm_end;
+    data->kpt_end = data->kpt_start + kernel_pagetable_size;
+    amountLeft -= kernel_pagetable_size; 
+    
+    uint32_t kernel_modules_size = 1024*1024;
+    data->modules_start = data->kpt_end;
+    data->modules_end = data->modules_start + kernel_modules_size;
+    amountLeft -= kernel_modules_size;
+    
+    /** Strategy to find an appropriate kernel heap size. This step is a bit 
+     * more involved because the more RAM we have, the heavier the system load
+     * can be so more kernel heap will be needed to track all those things.
+     *
+     * This is 100% going to change but for now here is the strategy :
+     * 30% of remaining RAM and a minimum of 10 MB.
+     * Both of those numbers are completely arbitrary. The only accurate number
+     * in this comment is the percent chance that this algorithm will change.
+     */
+    
+    uint32_t requested_heap_size = amountLeft * 0.30;
+    if(requested_heap_size < 1024*1024*10)
+    {
+        requested_heap_size = 1024*1024*10;
+    }
+    
+    data->kheap_start = data->modules_end;
+    data->kheap_end = data->kheap_start + requested_heap_size;
+    amountLeft -= requested_heap_size;
+    
+    if(amountLeft < 0)
+    {
+        // No abs() function yet. Also sprintf function can't handle negatives
+        uint32_t abs_amountleft = amountLeft * -1;
+        kWriteLog("Unable to allocate enough memory for the kernel.\n");
+        kWriteLog("Missing memory: %d bytes.", abs_amountleft);
+        
+        PanicQuit("MEMORY INIT ERROR.");
+    }
 }
 
 /**
