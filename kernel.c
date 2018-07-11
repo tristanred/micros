@@ -67,25 +67,24 @@ void kernel_main(multiboot_info_t* arg1)
     setupGdt();
     setupIdt();
 
-    Debugger();
-
     kSetupLog(SERIAL_COM1_BASE);
     fbInitialize();
     fbClear();
-    
+
     setup_kernel_block();
 
     init_page_allocator(kernel_info);
 
     init_memory_manager(kernel_info, arg1);
     init_kernel_scheduler(kernel_info);
-    
-    
+
+
+
     char buf[256];
     sprintf(buf, "Hello testies %d abcde %d aaa", 1024, 999);
-    
+
     // fbPutString("Done.");
-    
+
     // while(TRUE)
     // {
     //     cpu_idle();
@@ -200,7 +199,7 @@ void* alloc_kernel_module(size_t size)
         return NULL;
     }
 
-    uint32_t nextModuleAddress = kernel_info->modules_start_address + kernel_info->modules_current_offset + size;
+    uint32_t nextModuleAddress = kernel_info->modules_start_address + kernel_info->modules_current_offset;
     kernel_info->modules_current_offset += size;
 
     return (void*)nextModuleAddress;
