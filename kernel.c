@@ -43,6 +43,7 @@
 #include "ksh.h"
 #include "task.h"
 #include "kernel_task_idle.h"
+#include "bootlog.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -69,7 +70,7 @@ void kernel_main(multiboot_info_t* arg1)
     // We some flags to indicate the current state of the CPU.
     cpu_is_idle = FALSE;
     panic = FALSE;
-
+    
     // The IDT and GDT tables need to be initialized. The CPU uses these tables
     // to direct interrupts to the kernel and to describe the memory layout
     // of the kernel.
@@ -93,6 +94,7 @@ void kernel_main(multiboot_info_t* arg1)
     // The address must be static because we must setup the structure before we
     // have dynamic memory management.
     setup_kernel_block();
+    kBootProgress("Kernel Block created\n");
 
     // Now we initialize the kernel modules. Each module is responsible for
     // a subsystem of the kernel. Things like IO, memory, threads are managed
@@ -104,6 +106,7 @@ void kernel_main(multiboot_info_t* arg1)
     // or the kernel will panic. This is good to enable it first because we
     // will detect memory problems earlier in the development.
     init_page_allocator(kernel_info);
+    kBootProgress("Page Allocator created\n");
 
     // The memory manager needs to be initialized soon in the process. This
     // system manages kernel and program heaps. This uses the multiboot
@@ -113,6 +116,7 @@ void kernel_main(multiboot_info_t* arg1)
     // online but enabling paging after the memory manager is created is
     // counterproductive.
     init_memory_manager(kernel_info, arg1);
+    kBootProgress("Memory Manager created\n");
 
     // The next important module to setup is the kernel scheduler. The KS
     // is responsible for managing processes and threads. Once active, the
@@ -120,15 +124,21 @@ void kernel_main(multiboot_info_t* arg1)
     // The scheduler uses the Timer interrupt to analyse if the current thread
     // should be stopped and to pick another one.
     init_kernel_scheduler(kernel_info);
+    kBootProgress("Kernel Scheduler created\n");
 
+    // 
+    SetupKeyboardDriver(SCANCODE_SET1);
+    
     // Register the interrupt handler for the timer chip. This will get us
     // a stady call every MS. The timer DOES NOT start ticking at this time.
     // Only when the interrupts are enabled will we receive the calls.
     init_timer(TIMER_FREQ_1MS);
+    kBootProgress("Timer setup for 1ms ticks.\n");
 
     // Globally enable the interrupts. This will start popping up the timer
     // and the scheduler will start switching to other threads periodically.
     enable_interrupts();
+    kBootProgress("Interrupts ONLINE\n");
 
     //      TEST ZONE
 
@@ -139,20 +149,14 @@ void kernel_main(multiboot_info_t* arg1)
     // This special thread is always active and sitting at the lowest priority.
     // This is so the kernel always have something to do.
     ks_create_system_proc();
-    fbPutString("Just done the system proc !");
-
-    //ks_create_thread((uint32_t)&kernel_task_idle_main);
-
-    // TODO :
-    // init_module_ata_driver(kernel_info);
-    // setup_filesystem();
-    // ezfs_prepare_disk();
-
-    // SetupKeyboardDriver(SCANCODE_SET1);
-
-
+    fbPutString("Just done the system proc !\n");
+    
+    ksh_take_fb_control();
+    
     while(TRUE)
     {
+        ksh_update();
+        
         cpu_idle();
     }
 

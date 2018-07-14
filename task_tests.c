@@ -41,6 +41,7 @@ void test_do_tasks_tests()
 {
     struct task_t* t1 = ks_create_thread((uint32_t)&task1);
     struct task_t* t2 = ks_create_thread((uint32_t)&task2);
+    (void)t2;
 
     ks_activate(t1); // Start the test functions now.
 

@@ -86,7 +86,7 @@ void fbSetColor(uint8_t forecolor, uint8_t backcolor)
     fbColorBack = backcolor;
 }
 
-void fbPutString(char* str)
+void fbPutString(const char* str)
 {
     size_t stringLengthSafe = strlen_s(str, FBROWS * FBCOLS);
     

@@ -11,7 +11,7 @@ void kWriteLog(const char* str, ...)
 {
     if(keLogPort != 0)
     {
-        char outbuf[256];
+        char outbuf[COMSTRMAX];
         
         va_list formats;
         va_start(formats, str);

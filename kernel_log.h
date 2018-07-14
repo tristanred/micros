@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#define COMSTRMAX 256
+
 COMPRT keLogPort;
 
 void kSetupLog(COMPRT loggingPort);
