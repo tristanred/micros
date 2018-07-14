@@ -50,16 +50,16 @@ struct task_t // Size is 56 Bytes (TODO change) (unsure about task_state)
     enum task_state state;
     // Do not modify the order of the members above.
     // Assembly code depends on the correct ordering of the fields
-    
+
     //TODO : ensure project runs with new fields in this struct (task.asm)
     enum task_prio priority;
-    
+
     uint32_t ms_count_total; // Lifetime of the task
     uint32_t ms_count_running; // MS count since last suspended
-    
+
     uint32_t ms_sleep_until; // Task will sleep until system hits this tick
-    
-    struct m_heap* task_heap;
+
+    struct m_heap* task_heap; // Given by the owner Process
 };
 
 struct proc_t
@@ -67,15 +67,17 @@ struct proc_t
     // Parentage information
     struct proc_t* parent;
     void* children;
-    
+
     // Proc identity and stats
     uint32_t pid;
     char name[32];
     uint32_t starttime;
-    
+
+    struct m_heap* procheap;
+
     // Threads
     uint32_t threadsCount;
-    struct vector* threadsList; // todo type
+    struct vector* threadsList; // task_t**
 };
 
 // List of threads managed by the kernel
@@ -83,28 +85,31 @@ struct threadset
 {
     struct vector* list;
     struct vector* critical_list;
-    
+
     struct task_t* next_task;
-    
+
     struct task_t* idle_task;
 };
 
 struct kernel_scheduler_module
 {
-    // Processe
+    // Process
     struct vector* processes;
     uint32_t lastpid; // PID of the last process launched
-    
+
+    // Process that's running right now
+    struct proc_t* current_proc;
+
     struct proc_t* sys_proc; // Special kernel process
-    
+
     // Threads info
     struct threadset* ts;
     struct task_t* current;
     uint32_t currentIndex;
-    
+
     // Special threads
     struct task_t* idle_thread;
-    
+
     // Scheduling info
     uint32_t max_run_time; // Time in ms given to a thread before we preempt it
 };
@@ -123,10 +128,12 @@ void ks_disable_scheduling();
 struct proc_t* ks_create_proc(const char* name, uint32_t entrypoint);
 
 /**
- * Create and engages the System Process. This runs the kernel code and 
+ * Create and engages the System Process. This runs the kernel code and
  * runs important stuff.
  */
 void ks_create_system_proc();
+
+void ks_proc_activate(struct proc_t* process);
 
 /**
  * Generate a new PID and returns it.
@@ -151,9 +158,9 @@ struct task_t* ks_get_current();
 
 /**
  * Suspend the current thread and schedule another thread to run.
- 
+
  * This method is the first stage of the 2-stage context switching process.
- * The first stage saves the registers on the stack in assembly and calls the 
+ * The first stage saves the registers on the stack in assembly and calls the
  * stage 2 method.
  */
 extern void ks_suspend();
@@ -166,8 +173,8 @@ extern void ks_suspend();
 BOOL ks_get_task_index(struct task_t* task, size_t* index);
 
 /**
- * Finishes the thread switching operation. Must not be called by any other 
- * function than ks_suspend because it depends on the ordering of the 
+ * Finishes the thread switching operation. Must not be called by any other
+ * function than ks_suspend because it depends on the ordering of the
  * stack frames.
  */
 void ks_suspend_stage2();

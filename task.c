@@ -9,9 +9,9 @@ void init_kernel_scheduler(struct kernel_info_block* kinfo)
     sched = alloc_kernel_module(sizeof(struct kernel_scheduler_module));
     kinfo->m_scheduler = sched;
 
-
     sched->processes = vector_create();
     sched->lastpid = 1;
+    sched->current = NULL;
     sched->sys_proc = NULL;
 
     sched->ts = kmalloc(sizeof(struct threadset));
@@ -31,6 +31,9 @@ struct proc_t* ks_create_proc(const char* name, uint32_t entrypoint)
 
     strncpy(proc->name, name, 32);
     proc->pid = ks_gen_pid();
+
+    proc->procheap = mm_create_heap(FHEAP_NONE);
+
     proc->threadsList = vector_create();
 
     struct task_t* t = ks_create_thread(entrypoint);
@@ -61,6 +64,21 @@ void ks_create_system_proc()
     vector_add(proc->threadsList, idle_thread);
 
     sched->sys_proc = proc;
+}
+
+void ks_proc_activate(struct proc_t* process)
+{
+    if(sched->current_proc == NULL)
+    {
+        for(uint32_t i = 0; i < sched->current_proc->threadsCount; i++)
+        {
+            struct task_t* p = vector_get_at(sched->current_proc->threadsList, i);
+
+            p->state = T_SUSPENDED;
+        }
+    }
+
+    sched->current_proc = process;
 }
 
 uint32_t ks_gen_pid()
@@ -153,6 +171,7 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
     newTask->priority = T_PNORMAL;
 
     // Set the task to use the kernel heap.
+    // TODO : Use heap of current process
     newTask->task_heap = kernel_info->m_memory_manager->kernel_heap;
 
     size_t stackSize = 4096;
@@ -181,7 +200,7 @@ struct task_t* ks_get_next_thread(uint32_t* nextIndex)
 {
     // Main scheduling function
 
-    // If an critical task has been found in ks_should_preempt_current
+    // If a critical task has been found in ks_should_preempt_current
     // switch to it
     if(sched->ts->next_task != NULL)
     {
@@ -290,6 +309,7 @@ struct task_t* ks_create_idle_task()
 {
     if(sched->ts->idle_task != NULL)
         return NULL;
+
     struct task_t* t = ks_create_thread((uint32_t)&program_idle_main);
     t->priority = T_PLOW;
 

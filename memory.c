@@ -332,12 +332,12 @@ void mm_zone_find_largest(multiboot_info_t* mbi, uint32_t* start, uint32_t* leng
 
     multiboot_uint32_t zone_length = 0;
     multiboot_uint32_t zone_addr = 0;
-    
+
     // Find the largest zone of memory, type 1 memory is available memory
     for(multiboot_uint32_t i = 0; i < len / sizeof(multiboot_memory_map_t); i++)
     {
         multiboot_memory_map_t* x = (multiboot_memory_map_t*)addr + i;
-        
+
         if(x->len > zone_length && x->type == 1)
         {
             zone_length = x->len;
@@ -405,7 +405,7 @@ void mm_calculate_zones(uint32_t start, uint32_t length, struct mm_zonedata* dat
         uint32_t abs_amountleft = amountLeft * -1;
         kWriteLog("Unable to allocate enough memory for the kernel.\n");
         kWriteLog("Missing memory: %d bytes.", abs_amountleft);
-        
+
         PanicQuit("MEMORY INIT ERROR.");
     }
 }

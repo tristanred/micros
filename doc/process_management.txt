@@ -1,0 +1,37 @@
+This file documents the way the kernel manages the process architecture.
+
+* Overview
+
+All code running after the kernel boots is inside a thread object. (Currently
+named struct task_t). Threads exist to manage a set of CPU registers. To switch
+from one thread to another, we switch the current values of the registers for
+another set. Threads are in a particular state like sleeping, waiting, running
+and suspended. The state of a thread is very important because it is the main
+information we need to check if this thread is OK to be executed or not.
+
+Threads needs some resources to execute, such as a stack, heap and other
+kernel resources. Threads from the same program typically need to share
+resources together. To do that, threads are grouped into a process. A process
+is the collection of resources available for threads. A program can use many
+processes but only one is needed. Each process is independant from each other
+and they don't share their pagetables (so memory is not accessible).
+
+* Resources owned by a Thread
+
+- CPU Registers
+- Stack
+- State information
+
+* Resources owned by a Process
+
+- Heap
+- Thread List
+
+* Managing Processes
+
+- Creating a process
+
+Creating a process 
+
+
+* Scheduling Processes
