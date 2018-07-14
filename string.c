@@ -71,6 +71,19 @@ int vsprintf( char *buffer, const char *format, va_list vlist )
                 buffer[bufferIndex++] = numberDigits[numberCounter];
             }
         }
+        else if(format[sourceIndex] == '%' && format[sourceIndex + 1] == 's')
+        {
+            sourceIndex += 2;
+            
+            const char* str = va_arg(vlist, const char*);
+            size_t str_len = strlen(str);
+            
+            size_t strcounter = 0;
+            for(strcounter = 0; strcounter < str_len; strcounter++)
+            {
+                buffer[bufferIndex++] = str[strcounter];
+            }
+        }
         else
         {
             // If not reading a format specifier, continue placing source
