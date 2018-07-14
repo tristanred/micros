@@ -20,6 +20,13 @@ struct vector* vector_create_size(size_t size)
     return vec;
 }
 
+void vector_setup(struct vector* vec)
+{
+    vec->size = 0;
+    vec->count = 0;
+    vec->dataElements = NULL;
+}
+
 void vector_add(struct vector* vec, void* element)
 {
     if(vec == NULL)
@@ -85,7 +92,7 @@ void* vector_get_at(struct vector* vec, size_t index)
     if(vec == NULL)
         return NULL;
     
-    if(index >= vec->size)
+    if(index >= vec->count)
         return NULL;
     
     return (void*)vec->dataElements[index];

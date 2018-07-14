@@ -14,6 +14,7 @@ struct vector {
 // Vector public interface
 struct vector* vector_create();
 struct vector* vector_create_size(size_t size);
+void vector_setup(struct vector* vec);
 
 void vector_add(struct vector* vec, void* element);
 
