@@ -65,6 +65,8 @@ void init_memory_manager(struct kernel_info_block* kinfo, multiboot_info_t* mbi)
     kheap->lastAlloc = NULL;
 
     mm_module->kernel_heap = kheap;
+    
+    vector_setup(&mm_module->heaps);
 }
 
 /**
@@ -80,7 +82,33 @@ void* kmalloc(uint32_t size)
  */
 void kfree(void* ptr)
 {
-    kfreef(ptr);
+    kfreef(ptr, HEAP);
+}
+
+void* vmalloc(uint32_t size)
+{
+    // TODO : Get proc rather than task
+    struct task_t* procHeap = ks_get_current();
+    
+    if(procHeap == NULL)
+    {
+        BUG("Current Process is null when calling vmalloc");
+    }
+    
+    return kmallocf(size, MEM_NOFLAGS, procHeap->task_heap);
+}
+
+void vmfree(void* p)
+{
+    // TODO : Get proc rather than task
+    struct task_t* procHeap = ks_get_current();
+    
+    if(procHeap == NULL)
+    {
+        BUG("Current Process is null when calling vmfree");
+    }
+
+    kfreef(p, procHeap->task_heap);
 }
 
 /**
@@ -205,7 +233,7 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f, struct m_heap* target)
  * flags. This version of the function currently does not take any flags but
  * it might at some point.
  */
-void kfreef(void* ptr)
+void kfreef(void* ptr, struct m_heap* target)
 {
     if(ptr == NULL)
     {
@@ -214,7 +242,7 @@ void kfreef(void* ptr)
         return;
     }
 
-    struct m_allocation* current = HEAP->lastAlloc;
+    struct m_allocation* current = target->lastAlloc;
     while(current != NULL)
     {
         if(current->p == ptr)
@@ -271,19 +299,30 @@ void kmemplace(void* dest, uint32_t offset, const char* data, size_t count)
 
 struct m_heap* mm_create_heap(enum heap_flags flags)
 {
-    (void)flags;
-    return NULL;
+    // Heap creation steps.
+    // Firsts we need to find space in the memory for the heap.
+    // Check between each heap to see if theres a fit, if not check between
+    // the last heap and the end of the memory zone.
+    // This is pretty much the same algorithm as with the memory allocations.
+    uint32_t newHeapAddress = mm_find_heap_space(DEFAULT_HEAP_SPACE);
 
+    if(newHeapAddress == 0)
+    {
+        // out of memory 
+        return NULL;
+    }
+    
+    struct m_heap* newHeap = kmallocf(sizeof(struct m_heap), FHEAP_NONE, mm_module->kernel_heap);
+    newHeap->startAddress = (uint32_t)newHeap + sizeof(struct m_heap);
+    newHeap->endAddress = newHeap->startAddress + DEFAULT_HEAP_SPACE - sizeof(struct m_heap);
+    newHeap->hflags = flags;
+    newHeap->allocs_count = 0;
+    newHeap->firstAlloc = NULL;
+    newHeap->lastAlloc = NULL;
 
-
-    // // TODO : find storage for new heap struct
-    // struct m_heap new_heap;
-    // memset(&new_heap, 0, sizeof(struct m_heap));
-
-    // new_heap.hflags = flags;
-
-    // // TODO : link heap somewhere.
-    // return new_heap;
+    vector_add(&mm_module->heaps, newHeap);
+    
+    return newHeap;
 }
 
 void mm_zone_find_largest(multiboot_info_t* mbi, uint32_t* start, uint32_t* length)
@@ -521,3 +560,46 @@ BOOL mm_verify_all_allocs_canary()
 
     return FALSE;
 }
+
+uint32_t mm_find_heap_space(size_t heapSize)
+{
+    // If there are no heaps yet, give the space right after the kernel heap
+    if(mm_module->heaps.count == 0)
+    {
+        return mm_module->kernel_heap->endAddress;
+    }
+    
+    struct m_heap* current = vector_get_at(&mm_module->heaps, 0);
+    for(size_t i = 1; i < mm_module->heaps.count; i++)
+    {
+        struct m_heap* next = vector_get_at(&mm_module->heaps, i);
+        
+        if(next == NULL)
+        {
+            return current->endAddress;
+        }
+        else
+        {
+            if(mm_heaps_spacing(current, next) >= heapSize)
+            {
+                return current->endAddress;
+            }
+            
+            current = next;
+        }
+    }
+    
+    PanicQuit("Cannot allocate heap.");
+    return 0;
+}
+
+uint32_t mm_heaps_spacing(struct m_heap* first, struct m_heap* second)
+{
+    return second->startAddress - first->endAddress;
+}
+
+uint32_t mm_heaps_space_to_end(struct m_heap* lastHeap)
+{
+    return (mm_module->memory_start + mm_module->memory_length) - lastHeap->endAddress;
+}
+
