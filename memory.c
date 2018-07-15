@@ -72,7 +72,7 @@ void init_memory_manager(struct kernel_info_block* kinfo, multiboot_info_t* mbi)
  */
 void* kmalloc(uint32_t size)
 {
-    return kmallocf(size, MEM_NOFLAGS);
+    return kmallocf(size, MEM_NOFLAGS, HEAP);
 }
 
 /**
@@ -107,15 +107,15 @@ void* kmemcpy( void *dest, const void *src, uint32_t count )
  * The kmalloc function is meant to call this one with the default flag values.
  *
  */
-void* kmallocf(uint32_t size, enum mm_alloc_flags f)
+void* kmallocf(uint32_t size, enum mm_alloc_flags f, struct m_heap* target)
 {
     uint32_t allocTotalSize = size;
     if((f | MEM_CHECKED) == f)
         allocTotalSize += MM_HEAP_ALLOC_CANARY_SIZE;
 
-    if(HEAP->firstAlloc == NULL)
+    if(target->firstAlloc == NULL)
     {
-        struct m_allocation* newAlloc = (struct m_allocation*)HEAP->startAddress;
+        struct m_allocation* newAlloc = (struct m_allocation*)target->startAddress;
         newAlloc->size = allocTotalSize;
         newAlloc->p = (void*)(newAlloc + sizeof(struct m_allocation));
         newAlloc->allocated = TRUE;
@@ -127,13 +127,13 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
             mm_set_alloc_canary(newAlloc);
         }
 
-        HEAP->firstAlloc = newAlloc;
-        HEAP->lastAlloc = newAlloc;
+        target->firstAlloc = newAlloc;
+        target->lastAlloc = newAlloc;
 
         return newAlloc->p;
     }
 
-    struct m_allocation* current = HEAP->firstAlloc;
+    struct m_allocation* current = target->firstAlloc;
     while(current != NULL)
     {
         struct m_allocation* next = current->next;
@@ -158,7 +158,7 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
                 mm_link_allocs(current, newAlloc);
                 mm_link_allocs(newAlloc, next);
 
-                HEAP->lastAlloc = newAlloc;
+                target->lastAlloc = newAlloc;
 
                 return newAlloc->p;
             }
@@ -182,7 +182,7 @@ void* kmallocf(uint32_t size, enum mm_alloc_flags f)
 
                 mm_link_allocs(current, newAlloc);
 
-                HEAP->lastAlloc = newAlloc;
+                target->lastAlloc = newAlloc;
 
                 return newAlloc->p;
             }
