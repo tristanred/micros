@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// Kernel vector structure. This structure uses the kernel heap to allocate
+// memory. Can ONLY be used in kernel mode.
+// Can technically stack allocate data but the struct will use the heap when
+// resizing the vector.
 struct vector {
     size_t size; // Size of the array's memory
     
@@ -14,6 +18,10 @@ struct vector {
 // Vector public interface
 struct vector* vector_create();
 struct vector* vector_create_size(size_t size);
+
+// This sets up a local vector BUT this does not create the array to store
+// elements. So the first allocation will cause a resize. TODO : Need to handle
+// that case.
 void vector_setup(struct vector* vec);
 
 void vector_add(struct vector* vec, void* element);
