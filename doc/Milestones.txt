@@ -1,0 +1,34 @@
+MICROS 0.1 milestones
+
+- Boot with CD
+- Running on actual hardware
+- Virtual Memory *
+- Serial Driver *
+- Keyboard Driver *
+- Framebuffer text output *
+- Logging *
+- Kernel PANIC management *
+- CPU Idling (Power management) *
+- CPU Interrupts *
+- Hardware timers *
+- Threads and Processes
+- PCI bus scanning *
+- SATA Drivers
+- Basic filesystem (EZFS) *
+- Standard Library String functions (basic) *
+- KSH Process
+- Boot logo
+- KSH Commands
+  - ls
+  - create file
+  - read/write file
+  - Inspect kernel structures
+- Shutdown procedure
+
+
+MICROS 0.2 milestones
+
+- VGA graphics
+- Advanced SATA functions
+- Reboot from saved disk state
+- EZFS 2.0
