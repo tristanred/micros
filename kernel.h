@@ -11,7 +11,7 @@ void cpu_idle();
 extern void _cpu_idle();
 
 struct kernel_features;
-struct memory_manager;
+struct memory_manager_module;
 struct ata_driver_info;
 struct kernel_scheduler_module;
 struct page_allocator_module;
@@ -30,7 +30,7 @@ struct kernel_info_block {
     
     // Kernel module structs
     struct kernel_features* m_kernel_features;
-    struct memory_manager* m_memory_manager;
+    struct memory_manager_module* m_memory_manager;
     struct ata_driver_info* m_ata_driver; // ATA Driver is temporarily a kernel module
     struct kernel_scheduler_module* m_scheduler;
     struct page_allocator_module* m_page_alloc;

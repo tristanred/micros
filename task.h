@@ -6,6 +6,8 @@
 #include "idt.h"
 #include "vector.h"
 
+struct m_heap;
+
 enum task_state
 {
     T_WAITING,          // Has not been run yet
@@ -40,7 +42,7 @@ typedef struct registers
 */
 
 // TODO : Convert regs to struct registers_t (change task switch ASM)
-struct task_t // Size is 56 Bytes (unsure about task_state)
+struct task_t // Size is 56 Bytes (TODO change) (unsure about task_state)
 {
     uint32_t entryAddr;
     struct regs_t regs;
@@ -48,14 +50,34 @@ struct task_t // Size is 56 Bytes (unsure about task_state)
     enum task_state state;
     // Do not modify the order of the members above.
     // Assembly code depends on the correct ordering of the fields
-    
+
     //TODO : ensure project runs with new fields in this struct (task.asm)
     enum task_prio priority;
-    
+
     uint32_t ms_count_total; // Lifetime of the task
     uint32_t ms_count_running; // MS count since last suspended
-    
+
     uint32_t ms_sleep_until; // Task will sleep until system hits this tick
+
+    struct m_heap* task_heap; // Given by the owner Process
+};
+
+struct proc_t
+{
+    // Parentage information
+    struct proc_t* parent;
+    void* children;
+
+    // Proc identity and stats
+    uint32_t pid;
+    char name[32];
+    uint32_t starttime;
+
+    struct m_heap* procheap;
+
+    // Threads
+    uint32_t threadsCount;
+    struct vector* threadsList; // task_t**
 };
 
 // List of threads managed by the kernel
@@ -63,19 +85,31 @@ struct threadset
 {
     struct vector* list;
     struct vector* critical_list;
-    
+
     struct task_t* next_task;
-    
+
     struct task_t* idle_task;
 };
 
 struct kernel_scheduler_module
 {
+    // Process
+    struct vector* processes;
+    uint32_t lastpid; // PID of the last process launched
+
+    // Process that's running right now
+    struct proc_t* current_proc;
+
+    struct proc_t* sys_proc; // Special kernel process
+
     // Threads info
     struct threadset* ts;
     struct task_t* current;
     uint32_t currentIndex;
-    
+
+    // Special threads
+    struct task_t* idle_thread;
+
     // Scheduling info
     uint32_t max_run_time; // Time in ms given to a thread before we preempt it
 };
@@ -87,10 +121,51 @@ void init_kernel_scheduler(struct kernel_info_block* kinfo);
 void ks_enable_scheduling();
 void ks_disable_scheduling();
 
+// ***** Public API *****
+
+//    Processes
+
+struct proc_t* ks_create_proc(const char* name, uint32_t entrypoint);
+
+/**
+ * Create and engages the System Process. This runs the kernel code and
+ * runs important stuff.
+ */
+void ks_create_system_proc();
+
+void ks_proc_activate(struct proc_t* process);
+
+/**
+ * Generate a new PID and returns it.
+ * Each PID returned should be unique between all active processes.
+ */
+uint32_t ks_gen_pid();
+
+
+//    Threads
+
+/**
+ * Create a new thread with the provided entry point. The entrypoint should be
+ * the address of a function.
+ * This function will schedule the task for execution.
+ */
+struct task_t* ks_create_thread(uint32_t entrypoint);
+
 /**
  * Returns the current task that is running.
  */
 struct task_t* ks_get_current();
+
+/**
+ * Suspend the current thread and schedule another thread to run.
+
+ * This method is the first stage of the 2-stage context switching process.
+ * The first stage saves the registers on the stack in assembly and calls the
+ * stage 2 method.
+ */
+extern void ks_suspend();
+
+// ***** Private API *****
 
 /**
  * Get the index of a task from the threadset index.
@@ -98,17 +173,8 @@ struct task_t* ks_get_current();
 BOOL ks_get_task_index(struct task_t* task, size_t* index);
 
 /**
- * Suspend the current thread and schedule another thread to run.
- 
- * This method is the first stage of the 2-stage context switching process.
- * The first stage saves the registers on the stack in assembly and calls the 
- * stage 2 method.
- */
-extern void ks_suspend();
-
-/**
- * Finishes the thread switching operation. Must not be called by any other 
- * function than ks_suspend because it depends on the ordering of the 
+ * Finishes the thread switching operation. Must not be called by any other
+ * function than ks_suspend because it depends on the ordering of the
  * stack frames.
  */
 void ks_suspend_stage2();
@@ -136,13 +202,6 @@ extern void ks_do_activate(struct task_t* next);
 struct task_t* ks_get_next_thread(uint32_t* nextIndex);
 
 /**
- * Create a new thread with the provided entry point. The entrypoint should be
- * the address of a function.
- * This function will schedule the task for execution.
- */
-struct task_t* ks_create_thread(uint32_t entrypoint);
-
-/**
  * Update function called every timer tick. This updates the scheduler and adds
  * running time to the current process.
  */
@@ -154,7 +213,7 @@ BOOL ks_should_preempt_current();
 struct task_t* ks_preempt_current(registers_t* from);
 
 // Sleep functions TODO: Classify and document
-void ks_create_idle_task();
+struct task_t* ks_create_idle_task();
 BOOL ks_has_asleep_tasks();
 struct task_t* ks_get_sleeping_task();
 

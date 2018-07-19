@@ -51,7 +51,7 @@ void fbPutChar(char c);
 void fbSetColor(uint8_t forecolor, uint8_t backcolor);
 
 // EXTENDED FUNCTIONS
-void fbPutString(char* str);
+void fbPutString(const char* str);
 void fbClear();
 uint8_t fbGetColor(enum VGACOLOR front, enum VGACOLOR back);
 

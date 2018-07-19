@@ -1,0 +1,50 @@
+This file documents the way the kernel manages the process architecture.
+
+* Overview
+
+All code running after the kernel boots is inside a thread object. (Currently
+named struct task_t). Threads exist to manage a set of CPU registers. To switch
+from one thread to another, we switch the current values of the registers for
+another set. Threads are in a particular state like sleeping, waiting, running
+and suspended. The state of a thread is very important because it is the main
+information we need to check if this thread is OK to be executed or not.
+
+Threads needs some resources to execute, such as a stack, heap and other
+kernel resources. Threads from the same program typically need to share
+resources together. To do that, threads are grouped into a process. A process
+is the collection of resources available for threads. A program can use many
+processes but only one is needed. Each process is independant from each other
+and they don't share their pagetables (so memory is not accessible).
+
+----- TODO Architecture -----
+The Kernel itself is NOT inside a process. There are many kernel threads but 
+they are not owned by a process. Mainly because processes are limited by their
+assigned resource. They allocate from their own heap, they get time limits for 
+threads, etc. The kernel has no limits so it is not defined as a process. Also
+when going from whatever process to kernel mode, it would involve doing all the
+switching from process to process even if we're going from kernel proc to kernel
+proc.
+
+Theres a list of kernel threads in the scheduler and kernel threads have access
+to all of the system.
+----- TODO Architecture -----
+
+* Resources owned by a Thread
+
+- CPU Registers
+- Stack
+- State information
+
+* Resources owned by a Process
+
+- Heap
+- Thread List
+
+* Managing Processes
+
+- Creating a process
+
+Creating a process 
+
+
+* Scheduling Processes

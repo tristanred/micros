@@ -21,13 +21,13 @@ void keyboard_interrupt_handler(registers_t regs)
     {
         scancodeValue = (0xE0 << 8);
         
-        kWriteLog_format1d("First value %d", res);
+        kWriteLog("First value %d", res);
         
         res = inb(0x60);
         
         scancodeValue += res;
         
-        kWriteLog_format1d("Second value %d", res);        
+        kWriteLog("Second value %d", res);        
     }
     else
     {
@@ -52,13 +52,13 @@ void keyboard_interrupt_handler(registers_t regs)
     BOOL keyDown = res < 0x80;
     if(keyDown)
     {
-        kWriteLog_format1d("KEY PRESS %d", (uint64_t)current_keyboard_state.currentKeycode);
+        kWriteLog("KEY PRESS %d", (uint64_t)current_keyboard_state.currentKeycode);
         //current_keyboard_state.inputType = KEY_DOWN;
         key_states[current_keyboard_state.currentKeycode] = 1;
     }
     else
     {
-        kWriteLog_format1d("KEY RELEASE %d", (uint64_t)current_keyboard_state.currentKeycode);
+        kWriteLog("KEY RELEASE %d", (uint64_t)current_keyboard_state.currentKeycode);
         //current_keyboard_state.inputType = KEY_RELEASE;
         key_states[current_keyboard_state.currentKeycode] = 0;
     }

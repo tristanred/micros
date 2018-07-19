@@ -90,7 +90,7 @@
 #define PCI_SUB_MODEM_CONTROLLER                    0x03
 #define PCI_SUB_GPIB_CONTROLLER                     0x04
 #define PCI_SUB_SMARTCARD_CONTROLLER                0x05
-//TODO NEW NAME #define PCI_SUB_SERIAL_CONTROLLER                   0x80
+#define PCI_SUB_SERIAL_CONTROLLER_GENERIC           0x80
 
 /* PCI GENERIC SYS 0x08 SUBCLASSES */
 #define PCI_SUB_GENERIC_SYS_PIC                     0x00
@@ -110,16 +110,16 @@
 #define PCI_SUB_INPUT_CONTROLLER                    0x80
 
 /* PCI SERIAL BUS CONTROLLER 0xc */
-#define PCI_SUB_SERIAL_BUS_FIREWIRE                  0x00
-#define PCI_SUB_SERIAL_BUS_ACCESSBUS                 0x01
-#define PCI_SUB_SERIAL_BUS_SSA                       0x02
-#define PCI_SUB_SERIAL_BUS_USB                       0x03
-#define PCI_SUB_SERIAL_BUS_FIBRE_CHANNEL             0x04
-#define PCI_SUB_SERIAL_BUS_SMBUS                     0x05
-#define PCI_SUB_SERIAL_BUS_INFINIBAND                0x06
-#define PCI_SUB_SERIAL_BUS_IPMI_SMIC                 0x07
-#define PCI_SUB_SERIAL_BUS_SERCOS                    0x08
-#define PCI_SUB_SERIAL_BUS_CANBUS                    0x09
+#define PCI_SUB_SERIAL_BUS_FIREWIRE                 0x00
+#define PCI_SUB_SERIAL_BUS_ACCESSBUS                0x01
+#define PCI_SUB_SERIAL_BUS_SSA                      0x02
+#define PCI_SUB_SERIAL_BUS_USB                      0x03
+#define PCI_SUB_SERIAL_BUS_FIBRE_CHANNEL            0x04
+#define PCI_SUB_SERIAL_BUS_SMBUS                    0x05
+#define PCI_SUB_SERIAL_BUS_INFINIBAND               0x06
+#define PCI_SUB_SERIAL_BUS_IPMI_SMIC                0x07
+#define PCI_SUB_SERIAL_BUS_SERCOS                   0x08
+#define PCI_SUB_SERIAL_BUS_CANBUS                   0x09
 
 
 #endif

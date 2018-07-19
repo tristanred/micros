@@ -4,6 +4,7 @@
 #include "kernel_log.h"
 #include "memory.h"
 #include "vector.h"
+#include "pci_class_names.h"
 
 struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
 {
@@ -196,45 +197,142 @@ void print_pci_device_info(struct pci_device* device)
     kWriteLog("********************");
     kWriteLog("PCI Device Info");
     kWriteLog("                    ");
-    kWriteLog_format1d("Bus : %d", device->bus);
-    kWriteLog_format1d("Device : %d", device->device);
-    kWriteLog_format1d("Function : %d", device->function);
+    kWriteLog("Bus : %d", device->bus);
+    kWriteLog("Device : %d", device->device);
+    kWriteLog("Function : %d", device->function);
     kWriteLog("                    ");
-    kWriteLog_format1d("Device ID : %d", device->deviceID);
-    kWriteLog_format1d("Vendor ID : %d", device->vendorID);
+    kWriteLog("Device ID : %d", device->deviceID);
+    kWriteLog("Vendor ID : %d", device->vendorID);
     kWriteLog("                    ");
-    kWriteLog_format1d("Status : %d", device->status);
-    kWriteLog_format1d("Command : %d", device->command);
+    kWriteLog("Status : %d", device->status);
+    kWriteLog("Command : %d", device->command);
     kWriteLog("                    ");
-    kWriteLog_format1d("Class code : %d", device->classCode);
-    kWriteLog_format1d("Sub class : %d", device->subClass);
-    kWriteLog_format1d("Prog IF : %d", device->progIF);
-    kWriteLog_format1d("Rev ID : %d", device->revID);
+    kWriteLog("Class code : %d (%s)", device->classCode, pci_class_name(device->classCode));
+    kWriteLog("Sub class : %d (%s)", device->subClass, pci_subclass_name(device->classCode, device->subClass));
+    kWriteLog("Prog IF : %d", device->progIF);
+    kWriteLog("Rev ID : %d", device->revID);
     kWriteLog("                    ");
-    kWriteLog_format1d("BIST : %d", device->BIST);
-    kWriteLog_format1d("Header type : %d", device->headerType);
-    kWriteLog_format1d("Latency timer : %d", device->latencyTimer);
-    kWriteLog_format1d("Cache line size : %d", device->cacheLineSize);
+    kWriteLog("BIST : %d", device->BIST);
+    kWriteLog("Header type : %d", device->headerType);
+    kWriteLog("Latency timer : %d", device->latencyTimer);
+    kWriteLog("Cache line size : %d", device->cacheLineSize);
     kWriteLog("                    ");
-    kWriteLog_format1d("BAR Address #0 : %d", device->barAddress0);
-    kWriteLog_format1d("BAR Address #1 : %d", device->barAddress1);
-    kWriteLog_format1d("BAR Address #2 : %d", device->barAddress2);
-    kWriteLog_format1d("BAR Address #3 : %d", device->barAddress3);
-    kWriteLog_format1d("BAR Address #4 : %d", device->barAddress4);
-    kWriteLog_format1d("BAR Address #5 : %d", device->barAddress5);
+    kWriteLog("BAR Address #0 : %d", device->barAddress0);
+    kWriteLog("BAR Address #1 : %d", device->barAddress1);
+    kWriteLog("BAR Address #2 : %d", device->barAddress2);
+    kWriteLog("BAR Address #3 : %d", device->barAddress3);
+    kWriteLog("BAR Address #4 : %d", device->barAddress4);
+    kWriteLog("BAR Address #5 : %d", device->barAddress5);
     kWriteLog("                    ");
-    kWriteLog_format1d("Cardbus CIS Pointer : %d", device->cardbusCISPointer);
+    kWriteLog("Cardbus CIS Pointer : %d", device->cardbusCISPointer);
     kWriteLog("                    ");
-    kWriteLog_format1d("Subsystem ID : %d", device->subsystemID);
-    kWriteLog_format1d("Subsystem Vendor ID : %d", device->subsystemVendorID);
+    kWriteLog("Subsystem ID : %d", device->subsystemID);
+    kWriteLog("Subsystem Vendor ID : %d", device->subsystemVendorID);
     kWriteLog("                    ");
-    kWriteLog_format1d("Expansion ROM base address : %d", device->expansionROMBaseAddress);
-    kWriteLog_format1d("Capabilities pointer : %d", device->capabilitiesPointer);
+    kWriteLog("Expansion ROM base address : %d", device->expansionROMBaseAddress);
+    kWriteLog("Capabilities pointer : %d", device->capabilitiesPointer);
     kWriteLog("                    ");
-    kWriteLog_format1d("Max latency : %d", device->maxLatency);
-    kWriteLog_format1d("Min grant : %d", device->minGrant);
-    kWriteLog_format1d("Interrupt Pin : %d", device->intPin);
-    kWriteLog_format1d("Interrupt Line: %d", device->intLine);
+    kWriteLog("Max latency : %d", device->maxLatency);
+    kWriteLog("Min grant : %d", device->minGrant);
+    kWriteLog("Interrupt Pin : %d", device->intPin);
+    kWriteLog("Interrupt Line: %d", device->intLine);
     kWriteLog("                    ");
     kWriteLog("********************");
 }
+
+const char* pci_class_name(uint8_t pci_class)
+{
+    switch(pci_class)
+    {
+        case 0x00:
+        case 0x01:
+        case 0x02:
+        case 0x03:
+        case 0x04:
+        case 0x05:
+        case 0x06:
+        case 0x07:
+        case 0x08:
+        case 0x09:
+        case 0x0a:
+        case 0x0b:
+        case 0x0c:
+        case 0x0d:
+        case 0x0e:
+        case 0x0f:
+        case 0x10:
+        case 0x11:
+        case 0x12:
+        case 0x13:
+        case 0x40:
+        case 0xff:
+        {
+            return classnames[pci_class];
+        }
+        default:
+        {
+            return "Class not found";
+        }
+    }
+}
+
+const char* pci_subclass_name(uint8_t pci_class, uint8_t subclass)
+{
+    if(subclass == 128)
+    {
+        return "Generic";
+    }
+    
+    switch(pci_class)
+    {
+        case 0x0:
+        {
+            return "Unclassed";
+        }
+        case 0x01:
+        {
+            return massstoragenames[subclass];
+        }
+        case 0x02:
+        {
+            return netcontrollernames[subclass];
+        }
+        case 0x03:
+        {
+            return displaynames[subclass];
+        }
+        case 0x04:
+        {
+            return multimediacontrollernames[subclass];
+        }
+        case 0x05:
+        {
+            return memorynames[subclass];
+        }
+        case 0x06:
+        {
+            return bridgenames[subclass];
+        }
+        case 0x07:
+        {
+            return communicationnames[subclass];
+        }
+        case 0x08:
+        {
+            return systemnames[subclass];
+        }
+        case 0x09:
+        {
+            return inputnames[subclass];
+        }
+        case 0xc:
+        {
+            return serialbusnames[subclass];
+        }
+        default:
+        {
+            return "Class not found.";
+        }
+    }
+}
+

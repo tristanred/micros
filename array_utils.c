@@ -36,6 +36,20 @@ void array_set_pattern(uint8_t* destination, uint8_t* pattern, int destinationLe
     }
 }
 
+size_t array_verify_length(uint8_t* source)
+{
+    size_t count = 0;
+    while(TRUE)
+    {
+        if(source[count] == 0)
+            break;
+        
+        count++;
+    }
+    
+    return count;
+}
+
 uint8_t* array_concat(uint8_t* first, size_t firstSize, uint8_t* second, size_t secondSize)
 {
     uint8_t* res = (uint8_t*)malloc(sizeof(uint8_t) * firstSize + secondSize);
