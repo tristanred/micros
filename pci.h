@@ -124,5 +124,7 @@ struct pci_device** pci_scan_bus(int* count);
 
 uint32_t build_request(uint8_t bus, uint8_t device, uint8_t function, uint8_t reg);
 
+const char* pci_class_name(uint8_t pci_class);
+const char* pci_subclass_name(uint8_t pci_class, uint8_t subclass);
 
 #endif

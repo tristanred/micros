@@ -12,7 +12,7 @@ MICROS 0.1 milestones
 - CPU Interrupts *
 - Hardware timers *
 - Threads and Processes
-- PCI bus scanning *
+- PCI bus scanning
 - SATA Drivers
 - Basic filesystem (EZFS) *
 - Standard Library String functions (basic) *

@@ -4,6 +4,7 @@
 #include "kernel_log.h"
 #include "memory.h"
 #include "vector.h"
+#include "pci_class_names.h"
 
 struct pci_device get_device(uint8_t bus, uint8_t device, uint8_t function)
 {
@@ -206,8 +207,8 @@ void print_pci_device_info(struct pci_device* device)
     kWriteLog("Status : %d", device->status);
     kWriteLog("Command : %d", device->command);
     kWriteLog("                    ");
-    kWriteLog("Class code : %d", device->classCode);
-    kWriteLog("Sub class : %d", device->subClass);
+    kWriteLog("Class code : %d (%s)", device->classCode, pci_class_name(device->classCode));
+    kWriteLog("Sub class : %d (%s)", device->subClass, pci_subclass_name(device->classCode, device->subClass));
     kWriteLog("Prog IF : %d", device->progIF);
     kWriteLog("Rev ID : %d", device->revID);
     kWriteLog("                    ");
@@ -238,3 +239,100 @@ void print_pci_device_info(struct pci_device* device)
     kWriteLog("                    ");
     kWriteLog("********************");
 }
+
+const char* pci_class_name(uint8_t pci_class)
+{
+    switch(pci_class)
+    {
+        case 0x00:
+        case 0x01:
+        case 0x02:
+        case 0x03:
+        case 0x04:
+        case 0x05:
+        case 0x06:
+        case 0x07:
+        case 0x08:
+        case 0x09:
+        case 0x0a:
+        case 0x0b:
+        case 0x0c:
+        case 0x0d:
+        case 0x0e:
+        case 0x0f:
+        case 0x10:
+        case 0x11:
+        case 0x12:
+        case 0x13:
+        case 0x40:
+        case 0xff:
+        {
+            return classnames[pci_class];
+        }
+        default:
+        {
+            return "Class not found";
+        }
+    }
+}
+
+const char* pci_subclass_name(uint8_t pci_class, uint8_t subclass)
+{
+    if(subclass == 128)
+    {
+        return "Generic";
+    }
+    
+    switch(pci_class)
+    {
+        case 0x0:
+        {
+            return "Unclassed";
+        }
+        case 0x01:
+        {
+            return massstoragenames[subclass];
+        }
+        case 0x02:
+        {
+            return netcontrollernames[subclass];
+        }
+        case 0x03:
+        {
+            return displaynames[subclass];
+        }
+        case 0x04:
+        {
+            return multimediacontrollernames[subclass];
+        }
+        case 0x05:
+        {
+            return memorynames[subclass];
+        }
+        case 0x06:
+        {
+            return bridgenames[subclass];
+        }
+        case 0x07:
+        {
+            return communicationnames[subclass];
+        }
+        case 0x08:
+        {
+            return systemnames[subclass];
+        }
+        case 0x09:
+        {
+            return inputnames[subclass];
+        }
+        case 0xc:
+        {
+            return serialbusnames[subclass];
+        }
+        default:
+        {
+            return "Class not found.";
+        }
+    }
+}
+

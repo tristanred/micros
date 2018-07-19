@@ -126,7 +126,9 @@ void kernel_main(multiboot_info_t* arg1)
     init_kernel_scheduler(kernel_info);
     kBootProgress("Kernel Scheduler created\n");
 
-    // 
+    // The keyboard interrupt handler is automatically hooked in the init_timer
+    // function so we need to make sure th initialize the driver to receive
+    // the interrupts or else we'll hang the system.
     SetupKeyboardDriver(SCANCODE_SET1);
     
     // Register the interrupt handler for the timer chip. This will get us
@@ -151,6 +153,18 @@ void kernel_main(multiboot_info_t* arg1)
     ks_create_system_proc();
     fbPutString("Just done the system proc !\n");
     
+    kWriteLog("PCI SCAN START\n");
+    int total = 0;
+    struct pci_controlset* set = get_devices_list(&total);
+
+    for(int i = 0; i < total; i++)
+    {
+        kWriteLog("");
+        kWriteLog("Device #%d", i);
+        print_pci_device_info(set->deviceList[i]);
+    }
+    kWriteLog("PCI SCAN END\n");
+
     ksh_take_fb_control();
     
     while(TRUE)
@@ -176,18 +190,6 @@ void kernel_main(multiboot_info_t* arg1)
     //init_module_memory_manager(kernel_info);
 
     kfDetectFeatures(arg1);
-
-    // PCI bus scanning
-    int total = 0;
-
-    struct pci_controlset* set = get_devices_list(&total);
-
-    for(int i = 0; i < total; i++)
-    {
-        kWriteLog("");
-        kWriteLog("Device #%d", i);
-        print_pci_device_info(set->deviceList[i]);
-    }
 
     setup_filesystem();
     ezfs_prepare_disk();
