@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "types.h"
 
 // Kernel vector structure. This structure uses the kernel heap to allocate
 // memory. Can ONLY be used in kernel mode.
@@ -34,6 +35,8 @@ void vector_remove_at(struct vector* vec, size_t index);
 void* vector_get_at(struct vector* vec,size_t index);
 
 void** vector_get_array(struct vector* vec, int* count);
+
+BOOL vector_exists(struct vector* vec, void* element);
 
 // Vector management methods
 void vector_resize(struct vector* vec, size_t newSize);

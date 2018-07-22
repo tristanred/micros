@@ -103,7 +103,22 @@ void** vector_get_array(struct vector* vec, int* count)
     *count = vec->count;
     
     return (void**)vec->dataElements;
+}
+
+BOOL vector_exists(struct vector* vec, void* element)
+{
+    if(vec == NULL)
+        return FALSE;
     
+    for(size_t i = 0; i < vec->count; i++)
+    {
+        if(vec->dataElements[i] == (uint32_t)element)
+        {
+            return TRUE;
+        }
+    }
+    
+    return FALSE;
 }
 
 // Vector management methods
