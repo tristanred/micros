@@ -1,0 +1,15 @@
+Problem : Currently the ata_driver is very raw in function. It selects a drive
+and blows up if something happens. It doesn't track what ports are present
+or the status of each disk. If an operation fails or timeouts the whole kernel
+panics.
+
+A new module can solve this problem. The Disk Manager can be in charge of 
+tracking the active disks and forward read/writes to the drive only it is 
+capable of receiving the request. Due to the checks done we can have a program
+that is interactively using the disk functionalities.
+
+Operations :
+Disk Manager Init
+
+Connect Disk(bus/port disknumber)
+DisconnectDisk(disk_handle)

@@ -44,6 +44,7 @@
 #include "task.h"
 #include "kernel_task_idle.h"
 #include "bootlog.h"
+#include "disk_manager.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -132,8 +133,10 @@ void kernel_main(multiboot_info_t* arg1)
     SetupKeyboardDriver(SCANCODE_SET1);
     
     // Register the interrupt handler for the timer chip. This will get us
-    // a stady call every MS. The timer DOES NOT start ticking at this time.
+    // a steady call every MS. The timer DOES NOT start ticking at this time.
     // Only when the interrupts are enabled will we receive the calls.
+    // This sends an update to the kernel scheduler to update the running
+    // task status.
     init_timer(TIMER_FREQ_1MS);
     kBootProgress("Timer setup for 1ms ticks.\n");
 
@@ -142,9 +145,6 @@ void kernel_main(multiboot_info_t* arg1)
     enable_interrupts();
     kBootProgress("Interrupts ONLINE\n");
 
-    //      TEST ZONE
-
-    Debugger();
 
     // Create the System process. This is the process that will "own" the kernel
     // and do actual stuff. One of these things is starting the Idle thread.
@@ -152,6 +152,25 @@ void kernel_main(multiboot_info_t* arg1)
     // This is so the kernel always have something to do.
     ks_create_system_proc();
     fbPutString("Just done the system proc !\n");
+    
+    //      TEST ZONE    
+    Debugger();
+    init_module_ata_driver(kernel_info);
+    
+    struct diskman* dm = create_diskman();
+    
+    struct disk d1;
+    int res1 = connect_disk(dm, BUS_ATA, 0, &d1);
+    
+    struct disk d2;
+    int res2 = connect_disk(dm, BUS_ATA, 1, &d2);
+    
+    struct disk d3;
+    int res3 = connect_disk(dm, BUS_ATA, 2, &d3);
+    
+    struct disk d4;
+    int res4 = connect_disk(dm, BUS_ATA, 3, &d4);
+    
     
     kWriteLog("PCI SCAN START\n");
     int total = 0;

@@ -161,7 +161,7 @@ struct pci_device** pci_scan_bus(int* count)
     
     struct pci_device** array = (struct pci_device**)vector_get_array(vec, count);
     
-    free(vec);
+    //free(vec);
     
     return array;
 }

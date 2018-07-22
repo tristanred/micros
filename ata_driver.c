@@ -1,14 +1,10 @@
 #include "ata_driver.h"
 
-
+#include "kernel.h"
 #include "io_func.h"
 #include "framebuffer.h"
-#include "kernel.h"
-#include "memory.h"
-#include "string.h"
-#include "math.h"
-#include "array_utils.h"
-
+#include "task.h"
+#include "timer.h"
 
 void init_module_ata_driver(struct kernel_info_block* kinfo)
 {
@@ -202,9 +198,10 @@ enum ata_driver_status driver_ata_get_status()
     }
 }
 
-void driver_ata_wait_for_clear_bit(unsigned char statusBits)
+int driver_ata_wait_for_clear_bit(unsigned char statusBits, uint32_t timeout)
 {
-    uint64_t _debug_loopCount = 0;
+    uint32_t startTime = getmscount();
+    uint32_t currentTime;
     
     while(TRUE)
     {
@@ -212,29 +209,28 @@ void driver_ata_wait_for_clear_bit(unsigned char statusBits)
         
         if((status & statusBits) == 0)
         {
-            return;
+            return ATA_ERROR_OK;
         }
         
-        #ifdef REPORT_STUCK_IO
+        sleep(1);
         
-        _debug_loopCount++;
-        
-        if(_debug_loopCount > STUCK_IO_LOOP_TRESH)
+        currentTime = getmscount();
+        if(currentTime > startTime + timeout)
         {
-            char msg[256];
+            kWriteLog("[ATA] DRIVE=%d IO Timeout", ata_driver->currentDisk);
             
-            sprintf(msg, "IO STUCK WAITING FOR STATUS %d TO CLEAR.", statusBits);
-            
-            fbPutString(msg);
+            return ATA_ERROR_IO_TIMEOUT;
         }
-        
-        #endif
     }
+    
+    kWriteLog("[ATA] DRIVE=%d Wait Error", ata_driver->currentDisk);
+    return ATA_ERROR_FAILED;
 }
 
-void driver_ata_wait_for_set_bit(unsigned char statusBits)
+int driver_ata_wait_for_set_bit(unsigned char statusBits, uint32_t timeout)
 {
-    uint64_t _debug_loopCount = 0;
+    uint32_t startTime = getmscount();
+    uint32_t currentTime;
     
     while(TRUE)
     {
@@ -242,29 +238,28 @@ void driver_ata_wait_for_set_bit(unsigned char statusBits)
         
         if((statusBits & status) == statusBits)
         {
-            return;
+            return ATA_ERROR_OK;
         }
         
-        #ifdef REPORT_STUCK_IO
+        sleep(1);
         
-        _debug_loopCount++;
-        
-        if(_debug_loopCount > STUCK_IO_LOOP_TRESH)
+        currentTime = getmscount();
+        if(currentTime > startTime + timeout)
         {
-            char msg[256];
+            kWriteLog("[ATA] DRIVE=%d IO Timeout", ata_driver->currentDisk);
             
-            sprintf(msg, "IO STUCK WAITING FOR STATUS %d TO SET.", statusBits);
-            
-            fbPutString(msg);
+            return ATA_ERROR_IO_TIMEOUT;
         }
-        
-        #endif
     }
+    
+    kWriteLog("[ATA] DRIVE=%d Wait Error", ata_driver->currentDisk);
+    return ATA_ERROR_FAILED;
 }
 
-void driver_ata_wait_for_only_set_bit(unsigned char statusBits)
+int driver_ata_wait_for_only_set_bit(unsigned char statusBits, uint32_t timeout)
 {
-    uint64_t _debug_loopCount = 0;
+    uint32_t startTime = getmscount();
+    uint32_t currentTime;
     
     // TODO
     while(TRUE)
@@ -273,25 +268,22 @@ void driver_ata_wait_for_only_set_bit(unsigned char statusBits)
         
         if((statusBits & status) == statusBits)
         {
-            return;
+            return ATA_ERROR_OK;
         }
         
-        #ifdef REPORT_STUCK_IO
+        sleep(1);
         
-        _debug_loopCount++;
-        
-        if(_debug_loopCount > STUCK_IO_LOOP_TRESH)
+        currentTime = getmscount();
+        if(currentTime > startTime + timeout)
         {
-            char msg[256];
+            kWriteLog("[ATA] DRIVE=%d IO Timeout", ata_driver->currentDisk);
             
-            sprintf(msg, "IO STUCK WAITING FOR STATUS %d TO ONLY SET.", statusBits);
-            
-            fbPutString(msg);
+            return ATA_ERROR_IO_TIMEOUT;
         }
-        
-        #endif
-
     }
+    
+    kWriteLog("[ATA] DRIVE=%d Wait Error", ata_driver->currentDisk);
+    return ATA_ERROR_FAILED;
 }
 
 void driver_ata_resetdisk()
@@ -312,7 +304,7 @@ void driver_ata_select_drive(enum ata_disk_select disk)
         case ATA_SLAVE_0:
         {
             outb(PRIMARY_PORT + DRIVE_HEAD, SLAVE_PORT_SELECTOR);
-            ata_driver->currentDiskPort = PRIMARY_PORT;            
+            ata_driver->currentDiskPort = PRIMARY_PORT;
             break;
         };
         case ATA_MASTER_1:
@@ -329,14 +321,17 @@ void driver_ata_select_drive(enum ata_disk_select disk)
         };
         default:
         {
-            ASSERT(FALSE, "UNKNOWN DISK SELECT");
+            kWriteLog("[ATA] Wrong Drive Select %d", disk);
             
-            break;
+            ata_driver->currentDisk = ATA_NONE;
+            
+            return;
         }
     }
     
-    driver_ata_wait_for_set_bit(STATUS_READY);
-    driver_ata_wait_for_clear_bit(STATUS_BUSY);
+    int res = 0;
+    res = driver_ata_wait_for_set_bit(STATUS_READY, ATA_DEFAULT_TIMEOUT);
+    res &= driver_ata_wait_for_clear_bit(STATUS_BUSY, ATA_DEFAULT_TIMEOUT);
     
     ata_driver->currentDisk = disk;
 }
@@ -371,30 +366,42 @@ void driver_ata_select_drive_with_lba_bits(enum ata_disk_select disk, uint8_t to
         };
         default:
         {
-            ASSERT(FALSE, "UNKNOWN DISK SELECT");
+            kWriteLog("[ATA] Wrong Drive Select %d", disk);
             
-            break;
+            ata_driver->currentDisk = ATA_NONE;
+            
+            return;
         }
     }
     
-    driver_ata_wait_for_set_bit(STATUS_READY);
-    driver_ata_wait_for_clear_bit(STATUS_BUSY);
+    int res = 0;
+    res = driver_ata_wait_for_set_bit(STATUS_READY, ATA_DEFAULT_TIMEOUT);
+    res &= driver_ata_wait_for_clear_bit(STATUS_BUSY, ATA_DEFAULT_TIMEOUT);
     
     ata_driver->currentDisk = disk;
 }
 
-void driver_ata_identify(struct ata_identify_device* drive_info)
+int driver_ata_identify(struct ata_identify_device* drive_info)
 {
     if(ata_driver->currentDisk == ATA_NONE)
     {
         ata_driver->driverError = TRUE;
-        return;
+
+        kWriteLog("No disk selected for IDENTIFY");
+        
+        return ATA_ERROR_NOSELECT;
     }
 
     // Send the command
     outb(ata_driver->currentDiskPort + COMMAND_REG_STATUS, 0xEC);
     
-    driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST);
+    int res = driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST, ATA_DEFAULT_TIMEOUT);
+    if(res == ATA_ERROR_IO_TIMEOUT)
+    {
+        kWriteLog("Drive %d TIMEOUT on IDENTIFY", ata_driver->currentDisk);
+        
+        return ATA_ERROR_IO_TIMEOUT;
+    }
     
     // Read 512 bytes from the device
     uint16_t buf[256];
@@ -406,13 +413,15 @@ void driver_ata_identify(struct ata_identify_device* drive_info)
     }
     
     memcpy(drive_info, buf, sizeof(struct ata_identify_device));
+    
+    return ATA_ERROR_OK;
 }
 
 void driver_ata_flush_cache()
 {
     outb(ata_driver->currentDiskPort + COMMAND_REG_STATUS, 0xE7);
     
-    driver_ata_wait_for_clear_bit(STATUS_BUSY);
+    driver_ata_wait_for_clear_bit(STATUS_BUSY, ATA_DEFAULT_TIMEOUT);
 }
 
 uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
@@ -428,7 +437,7 @@ uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
     outb(ata_driver->currentDiskPort + LBA_HIGH, (startingSector >> 16) & 0xFF);
     outb(ata_driver->currentDiskPort + COMMAND_REG_STATUS, 0x20);
     
-    driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST);
+    driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST, ATA_DEFAULT_TIMEOUT);
 
     uint16_t* buf = malloc(sizeof(uint16_t) * 256 * sectorCount);
     
@@ -441,7 +450,7 @@ uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
         buf[i] = 0;
         buf[i] = inw(ata_driver->currentDiskPort + DATA_PORT);
         
-        driver_ata_wait_for_clear_bit(STATUS_BUSY);
+        driver_ata_wait_for_clear_bit(STATUS_BUSY, ATA_DEFAULT_TIMEOUT);
         
         res = get_status();
     }
@@ -469,7 +478,7 @@ void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint64_t star
     outb(ata_driver->currentDiskPort + LBA_HIGH, (startingSector >> 16) & 0xFF);
     outb(ata_driver->currentDiskPort + COMMAND_REG_STATUS, 0x30);
     
-    driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST);
+    driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST, ATA_DEFAULT_TIMEOUT);
     
     // This is the code for a 'write bytes until DRQ is off' type of write.
     // int i = 0;
@@ -503,7 +512,7 @@ void driver_ata_write_sectors(uint16_t* data, uint8_t sectorCount, uint64_t star
         
         // Wasting a bit of time here since the disk only seems to get busy every
         // 255 writes so he can write his buffer.
-        driver_ata_wait_for_clear_bit(STATUS_BUSY);
+        driver_ata_wait_for_clear_bit(STATUS_BUSY, ATA_DEFAULT_TIMEOUT);
         
         res = get_status();
     }
@@ -536,4 +545,17 @@ void driver_ata_write_test_sectors()
     }
     
     free(dat);
+}
+
+BOOL driver_ata_valid_disk()
+{
+    // Checking disk status : 
+    //   If BSY is set, no other bits are valid for checks.
+    //   If DRDY is set, the device is ready to accept commands
+    // When ready, 'res' should be equal to 80 (decimal);
+    // Bit 6 and 4 are set. Bit 4 is Device Seek Complete, when the head is
+    // settled over a track.
+    unsigned char res = get_status();
+    
+    return FLAG(res, STATUS_BUSY) == FALSE && FLAG(res, STATUS_READY);
 }
