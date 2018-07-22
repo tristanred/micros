@@ -291,7 +291,7 @@ void driver_ata_resetdisk()
     
 }
 
-void driver_ata_select_drive(enum ata_disk_select disk)
+int driver_ata_select_drive(enum ata_disk_select disk)
 {
     switch(disk)
     {
@@ -325,18 +325,25 @@ void driver_ata_select_drive(enum ata_disk_select disk)
             
             ata_driver->currentDisk = ATA_NONE;
             
-            return;
+            return ATA_ERROR_BADPORT;
         }
     }
     
     int res = 0;
     res = driver_ata_wait_for_set_bit(STATUS_READY, ATA_DEFAULT_TIMEOUT);
-    res &= driver_ata_wait_for_clear_bit(STATUS_BUSY, ATA_DEFAULT_TIMEOUT);
+    if(res == ATA_ERROR_IO_TIMEOUT)
+        return res;
+    
+    res = driver_ata_wait_for_clear_bit(STATUS_BUSY, ATA_DEFAULT_TIMEOUT);
+    if(res == ATA_ERROR_IO_TIMEOUT)
+        return res;
     
     ata_driver->currentDisk = disk;
+    
+    return ATA_ERROR_OK;
 }
 
-void driver_ata_select_drive_with_lba_bits(enum ata_disk_select disk, uint8_t top_lba_bits)
+int driver_ata_select_drive_with_lba_bits(enum ata_disk_select disk, uint8_t top_lba_bits)
 {
     switch(disk)
     {
@@ -370,15 +377,22 @@ void driver_ata_select_drive_with_lba_bits(enum ata_disk_select disk, uint8_t to
             
             ata_driver->currentDisk = ATA_NONE;
             
-            return;
+            return ATA_ERROR_BADPORT;
         }
     }
     
     int res = 0;
     res = driver_ata_wait_for_set_bit(STATUS_READY, ATA_DEFAULT_TIMEOUT);
-    res &= driver_ata_wait_for_clear_bit(STATUS_BUSY, ATA_DEFAULT_TIMEOUT);
+    if(res == ATA_ERROR_IO_TIMEOUT)
+        return res;
+    
+    res = driver_ata_wait_for_clear_bit(STATUS_BUSY, ATA_DEFAULT_TIMEOUT);
+    if(res == ATA_ERROR_IO_TIMEOUT)
+        return res;
     
     ata_driver->currentDisk = disk;
+    
+    return ATA_ERROR_OK;
 }
 
 int driver_ata_identify(struct ata_identify_device* drive_info)
@@ -437,7 +451,12 @@ uint16_t* driver_ata_read_sectors(uint8_t sectorCount, uint64_t startingSector)
     outb(ata_driver->currentDiskPort + LBA_HIGH, (startingSector >> 16) & 0xFF);
     outb(ata_driver->currentDiskPort + COMMAND_REG_STATUS, 0x20);
     
-    driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST, ATA_DEFAULT_TIMEOUT);
+    int waitResult = driver_ata_wait_for_set_bit(STATUS_DATA_REQUEST, ATA_DEFAULT_TIMEOUT);
+    
+    if(waitResult == ATA_ERROR_IO_TIMEOUT)
+    {
+        return NULL;
+    }
 
     uint16_t* buf = malloc(sizeof(uint16_t) * 256 * sectorCount);
     

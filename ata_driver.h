@@ -58,16 +58,17 @@ enum ata_error
     ATA_ERROR_OK = 0,
     ATA_ERROR_IO_TIMEOUT,
     ATA_ERROR_NOSELECT,            // When no disk are targeted for an operation
+    ATA_ERROR_BADPORT,
     ATA_ERROR_FAILED
 };
 
 enum ata_disk_select
 {
-    ATA_NONE,
     ATA_MASTER_0,
     ATA_SLAVE_0,
     ATA_MASTER_1,
-    ATA_SLAVE_1
+    ATA_SLAVE_1,
+    ATA_NONE
 };
 
 #pragma pack(1)
@@ -201,9 +202,9 @@ int driver_ata_wait_for_clear_bit(unsigned char statusBits, uint32_t timeout);
 int driver_ata_wait_for_set_bit(unsigned char statusBits, uint32_t timeout);
 int driver_ata_wait_for_only_set_bit(unsigned char statusBits, uint32_t timeout);
 
-void driver_ata_select_drive(enum ata_disk_select disk);
+int driver_ata_select_drive(enum ata_disk_select disk);
 
-void driver_ata_select_drive_with_lba_bits(enum ata_disk_select disk, uint8_t top_lba_bits);
+int driver_ata_select_drive_with_lba_bits(enum ata_disk_select disk, uint8_t top_lba_bits);
 
 void driver_ata_resetdisk();
 

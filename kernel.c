@@ -171,6 +171,11 @@ void kernel_main(multiboot_info_t* arg1)
     struct disk d4;
     int res4 = connect_disk(dm, BUS_ATA, 3, &d4);
     
+    res1 = disk_write(&d1, 0, "wasda", 5);
+    
+    uint8_t* buf = NULL;
+    size_t reads = 0;
+    res1 = disk_read(&d1, 0, 5, &buf, &reads);
     
     kWriteLog("PCI SCAN START\n");
     int total = 0;
