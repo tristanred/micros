@@ -154,7 +154,6 @@ void kernel_main(multiboot_info_t* arg1)
     fbPutString("Just done the system proc !\n");
     
     //      TEST ZONE    
-    Debugger();
     init_module_ata_driver(kernel_info);
     
     struct diskman* dm = create_diskman();
@@ -190,6 +189,20 @@ void kernel_main(multiboot_info_t* arg1)
     kWriteLog("PCI SCAN END\n");
 
     ksh_take_fb_control();
+    
+    Debugger();
+    disablePaging();
+    uint32_t* ptr = (uint32_t*)0xFEBF1000;
+    uint32_t* ptr2 = (uint32_t*)(0xFEBF1000 + 0x04);
+    uint32_t* ptr3 = (uint32_t*)(0xFEBF1000 + 0x08);
+    uint32_t* ptr4 = (uint32_t*)(0xFEBF1000 + 0x0C);
+    uint32_t* ptr5 = (uint32_t*)(0xFEBF1000 + 0x10);
+    
+    uint32_t data1 = *ptr;
+    uint32_t data2 = *ptr2;
+    uint32_t data3 = *ptr3;
+    uint32_t data4 = *ptr4;
+    uint32_t data5 = *ptr5;
     
     while(TRUE)
     {
