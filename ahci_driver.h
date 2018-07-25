@@ -35,7 +35,7 @@
 #define AHCI_CAP_CCCS   (x) (x & 1<<7)  // #07 Command Completion Coalescing Supported
 #define AHCI_CAP_EMS    (x) (x & 1<<6)  // #06 Enclosure Management Supported
 #define AHCI_CAP_SXS    (x) (x & 1<<5)  // #05 Supports External SATA
-#define AHCI_CAP_SXS    (x) (x & 0x1F)  // #04:00 Number of Ports
+#define AHCI_CAP_NP     (x) (x & 0x1F)  // #04:00 Number of Ports
 
 // AHCI GHC Bytes
 #define AHCI_GHC_AE     (x) (x & 1<<31) // #31 AHCI Enable

@@ -45,6 +45,7 @@
 #include "kernel_task_idle.h"
 #include "bootlog.h"
 #include "disk_manager.h"
+#include "ahci_driver.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -71,7 +72,7 @@ void kernel_main(multiboot_info_t* arg1)
     // We some flags to indicate the current state of the CPU.
     cpu_is_idle = FALSE;
     panic = FALSE;
-    
+
     // The IDT and GDT tables need to be initialized. The CPU uses these tables
     // to direct interrupts to the kernel and to describe the memory layout
     // of the kernel.
@@ -131,7 +132,7 @@ void kernel_main(multiboot_info_t* arg1)
     // function so we need to make sure th initialize the driver to receive
     // the interrupts or else we'll hang the system.
     SetupKeyboardDriver(SCANCODE_SET1);
-    
+
     // Register the interrupt handler for the timer chip. This will get us
     // a steady call every MS. The timer DOES NOT start ticking at this time.
     // Only when the interrupts are enabled will we receive the calls.
@@ -152,62 +153,86 @@ void kernel_main(multiboot_info_t* arg1)
     // This is so the kernel always have something to do.
     ks_create_system_proc();
     fbPutString("Just done the system proc !\n");
-    
-    //      TEST ZONE    
+
+    //      TEST ZONE
     init_module_ata_driver(kernel_info);
-    
+
     struct diskman* dm = create_diskman();
-    
+
     struct disk d1;
     int res1 = connect_disk(dm, BUS_ATA, 0, &d1);
-    
+
     struct disk d2;
     int res2 = connect_disk(dm, BUS_ATA, 1, &d2);
-    
+
     struct disk d3;
     int res3 = connect_disk(dm, BUS_ATA, 2, &d3);
-    
+
     struct disk d4;
     int res4 = connect_disk(dm, BUS_ATA, 3, &d4);
-    
+
     res1 = disk_write(&d1, 0, "wasda", 5);
-    
+
     uint8_t* buf = NULL;
     size_t reads = 0;
     res1 = disk_read(&d1, 0, 5, &buf, &reads);
-    
+
     kWriteLog("PCI SCAN START\n");
     int total = 0;
     struct pci_controlset* set = get_devices_list(&total);
 
+    struct pci_device* dev = NULL;
     for(int i = 0; i < total; i++)
     {
         kWriteLog("");
         kWriteLog("Device #%d", i);
         print_pci_device_info(set->deviceList[i]);
+
+        if(set->deviceList[i]->classCode == PCI_CLA_MASS_STORAGE &&
+           set->deviceList[i]->subClass == PCI_SUB_MASS_STOR_SATA_CONTROLLER )
+           {
+               dev = set->deviceList[i];
+           }
     }
     kWriteLog("PCI SCAN END\n");
 
-    ksh_take_fb_control();
-    
     Debugger();
     disablePaging();
+
+    if(dev != NULL)
+    {
+        uint32_t abar = dev->barAddress5 & 0xFFFFFFF0;
+        kWriteLog("AHCI CAP %d", *((uint32_t*)(abar + AHCI_CAP)));
+        kWriteLog("AHCI GHC %d", *(uint32_t*)(abar + AHCI_GHC));
+        kWriteLog("AHCI IS %d", *(uint32_t*)(abar + AHCI_IS));
+        kWriteLog("AHCI PI %d", *(uint32_t*)(abar + AHCI_PI));
+        kWriteLog("AHCI VS %d", *(uint32_t*)(abar + AHCI_VS));
+        kWriteLog("AHCI CCC_CTL %d", *(uint32_t*)(abar + AHCI_CCC_CTL));
+        kWriteLog("AHCI CCC_PORTS %d", *(uint32_t*)(abar + AHCI_CCC_PORTS));
+        kWriteLog("AHCI EM_LOC %d", *(uint32_t*)(abar + AHCI_EM_LOC));
+        kWriteLog("AHCI EM_CTL %d", *(uint32_t*)(abar + AHCI_EM_CTL));
+        kWriteLog("AHCI CAP2 %d", *(uint32_t*)(abar + AHCI_CAP2));
+        kWriteLog("AHCI BOHC %d", *(uint32_t*)(abar + AHCI_BOHC));
+    }
+
+    ksh_take_fb_control();
+
     uint32_t* ptr = (uint32_t*)0xFEBF1000;
     uint32_t* ptr2 = (uint32_t*)(0xFEBF1000 + 0x04);
     uint32_t* ptr3 = (uint32_t*)(0xFEBF1000 + 0x08);
     uint32_t* ptr4 = (uint32_t*)(0xFEBF1000 + 0x0C);
     uint32_t* ptr5 = (uint32_t*)(0xFEBF1000 + 0x10);
-    
+
     uint32_t data1 = *ptr;
     uint32_t data2 = *ptr2;
     uint32_t data3 = *ptr3;
     uint32_t data4 = *ptr4;
     uint32_t data5 = *ptr5;
-    
+
     while(TRUE)
     {
         ksh_update();
-        
+
         cpu_idle();
     }
 
