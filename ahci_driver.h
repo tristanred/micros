@@ -1,6 +1,8 @@
 #ifndef AHCI_DRIVER_H
 #define AHCI_DRIVER_H
 
+#include <stdint.h>
+
 // Generic Host Control registers
 
 #define AHCI_CAP        0x00 // Host Capabilities
@@ -42,5 +44,53 @@
 #define AHCI_GHC_MRSM   (x) (x & 1<<2)  // #02 MSI Revert to Single Message
 #define AHCI_GHC_IE     (x) (x & 1<<1)  // #01 Interrupt Enable
 #define AHCI_GHC_HR     (x) (x & 1)  // #00 HBA Reset
+
+struct ahci_generic_host_regs
+{
+    uint32_t host_capabilities;
+    uint32_t global_host_control;
+    uint32_t interrupt_status;
+    uint32_t ports_implemented;
+    uint32_t version;
+    uint32_t command_completion_coalescing_control;
+    uint32_t command_completion_coalescing_ports;
+    uint32_t enclosure_management_location;
+    uint32_t enclosure_management_control;
+    uint32_t host_capabilities_extended;
+    uint32_t bios_handoff_control_status;
+};
+
+struct ahci_vendor_specific_regs
+{
+    uint32_t regs[6];
+};
+
+struct ahci_port_regs
+{
+    uint32_t command_list_base_addr_lower;
+    uint32_t command_list_base_addr_upper;
+    uint32_t fis_base_addr_lower;
+    uint32_t fis_base_addr_upper;
+    uint32_t interrupt_status;
+    uint32_t interrupt_enable;
+    uint32_t command_and_status;
+    uint32_t reserved;
+    uint32_t task_file_data;
+    uint32_t signature;
+    uint32_t serial_ata_status;
+    uint32_t serial_ata_control;
+    uint32_t serial_ata_error;
+    uint32_t serial_ata_active;
+    uint32_t serial_command_issue;
+    uint32_t serial_ata_notification;
+    uint32_t fis_based_switching_control;
+    uint32_t device_sleep;
+    uint32_t reserved;
+    uint32_t vendor_specific;
+};
+
+int driver_ahci_read_CAP_regs(struct ahci_hba_regs* regs);
+
+int driver_ahci_read_GHC_regs();
 
 #endif
