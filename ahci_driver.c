@@ -4,29 +4,35 @@
 #include "memory.h"
 #include "flagutils.h"
 
-uint32_t driver_ahci_get_default_disk()
+void init_module_ahci_driver(struct kernel_info_block* kinfo)
+{
+    ahci_driver = alloc_kernel_module(sizeof(struct ahci_driver_info));
+    kinfo->m_ahci_driver = ahci_driver;
+    
+    ahci_driver->disk_count = 0;
+    ahci_driver->disk_ports = NULL;
+    ahci_driver->hba_device = NULL;
+}
+
+int driver_ahci_find_disks(struct pci_controlset* pcs)
 {
     int total = 0;
-    struct pci_controlset* set = get_devices_list(&total);
-    
     struct pci_device* dev = NULL;
     for(int i = 0; i < total; i++)
     {
-        if(set->deviceList[i]->classCode == PCI_CLA_MASS_STORAGE &&
-           set->deviceList[i]->subClass == PCI_SUB_MASS_STOR_SATA_CONTROLLER )
+        if(pcs->deviceList[i]->classCode == PCI_CLA_MASS_STORAGE &&
+           pcs->deviceList[i]->subClass == PCI_SUB_MASS_STOR_SATA_CONTROLLER )
            {
-               dev = set->deviceList[i];
+               dev = pcs->deviceList[i];
+               break;
            }
     }
-
+    
+    // If we found a SATA host bus adapter
     if(dev != NULL)
     {
-        uint32_t abar = dev->barAddress5;
-        
-        return abar;
+        ahci_driver->hba_device = dev;
     }
-    
-    return 0;
 }
 
 int driver_ahci_read_GHC_regs(uint32_t abar, struct ahci_generic_host_regs* regs)

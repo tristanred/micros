@@ -198,6 +198,10 @@ void kernel_main(multiboot_info_t* arg1)
 
     Debugger();
     disablePaging();
+    
+    struct ahci_generic_host_regs regz;
+    memset(&regz, 0, sizeof(struct ahci_generic_host_regs));
+    //driver_ahci_read_GHC_regs(driver_ahci_get_default_disk(), &regz);
 
     if(dev != NULL)
     {

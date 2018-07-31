@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "kernel.h"
+
 // Generic Host Control registers
 
 #define AHCI_CAP        0x00 // Host Capabilities
@@ -118,6 +120,15 @@ struct ahci_port_commandtable
     void* data;
 };
 
+// Handy structure to keep the info about a disk.
+struct ahci_disk_info
+{
+    uint8_t portNb;
+    
+    // BAR5 address
+    uint32_t memory_addr;
+};
+
 /**
  * AHCI Memory overview
  * 
@@ -131,9 +142,21 @@ struct ahci_port_commandtable
  * The Command list struct contains a list of command tables
  * 
  */
+struct pci_device;
+struct pci_controlset;
 
-// Get the ABAR of the default disk.
-uint32_t driver_ahci_get_default_disk();
+struct ahci_driver_info
+{
+    struct pci_device* hba_device; // Host Bus Adapter
+    
+    int disk_count;
+    uint8_t** disk_ports;
+};
+struct ahci_driver_info* ahci_driver;
+
+void init_module_ahci_driver(struct kernel_info_block* kinfo);
+
+int driver_ahci_find_disks(struct pci_controlset* pcs);
 
 /* Register reading */
 int driver_ahci_read_GHC_regs(uint32_t abar, struct ahci_generic_host_regs* regs);
