@@ -68,6 +68,16 @@ void init_page_allocator(struct kernel_info_block* kinfo)
     pa_print_kpt(kpt);
 }
 
+void pa_enable_paging()
+{
+    enablePaging();
+}
+
+void pa_disable_paging()
+{
+    disablePaging();
+}
+
 void pa_print_kpt(struct page_table_info* pt)
 {
     (void)pt;

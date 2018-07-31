@@ -166,6 +166,8 @@ struct page_table_info* currentPageTable;
  */
 void init_page_allocator(struct kernel_info_block* kinfo);
 
+void pa_enable_paging();
+void pa_disable_paging();
 /**
  * Just a test function to reference an unloaded page. If the system is 
  * allocating pages freely it won't crash the system but if not and the page

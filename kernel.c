@@ -46,6 +46,7 @@
 #include "bootlog.h"
 #include "disk_manager.h"
 #include "ahci_driver.h"
+#include "paging.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -197,8 +198,8 @@ void kernel_main(multiboot_info_t* arg1)
     kWriteLog("PCI SCAN END\n");
 
     Debugger();
-    disablePaging();
-    
+    pa_disablePaging();
+
     struct ahci_generic_host_regs regz;
     memset(&regz, 0, sizeof(struct ahci_generic_host_regs));
     //driver_ahci_read_GHC_regs(driver_ahci_get_default_disk(), &regz);
