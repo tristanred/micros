@@ -124,23 +124,23 @@ struct ahci_port_commandtable
 struct ahci_disk_info
 {
     uint8_t portNb;
-    
+
     // BAR5 address
     uint32_t memory_addr;
 };
 
 /**
  * AHCI Memory overview
- * 
+ *
  * The PCI bus device has the BAR5(ABAR) and it stores the address in memory
  * of the HBA.
- * 
+ *
  * The HBA has generic registers and a set of register for each port.
- * 
+ *
  * Each port has the address to a Command List and Received FIS struct.
- * 
+ *
  * The Command list struct contains a list of command tables
- * 
+ *
  */
 struct pci_device;
 struct pci_controlset;
@@ -148,9 +148,11 @@ struct pci_controlset;
 struct ahci_driver_info
 {
     struct pci_device* hba_device; // Host Bus Adapter
-    
+
+    uint32_t abar; // hba_device->barAddress5 shortcut
+
     int disk_count;
-    uint8_t** disk_ports;
+    uint8_t disk_ports[32];
 };
 struct ahci_driver_info* ahci_driver;
 
@@ -158,14 +160,16 @@ void init_module_ahci_driver(struct kernel_info_block* kinfo);
 
 int driver_ahci_find_disks(struct pci_controlset* pcs);
 
+uint8_t driver_ahc_get_default_port();
+
 /* Register reading */
 int driver_ahci_read_GHC_regs(uint32_t abar, struct ahci_generic_host_regs* regs);
 int driver_ahci_read_port_regs(uint32_t abar, int portNb, struct ahci_port_regs* regs);
 int driver_ahci_read_port_commandlist(uint32_t abar, int portNb, struct ahci_port_commandlist* data);
 int driver_ahci_read_port_commandtable(uint32_t abar, int portNb, int commandNb, struct ahci_port_commandtable* data);
 
-// Get the amount of ports supported by the machine not all of them may be 
-// implemented. Not such a useful function because we can just call 
+// Get the amount of ports supported by the machine not all of them may be
+// implemented. Not such a useful function because we can just call
 // driver_ahci_get_disk_ports and get the current amount of ports usable.
 int driver_ahci_get_ports_enabled();
 
@@ -173,6 +177,6 @@ int driver_ahci_get_ports_enabled();
 // 'ports' must be initialized as an array of 32 ints all filled with 0.
 // 'amount' is the number of disks found, the first 'amount' elements of the 'ports'
 // array will be filled with the occupied port of that disk.
-int driver_ahci_get_disk_ports(uint32_t abar, int* ports, size_t* amount);
+int driver_ahci_get_disk_ports(uint32_t abar, uint8_t* ports, int* amount);
 
 #endif
