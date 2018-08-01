@@ -170,37 +170,16 @@ void kernel_main(multiboot_info_t* arg1)
         kWriteLog("");
         kWriteLog("Device #%d", i);
         print_pci_device_info(set->deviceList[i]);
-
-        if(set->deviceList[i]->classCode == PCI_CLA_MASS_STORAGE &&
-           set->deviceList[i]->subClass == PCI_SUB_MASS_STOR_SATA_CONTROLLER )
-           {
-               dev = set->deviceList[i];
-           }
     }
     kWriteLog("PCI SCAN END\n");
 
     Debugger();
-    pa_disablePaging();
+    pa_disable_paging();
 
-    struct ahci_generic_host_regs regz;
-    memset(&regz, 0, sizeof(struct ahci_generic_host_regs));
-    //driver_ahci_read_GHC_regs(driver_ahci_get_default_disk(), &regz);
-
-    if(dev != NULL)
-    {
-        uint32_t abar = dev->barAddress5 & 0xFFFFFFF0;
-        kWriteLog("AHCI CAP %d", *((uint32_t*)(abar + AHCI_CAP)));
-        kWriteLog("AHCI GHC %d", *(uint32_t*)(abar + AHCI_GHC));
-        kWriteLog("AHCI IS %d", *(uint32_t*)(abar + AHCI_IS));
-        kWriteLog("AHCI PI %d", *(uint32_t*)(abar + AHCI_PI));
-        kWriteLog("AHCI VS %d", *(uint32_t*)(abar + AHCI_VS));
-        kWriteLog("AHCI CCC_CTL %d", *(uint32_t*)(abar + AHCI_CCC_CTL));
-        kWriteLog("AHCI CCC_PORTS %d", *(uint32_t*)(abar + AHCI_CCC_PORTS));
-        kWriteLog("AHCI EM_LOC %d", *(uint32_t*)(abar + AHCI_EM_LOC));
-        kWriteLog("AHCI EM_CTL %d", *(uint32_t*)(abar + AHCI_EM_CTL));
-        kWriteLog("AHCI CAP2 %d", *(uint32_t*)(abar + AHCI_CAP2));
-        kWriteLog("AHCI BOHC %d", *(uint32_t*)(abar + AHCI_BOHC));
-    }
+    init_module_ahci_driver(kernel_info);
+    int res = driver_ahci_find_disks(set);
+    
+    res = driver_ahci_print_ports_info();
 
     ksh_take_fb_control();
 
@@ -255,12 +234,12 @@ void kernel_main(multiboot_info_t* arg1)
 
     ksh_take_fb_control();
 
-    BOOL res = mm_verify_all_allocs_canary();
+    // BOOL res = mm_verify_all_allocs_canary();
 
-    if(res == FALSE)
-    {
-        Debugger();
-    }
+    // if(res == FALSE)
+    // {
+    //     Debugger();
+    // }
 
     while(TRUE)
     {

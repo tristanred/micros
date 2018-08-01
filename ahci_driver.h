@@ -48,7 +48,7 @@
 #define AHCI_GHC_IE(x)      (x & 1<<1)  // #01 Interrupt Enable
 #define AHCI_GHC_HR(x)      (x & 1)  // #00 HBA Reset
 
-struct ahci_generic_host_regs
+struct ahci_host_regs
 {
     uint32_t host_capabilities;
     uint32_t global_host_control;
@@ -63,7 +63,7 @@ struct ahci_generic_host_regs
     uint32_t bios_handoff_control_status;
 };
 
-struct ahci_vendor_specific_regs
+struct ahci_vendor_regs
 {
     uint32_t regs[6];
 };
@@ -142,6 +142,12 @@ struct ahci_disk_info
  * The Command list struct contains a list of command tables
  *
  */
+
+// If defined, the device register read functions will return a copy of the 
+// data. Otherwise the structure returned by parameter will point to the 
+// memory mapped registers.
+#define AHCI_INVALID_PORT 255
+
 struct pci_device;
 struct pci_controlset;
 
@@ -151,7 +157,7 @@ struct ahci_driver_info
 
     uint32_t abar; // hba_device->barAddress5 shortcut
 
-    int disk_count;
+    int port_count;
     uint8_t disk_ports[32];
 };
 struct ahci_driver_info* ahci_driver;
@@ -160,13 +166,13 @@ void init_module_ahci_driver(struct kernel_info_block* kinfo);
 
 int driver_ahci_find_disks(struct pci_controlset* pcs);
 
-uint8_t driver_ahc_get_default_port();
+uint8_t driver_ahci_get_default_port();
 
 /* Register reading */
-int driver_ahci_read_GHC_regs(uint32_t abar, struct ahci_generic_host_regs* regs);
-int driver_ahci_read_port_regs(uint32_t abar, int portNb, struct ahci_port_regs* regs);
-int driver_ahci_read_port_commandlist(uint32_t abar, int portNb, struct ahci_port_commandlist* data);
-int driver_ahci_read_port_commandtable(uint32_t abar, int portNb, int commandNb, struct ahci_port_commandtable* data);
+int driver_ahci_read_GHC_regs(struct ahci_host_regs* regs);
+int driver_ahci_read_port_regs(int portNb, struct ahci_port_regs* regs);
+int driver_ahci_read_port_commandlist(int portNb, struct ahci_port_commandlist* data);
+int driver_ahci_read_port_commandtable(int portNb, int commandNb, struct ahci_port_commandtable* data);
 
 // Get the amount of ports supported by the machine not all of them may be
 // implemented. Not such a useful function because we can just call
@@ -177,6 +183,8 @@ int driver_ahci_get_ports_enabled();
 // 'ports' must be initialized as an array of 32 ints all filled with 0.
 // 'amount' is the number of disks found, the first 'amount' elements of the 'ports'
 // array will be filled with the occupied port of that disk.
-int driver_ahci_get_disk_ports(uint32_t abar, uint8_t* ports, int* amount);
+int driver_ahci_get_disk_ports(uint8_t* ports, int* amount);
+
+int driver_ahci_print_ports_info();
 
 #endif
