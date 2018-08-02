@@ -68,6 +68,11 @@ struct ahci_vendor_regs
     uint32_t regs[6];
 };
 
+#define AHCI_SIG_ATA 0x00000101 // SATA Drive
+#define AHCI_SIG_ATAPI 0xEB140101 // SATAPI device
+#define AHCI_SIG_SEMB 0xC33C0101 // Enclosure management bridge
+#define AHCI_SIG_PM 0x96690101 // Port Multiplier
+
 struct ahci_port_regs
 {
     uint32_t command_list_base_addr_lower;
@@ -143,8 +148,8 @@ struct ahci_disk_info
  *
  */
 
-// If defined, the device register read functions will return a copy of the 
-// data. Otherwise the structure returned by parameter will point to the 
+// If defined, the device register read functions will return a copy of the
+// data. Otherwise the structure returned by parameter will point to the
 // memory mapped registers.
 #define AHCI_INVALID_PORT 255
 
@@ -186,5 +191,7 @@ int driver_ahci_get_ports_enabled();
 int driver_ahci_get_disk_ports(uint8_t* ports, int* amount);
 
 int driver_ahci_print_ports_info();
+
+int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, uint32_t length, uint8_t* buf);
 
 #endif

@@ -35,9 +35,9 @@ int driver_ahci_find_disks(struct pci_controlset* pcs)
         ahci_driver->abar = dev->barAddress5;
 
         // Fill the driver fields with ports information.
-        int res = driver_ahci_get_disk_ports(ahci_driver->disk_ports, 
+        int res = driver_ahci_get_disk_ports(ahci_driver->disk_ports,
                                              &ahci_driver->port_count);
-        
+
         if(FAILED(res))
         {
             return res;
@@ -53,7 +53,7 @@ uint8_t driver_ahci_get_default_port()
     {
         return ahci_driver->disk_ports[ahci_driver->port_count];
     }
-    
+
     return AHCI_INVALID_PORT;
 }
 
@@ -91,7 +91,7 @@ int driver_ahci_read_port_commandtable(int portNb, int commandNb, struct ahci_po
     (void)portNb;
     (void)commandNb;
     (void)data;
-    
+
     return E_OK;
 }
 
@@ -131,7 +131,7 @@ int driver_ahci_get_disk_ports(uint8_t* ports, int* amount)
     }
 
     *amount = portsIndex;
-    
+
     return E_OK;
 }
 
@@ -141,7 +141,7 @@ int driver_ahci_print_ports_info()
     {
         struct ahci_port_regs pregs;
         int read_res = driver_ahci_read_port_regs(i, &pregs);
-        
+
         if(SUCCESS(read_res))
         {
             kWriteLog("*** AHCI Port %d Registers START ***", i);
@@ -172,6 +172,23 @@ int driver_ahci_print_ports_info()
             return E_UNKNOWN;
         }
     }
-    
+
+    return E_OK;
+}
+
+int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, uint32_t length, uint8_t* buf)
+{
+    (void)port;
+    (void)addr_low;
+    (void)addr_high;
+    (void)length;
+    (void)buf;
+
+    // Steps to read data :
+    // Find a free command slot
+    // Build a command header at that location in the list
+    // 
+
+
     return E_OK;
 }
