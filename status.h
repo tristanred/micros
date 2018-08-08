@@ -6,9 +6,12 @@ enum kernel_error_code
     E_OK,
     E_UNKNOWN,
     E_INVALID_PARAM,
-    
+
     // General error codes
-    
+
+    // General IO Errors
+    E_IO_FULL,              // Generated when the target disk cannot field any more requests
+
     // ATA Driver Errors
 };
 

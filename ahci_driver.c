@@ -64,8 +64,10 @@ int driver_ahci_read_GHC_regs(struct ahci_host_regs* regs)
     return E_OK;
 }
 
-int driver_ahci_read_port_regs(int portNb, struct ahci_port_regs* regs)
+int driver_ahci_read_port_regs(uint8_t portNb, struct ahci_port_regs* regs)
 {
+    // TODO : Check port isn't a nonsense index.
+
     uint32_t portAddress = ahci_driver->abar + 0x100 + (portNb * 0x80);
 
     memcpy(regs, (void*)portAddress, sizeof(struct ahci_port_regs));
@@ -73,7 +75,7 @@ int driver_ahci_read_port_regs(int portNb, struct ahci_port_regs* regs)
     return E_OK;
 }
 
-int driver_ahci_read_port_commandlist(int portNb, struct ahci_port_commandlist* data)
+int driver_ahci_read_port_commandlist(uint8_t portNb, struct ahci_port_commandlist* data)
 {
     uint32_t portAddress = ahci_driver->abar + 0x100 + (portNb * 0x80);
 
@@ -86,7 +88,7 @@ int driver_ahci_read_port_commandlist(int portNb, struct ahci_port_commandlist* 
     return E_OK;
 }
 
-int driver_ahci_read_port_commandtable(int portNb, int commandNb, struct ahci_port_commandtable* data)
+int driver_ahci_read_port_commandtable(uint8_t portNb, int commandNb, struct ahci_port_commandtable* data)
 {
     (void)portNb;
     (void)commandNb;
@@ -105,7 +107,7 @@ int driver_ahci_get_ports_enabled()
     return np + 1; // Add 1 because its 0 based count. 0 equals 1 port available
 }
 
-int driver_ahci_get_disk_ports(uint8_t* ports, int* amount)
+int driver_ahci_get_disk_ports(uint8_t* ports, uint8_t* amount)
 {
     // Get the GHC regs.
     struct ahci_host_regs target_hba;
@@ -187,8 +189,109 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     // Steps to read data :
     // Find a free command slot
     // Build a command header at that location in the list
-    // 
+    //
 
+
+    uint8_t cmdSlot = 0;
+    int res = driver_ahci_get_next_cmdslot(port, &cmdSlot);
+
+    if(FAILED(res))
+        return res;
+
+    struct ahci_port_command_header* command;
+    memset(&command, 0, sizeof(struct ahci_port_command_header));
+    res = driver_ahci_make_command_header(port, cmdSlot, &command);
+
+    if(FAILED(res))
+        return res;
+
+    command->prflags = sizeof(struct ahci_fis_reg_H2D) / sizeof(uint32_t); // 5
+    command->prflags = command->prflags & 0xFFBF; // Take all bits except #6, make sure #6 is 0 for a Read operation
+
+    // Need to calculate how many PRDT entries we will need
+    // Need to know how much data can a PRDT contain.
+    command->prdtl = 1; // Amount of PRDT entries in the table
+    
+    // For now, we'll just use one PRDT
+    struct ahci_port_commandtable* table = (struct ahci_port_commandtable*)command->commandtableBaseAddr;
+    table->regions[0].addr_base = buf;
+    table->regions[0].bytecount = (length << 9) - 1; // 512 bytes per sector
+    table->regions[0].bytecount |= 0x80000000; // Set bit #31 to enable interrupt on completion
+
+    // TODO : Fill the table PRDT regions
+
+    struct ahci_fis_reg_H2D* cmd_fis;
+    res = driver_ahci_make_command_fis(command, &table);
+    cmd_fis->type = AHCI_FIS_REG_H2D;
+    cmd_fis->commandreg = 1;
+    cmd_fis->command = 0; // ATA_CMD_READ_DMA_EX
+    cmd_fis->device = 1<<6; // LBA Mode
+    
+    cmd_fis->lba_1 = (uint8_t)addr_low;
+    cmd_fis->lba_2 = (uint8_t)(addr_low >> 8);
+    cmd_fis->lba_3 = (uint8_t)(addr_low >> 16);
+    cmd_fis->lba_4 = (uint8_t)(addr_low >> 24);
+    cmd_fis->lba_5 = (uint8_t)(addr_high);
+    cmd_fis->lba_6 = (uint8_t)(addr_high >> 8);
+    
+    cmd_fis->count_low = length && 0xFF;
+    cmd_fis->count_high = (length >> 8) & 0xFF;
 
     return E_OK;
+}
+
+int driver_ahci_make_command_header(uint8_t portNb, uint8_t cmdslot, struct ahci_port_command_header** cmd)
+{
+    struct ahci_port_regs pregs;
+    int res = driver_ahci_read_port_regs(portNb, &pregs);
+    *cmd = (struct ahci_port_command_header*)pregs.command_list_base_addr_lower;
+    *cmd += cmdslot;
+
+    return E_OK;
+}
+
+int driver_ahci_make_command_fis(struct ahci_port_commandtable* cmdtable, struct ahci_fis_reg_H2D** fis)
+{
+    *fis = &cmdtable->cmd_fis;
+    
+    return E_OK;
+}
+
+int driver_ahci_get_next_cmdslot(uint8_t portNb, uint8_t* cmdslot)
+{
+    struct ahci_host_regs hregs;
+    int res = driver_ahci_read_GHC_regs(&hregs);
+
+    struct ahci_port_regs pregs;
+    res = driver_ahci_read_port_regs(portNb, &pregs);
+
+    if(FAILED(res))
+        return res;
+
+    // One of these ports have bit N set when the N command is running.
+    uint32_t slotstatus = pregs.serial_ata_active | pregs.serial_command_issue;
+
+    int cmdSlotsAvailable = AHCI_CAP_NCS(hregs.host_capabilities);
+    // Go through each bit and check if one is not set, that port will be free.
+    // If set, shift bits to the right for the next evaluation.
+    // Checking the rightmost bit and shifting is just an easy way to check each
+    // bit.
+    for(uint8_t i = 0; i < cmdSlotsAvailable; i++)
+    {
+        if((slotstatus & 1) == 0)
+        {
+            *cmdslot = i;
+
+            return E_OK;
+        }
+        else
+        {
+            slotstatus = slotstatus >> 1;
+        }
+    }
+
+    // No ports are free, return some bad value and flag an error.
+    *cmdslot = 255;
+
+    return E_IO_FULL;
 }

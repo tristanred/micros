@@ -73,6 +73,15 @@ struct ahci_vendor_regs
 #define AHCI_SIG_SEMB 0xC33C0101 // Enclosure management bridge
 #define AHCI_SIG_PM 0x96690101 // Port Multiplier
 
+#define AHCI_FIS_REG_H2D 0x27
+#define AHCI_FIS_REG_D2H 0x34
+#define AHCI_FIS_DMA_ACT 0x39
+#define AHCI_FIS_DMA_SET 0x41
+#define AHCI_FIS_DAT     0x46
+#define AHCI_FIS_BIST    0x58
+#define AHCI_FIS_PIO_SET 0x5F
+#define AHCI_FIS_DEV_BIT 0xA1
+
 struct ahci_port_regs
 {
     uint32_t command_list_base_addr_lower;
@@ -110,19 +119,51 @@ struct ahci_port_command_header
     uint32_t reserved4;
 };
 
+struct ahci_port_prdt
+{
+    uint32_t addr_base;
+    uint32_t addr_upper;
+    uint32_t reserved;
+    uint32_t bytecount;
+};
+
 struct ahci_port_commandlist
 {
     struct ahci_port_command_header entries[32];
 };
 
-struct ahci_port_fis
-{
-    void* data;
-};
-
 struct ahci_port_commandtable
 {
-    void* data;
+    uint8_t cmd_fis[64];
+    uint8_t cmd_atapi[16];
+    uint8_t reserved[48];
+
+    struct ahci_port_prdt* regions; // 0 to 65535 elements
+};
+
+struct ahci_fis_reg_H2D
+{
+    uint8_t type; // 0x27
+    uint8_t commandreg;
+    uint8_t command;
+    uint8_t features_low;
+
+    uint8_t lba_1;
+    uint8_t lba_2;
+    uint8_t lba_3;
+    uint8_t device;
+
+    uint8_t lba_4;
+    uint8_t lba_5;
+    uint8_t lba_6;
+    uint8_t features_high;
+
+    uint8_t count_low;
+    uint8_t count_high;
+    uint8_t icc;
+    uint8_t control;
+
+    uint32_t reserved;
 };
 
 // Handy structure to keep the info about a disk.
@@ -162,11 +203,12 @@ struct ahci_driver_info
 
     uint32_t abar; // hba_device->barAddress5 shortcut
 
-    int port_count;
+    uint8_t port_count;
     uint8_t disk_ports[32];
 };
 struct ahci_driver_info* ahci_driver;
 
+/* Module Setup and init tasks */
 void init_module_ahci_driver(struct kernel_info_block* kinfo);
 
 int driver_ahci_find_disks(struct pci_controlset* pcs);
@@ -175,9 +217,9 @@ uint8_t driver_ahci_get_default_port();
 
 /* Register reading */
 int driver_ahci_read_GHC_regs(struct ahci_host_regs* regs);
-int driver_ahci_read_port_regs(int portNb, struct ahci_port_regs* regs);
-int driver_ahci_read_port_commandlist(int portNb, struct ahci_port_commandlist* data);
-int driver_ahci_read_port_commandtable(int portNb, int commandNb, struct ahci_port_commandtable* data);
+int driver_ahci_read_port_regs(uint8_t portNb, struct ahci_port_regs* regs);
+int driver_ahci_read_port_commandlist(uint8_t portNb, struct ahci_port_commandlist* data);
+int driver_ahci_read_port_commandtable(uint8_t portNb, int commandNb, struct ahci_port_commandtable* data);
 
 // Get the amount of ports supported by the machine not all of them may be
 // implemented. Not such a useful function because we can just call
@@ -188,10 +230,18 @@ int driver_ahci_get_ports_enabled();
 // 'ports' must be initialized as an array of 32 ints all filled with 0.
 // 'amount' is the number of disks found, the first 'amount' elements of the 'ports'
 // array will be filled with the occupied port of that disk.
-int driver_ahci_get_disk_ports(uint8_t* ports, int* amount);
+int driver_ahci_get_disk_ports(uint8_t* ports, uint8_t* amount);
 
 int driver_ahci_print_ports_info();
 
+/* IO Procedures */
 int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, uint32_t length, uint8_t* buf);
+
+
+/* Command driving methods */
+int driver_ahci_make_command_header(uint8_t portNb, uint8_t cmdslot, struct ahci_port_command_header** cmd);
+int driver_ahci_make_command_fis(struct ahci_port_commandtable* cmdtable, struct ahci_fis_reg_H2D** fis);
+
+int driver_ahci_get_next_cmdslot(uint8_t portNb, uint8_t* cmdslot);
 
 #endif
