@@ -10,6 +10,8 @@ enum kernel_error_code
     // General error codes
 
     // General IO Errors
+    E_IO_ERROR,
+    E_IO_TIMEOUT,
     E_IO_FULL,              // Generated when the target disk cannot field any more requests
 
     // ATA Driver Errors

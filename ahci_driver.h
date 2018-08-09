@@ -6,6 +6,17 @@
 
 #include "kernel.h"
 
+// Generic ATA 
+#define ATA_STATUS_BUSY 0x80
+#define ATA_STATUS_READY 0x40
+#define ATA_STATUS_FAULT 0x20           // STATUS_FAULT and STATUS_STREAM ERROR
+#define ATA_STATUS_STREAM_ERROR 0x20    // share the same bit.
+#define ATA_STATUS_DEF_WRITE_ERROR 0x10
+#define ATA_STATUS_DATA_REQUEST 0x8
+#define ATA_STATUS_ALIGN_ERROR 0x4
+#define ATA_STATUS_SENSE_DATA 0x2
+#define ATA_STATUS_ERROR 0x1
+
 // Generic Host Control registers
 
 #define AHCI_CAP        0x00 // Host Capabilities
@@ -220,6 +231,12 @@ int driver_ahci_read_GHC_regs(struct ahci_host_regs* regs);
 int driver_ahci_read_port_regs(uint8_t portNb, struct ahci_port_regs* regs);
 int driver_ahci_read_port_commandlist(uint8_t portNb, struct ahci_port_commandlist* data);
 int driver_ahci_read_port_commandtable(uint8_t portNb, int commandNb, struct ahci_port_commandtable* data);
+
+/* Register Access */
+int driver_ahci_get_GHC_regs(struct ahci_host_regs** regs);
+int driver_ahci_get_port_regs(uint8_t portNb, struct ahci_port_regs** regs);
+int driver_ahci_get_port_commandlist(uint8_t portNb, struct ahci_port_commandlist** data);
+int driver_ahci_get_port_commandtable(uint8_t portNb, int commandNb, struct ahci_port_commandtable** data);
 
 // Get the amount of ports supported by the machine not all of them may be
 // implemented. Not such a useful function because we can just call

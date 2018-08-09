@@ -97,6 +97,44 @@ int driver_ahci_read_port_commandtable(uint8_t portNb, int commandNb, struct ahc
     return E_OK;
 }
 
+int driver_ahci_get_GHC_regs(struct ahci_host_regs** regs)
+{
+    *regs = (struct ahci_host_regs*)ahci_driver->abar;
+    
+    return E_OK;
+}
+
+int driver_ahci_get_port_regs(uint8_t portNb, struct ahci_port_regs** regs)
+{
+    uint32_t portAddress = ahci_driver->abar + 0x100 + (portNb * 0x80);
+    
+    *regs = (struct ahci_port_regs*)portAddress;
+    
+    return E_OK;
+}
+
+int driver_ahci_get_port_commandlist(uint8_t portNb, struct ahci_port_commandlist** data)
+{
+    uint32_t portAddress = ahci_driver->abar + 0x100 + (portNb * 0x80);
+
+    struct ahci_port_regs* port = (struct ahci_port_regs*)portAddress;
+
+    uint32_t cmdlistaddr = port->command_list_base_addr_lower;
+    
+    *data = (struct ahci_port_commandlist*)cmdlistaddr;
+    
+    return E_OK;
+}
+
+int driver_ahci_get_port_commandtable(uint8_t portNb, int commandNb, struct ahci_port_commandtable** data)
+{
+    (void)portNb;
+    (void)commandNb;
+    (void)data;
+
+    return E_OK;
+}
+
 int driver_ahci_get_ports_enabled()
 {
     struct ahci_host_regs target_hba;
@@ -236,6 +274,49 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     
     cmd_fis->count_low = length && 0xFF;
     cmd_fis->count_high = (length >> 8) & 0xFF;
+    
+    // Wait until drive is ready for requests
+    int waitloop = 0;
+    BOOL waiting = TRUE;
+    struct ahci_port_regs* regs;
+    res = driver_ahci_get_port_regs(port,  &regs);
+    while(waiting)
+    {
+        if(regs->task_file_data & (ATA_STATUS_BUSY | ATA_STATUS_DATA_REQUEST))
+        {
+            waitloop++;
+        }
+        else
+        {
+            break;
+        }
+        
+        if(waitloop > 10000)
+        {
+            DEbugger();
+            kWriteLog("IO TIMEOUT");
+            
+            return E_IO_TIMEOUT;
+        }
+    }
+    
+    regs->serial_command_issue = 1 << port; // Start the IO operation
+    
+    waitloop = 0;
+    waiting = TRUE;
+    while(waiting)
+    {
+        if((regs->serial_command_issue & (1 << port)) == 0)
+        {
+            break; // Command has cleared !
+        }
+        if(regs->interrupt_status & 0x40000000)
+        {
+            Debugger();
+            kWriteLog("IO Error");
+            return E_IO_ERROR;
+        }
+    }
 
     return E_OK;
 }
