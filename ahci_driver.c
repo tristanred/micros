@@ -259,7 +259,7 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     // TODO : Fill the table PRDT regions
 
     struct ahci_fis_reg_H2D* cmd_fis;
-    res = driver_ahci_make_command_fis(command, &table);
+    res = driver_ahci_make_command_fis(table, &cmd_fis);
     cmd_fis->type = AHCI_FIS_REG_H2D;
     cmd_fis->commandreg = 1;
     cmd_fis->command = 0; // ATA_CMD_READ_DMA_EX
@@ -293,7 +293,7 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
         
         if(waitloop > 10000)
         {
-            DEbugger();
+            Debugger();
             kWriteLog("IO TIMEOUT");
             
             return E_IO_TIMEOUT;
