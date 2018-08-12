@@ -254,12 +254,12 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     // For now, we'll just use one PRDT
     struct ahci_port_commandtable* table = (struct ahci_port_commandtable*)command->commandtableBaseAddr;
     table->regions[0].addr_base = buf;
-    table->regions[0].bytecount = (length << 9) - 1; // 512 bytes per sector
+    table->regions[0].bytecount = length; // 512 bytes per sector
     table->regions[0].bytecount |= 0x80000000; // Set bit #31 to enable interrupt on completion
 
     // TODO : Fill the table PRDT regions
 
-    struct ahci_fis_reg_H2D* cmd_fis;
+    struct ahci_fis_reg_H2D* cmd_fis = NULL;
     res = driver_ahci_make_command_fis(table, &cmd_fis);
     cmd_fis->type = AHCI_FIS_REG_H2D;
     cmd_fis->commandreg = 1;
@@ -279,7 +279,7 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     // Wait until drive is ready for requests
     int waitloop = 0;
     BOOL waiting = TRUE;
-    struct ahci_port_regs* regs;
+    struct ahci_port_regs* regs = NULL;
     res = driver_ahci_get_port_regs(port,  &regs);
     while(waiting)
     {
