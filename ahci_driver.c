@@ -236,8 +236,9 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     if(FAILED(res))
         return res;
 
-    struct ahci_port_command_header* command;
-    memset(&command, 0, sizeof(struct ahci_port_command_header));
+    Debugger();
+    struct ahci_port_command_header* command = NULL;
+    memset(command, 0, sizeof(struct ahci_port_command_header));
     res = driver_ahci_make_command_header(port, cmdSlot, &command);
 
     if(FAILED(res))
@@ -262,7 +263,7 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     res = driver_ahci_make_command_fis(table, &cmd_fis);
     cmd_fis->type = AHCI_FIS_REG_H2D;
     cmd_fis->commandreg = 1;
-    cmd_fis->command = 0; // ATA_CMD_READ_DMA_EX
+    cmd_fis->command = 0x20; // ATA_CMD_READ_DMA_EX
     cmd_fis->device = 1<<6; // LBA Mode
     
     cmd_fis->lba_1 = (uint8_t)addr_low;

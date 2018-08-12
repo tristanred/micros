@@ -173,13 +173,18 @@ void kernel_main(multiboot_info_t* arg1)
     }
     kWriteLog("PCI SCAN END\n");
 
-    Debugger();
     pa_disable_paging();
 
     init_module_ahci_driver(kernel_info);
     int res = driver_ahci_find_disks(set);
     
     res = driver_ahci_print_ports_info();
+
+    uint8_t readBuf[4096];
+    memset(readBuf, 1, 4096);
+    res = driver_ahci_read_data(driver_ahci_get_default_port(), 0, 0, 4096, readBuf);
+
+    Debugger();
 
     ksh_take_fb_control();
 
@@ -231,7 +236,7 @@ void kernel_main(multiboot_info_t* arg1)
     // asm volatile ("int $0x4");
 
     init_timer(TIMER_FREQ_1MS);
-
+    
     ksh_take_fb_control();
 
     // BOOL res = mm_verify_all_allocs_canary();

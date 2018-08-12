@@ -59,6 +59,7 @@
 #define AHCI_GHC_IE(x)      (x & 1<<1)  // #01 Interrupt Enable
 #define AHCI_GHC_HR(x)      (x & 1)  // #00 HBA Reset
 
+#pragma pack(1)
 struct ahci_host_regs
 {
     uint32_t host_capabilities;
@@ -74,6 +75,7 @@ struct ahci_host_regs
     uint32_t bios_handoff_control_status;
 };
 
+#pragma pack(1)
 struct ahci_vendor_regs
 {
     uint32_t regs[6];
@@ -93,6 +95,7 @@ struct ahci_vendor_regs
 #define AHCI_FIS_PIO_SET 0x5F
 #define AHCI_FIS_DEV_BIT 0xA1
 
+#pragma pack(1)
 struct ahci_port_regs
 {
     uint32_t command_list_base_addr_lower;
@@ -117,6 +120,7 @@ struct ahci_port_regs
     uint32_t vendor_specific;
 };
 
+#pragma pack(1)
 struct ahci_port_command_header
 {
     uint16_t prdtl;
@@ -130,6 +134,7 @@ struct ahci_port_command_header
     uint32_t reserved4;
 };
 
+#pragma pack(1)
 struct ahci_port_prdt
 {
     uint32_t addr_base;
@@ -138,11 +143,13 @@ struct ahci_port_prdt
     uint32_t bytecount;
 };
 
+#pragma pack(1)
 struct ahci_port_commandlist
 {
     struct ahci_port_command_header entries[32];
 };
 
+#pragma pack(1)
 struct ahci_port_commandtable
 {
     uint8_t cmd_fis[64];
@@ -152,6 +159,7 @@ struct ahci_port_commandtable
     struct ahci_port_prdt* regions; // 0 to 65535 elements
 };
 
+#pragma pack(1)
 struct ahci_fis_reg_H2D
 {
     uint8_t type; // 0x27
