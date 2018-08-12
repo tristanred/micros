@@ -18,15 +18,16 @@
 // 256 bytes of data on each function
 
 // TODO : Move to pcidev.h
-struct pci_device 
+#pragma pack(1)
+struct pci_device
 {
     BOOL valid_device;
-    
+
     // Location information
     uint8_t bus;
     uint8_t device;
     uint8_t function;
-    
+
     // Register 0x00
     uint16_t deviceID;
     uint16_t vendorID;
@@ -78,12 +79,12 @@ struct pci_device
 struct pci_request
 {
     struct pci_device* dev;
-    
+
     uint8_t reg_num;
 };
 
-/* 
- * This is the set of devices controlled by the kernel. It is meant to be 
+/*
+ * This is the set of devices controlled by the kernel. It is meant to be
  * allocated once and kept in a kernel module. The controlset can be rescanned
  * by calling pci_rescan_devices.
  */
@@ -101,7 +102,7 @@ struct pci_module
     BOOL module_loaded;
     BOOL module_active;
     struct pci_controlset* current_controlset;
-    
+
 };
 
 
@@ -109,7 +110,7 @@ struct pci_module
 
 /*
  * This function enumerates the devices on the PCI bus and replace the current
- * controlset in the pci kernel module. If a new device 
+ * controlset in the pci kernel module. If a new device
  */
 void pci_rescan_devices();
 
