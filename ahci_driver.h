@@ -6,7 +6,7 @@
 
 #include "kernel.h"
 
-// Generic ATA 
+// Generic ATA
 #define ATA_STATUS_BUSY 0x80
 #define ATA_STATUS_READY 0x40
 #define ATA_STATUS_FAULT 0x20           // STATUS_FAULT and STATUS_STREAM ERROR
@@ -228,35 +228,74 @@ struct ahci_driver_info
 struct ahci_driver_info* ahci_driver;
 
 /* Module Setup and init tasks */
+
+/**
+ * Kernel module init. Sets up the 'ahci_driver' object.
+ */
 void init_module_ahci_driver(struct kernel_info_block* kinfo);
 
+/**
+ * Scan the PCI bus and look for AHCI compatible disks. Right now this finds
+ * SATA disks and adds the first one to the driver. Only the first disk found
+ * will be used.
+ */
 int driver_ahci_find_disks(struct pci_controlset* pcs);
 
+/**
+ * Setup the AHCI structures in memory by setting the addresses in the
+ * AHCI registers. This will allocate heap memory with some alignment
+ * requirements.
+ */
+int driver_ahci_setup_memory();
+
+/**
+ * For testing, returns whatever port we will always use for issuing
+ * AHCI commands. This function looks for whatever port is connected to an
+ * online disk.
+ */
 uint8_t driver_ahci_get_default_port();
 
 /* Register reading */
+
+/**
+ * These functions return a copy of the targer registers. The structures can
+ * be passed around safely without modifying the drive registers.
+ */
+
 int driver_ahci_read_GHC_regs(struct ahci_host_regs* regs);
 int driver_ahci_read_port_regs(uint8_t portNb, struct ahci_port_regs* regs);
 int driver_ahci_read_port_commandlist(uint8_t portNb, struct ahci_port_commandlist* data);
 int driver_ahci_read_port_commandtable(uint8_t portNb, int commandNb, struct ahci_port_commandtable* data);
 
 /* Register Access */
+
+/**
+ * These functions return the actual memory mapped registers. This is used to
+ * modify the registers directly and read the registers values directly from the
+ * controller.
+ */
+
 int driver_ahci_get_GHC_regs(struct ahci_host_regs** regs);
 int driver_ahci_get_port_regs(uint8_t portNb, struct ahci_port_regs** regs);
 int driver_ahci_get_port_commandlist(uint8_t portNb, struct ahci_port_commandlist** data);
 int driver_ahci_get_port_commandtable(uint8_t portNb, int commandNb, struct ahci_port_commandtable** data);
 
-// Get the amount of ports supported by the machine not all of them may be
-// implemented. Not such a useful function because we can just call
-// driver_ahci_get_disk_ports and get the current amount of ports usable.
+/** Get the amount of ports supported by the machine not all of them may be
+ * implemented. Not such a useful function because we can just call
+ * driver_ahci_get_disk_ports and get the current amount of ports usable.
+ */
 int driver_ahci_get_ports_enabled();
 
-// Get the ports where a disk is present.
-// 'ports' must be initialized as an array of 32 ints all filled with 0.
-// 'amount' is the number of disks found, the first 'amount' elements of the 'ports'
-// array will be filled with the occupied port of that disk.
+/* Get the ports where a disk is present.
+ * 'ports' must be initialized as an array of 32 ints all filled with 0.
+ * 'amount' is the number of disks found, the first 'amount' elements of the 'ports'
+ * array will be filled with the occupied port of that disk.
+ */
 int driver_ahci_get_disk_ports(uint8_t* ports, uint8_t* amount);
 
+/**
+ * Print each port's registers to the log.
+ */
 int driver_ahci_print_ports_info();
 
 /* IO Procedures */

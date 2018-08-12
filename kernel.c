@@ -175,10 +175,23 @@ void kernel_main(multiboot_info_t* arg1)
 
     pa_disable_paging();
 
+    Debugger();
     init_module_ahci_driver(kernel_info);
     int res = driver_ahci_find_disks(set);
-    
+    res = driver_ahci_setup_memory();
+
     res = driver_ahci_print_ports_info();
+
+    uint8_t def = driver_ahci_get_default_port();
+    struct ahci_host_regs* host;
+    res = driver_ahci_read_GHC_regs(host);
+    struct ahci_port_regs* portreg;
+    res = driver_ahci_read_port_regs(def, portreg);
+    struct ahci_port_commandlist* data;
+    res = driver_ahci_read_port_commandlist(def, data);
+    struct ahci_port_command_header head = data->entries[0];
+    struct ahci_port_commandtable* table;
+    res = driver_ahci_read_port_commandtable(def, 0, table);
 
     uint8_t readBuf[4096];
     memset(readBuf, 1, 4096);
@@ -236,7 +249,7 @@ void kernel_main(multiboot_info_t* arg1)
     // asm volatile ("int $0x4");
 
     init_timer(TIMER_FREQ_1MS);
-    
+
     ksh_take_fb_control();
 
     // BOOL res = mm_verify_all_allocs_canary();
