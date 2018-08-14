@@ -9,6 +9,10 @@ enum kernel_error_code
 
     // General error codes
 
+    // Device Error codes
+    E_NODISK,
+    E_DEVICE_INVALID,
+
     // General IO Errors
     E_IO_ERROR,
     E_IO_TIMEOUT,

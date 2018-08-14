@@ -76,6 +76,7 @@ struct pci_device
     uint8_t intLine;
 };
 
+#pragma pack(1)
 struct pci_request
 {
     struct pci_device* dev;
@@ -88,6 +89,7 @@ struct pci_request
  * allocated once and kept in a kernel module. The controlset can be rescanned
  * by calling pci_rescan_devices.
  */
+#pragma pack(1)
 struct pci_controlset
 {
     int devicesCount;
@@ -97,6 +99,7 @@ struct pci_controlset
 /*
  * Kernel module for PCI bus
  */
+#pragma pack(1)
 struct pci_module
 {
     BOOL module_loaded;
@@ -104,7 +107,6 @@ struct pci_module
     struct pci_controlset* current_controlset;
 
 };
-
 
 // PCI Public interface
 

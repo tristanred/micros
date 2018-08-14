@@ -3,6 +3,7 @@
 #include "pci.h"
 #include "memory.h"
 #include "flagutils.h"
+#include "status.h"
 
 void init_module_ahci_driver(struct kernel_info_block* kinfo)
 {
@@ -31,6 +32,13 @@ int driver_ahci_find_disks(struct pci_controlset* pcs)
     // If we found a SATA host bus adapter
     if(dev != NULL)
     {
+        if(dev->barAddress5 == 0)
+        {
+            // We found an invalid device and it somehow had the correct bits
+            // report error.
+            return E_DEVICE_INVALID;
+        }
+        
         ahci_driver->hba_device = dev;
         ahci_driver->abar = dev->barAddress5;
 
@@ -43,8 +51,57 @@ int driver_ahci_find_disks(struct pci_controlset* pcs)
             return res;
         }
     }
+    else
+    {
+        return E_NODISK;
+    }
 
     return E_OK;
+}
+
+int driver_ahci_setup_memory(uint8_t portNb)
+{
+    // TODO : Find area of memory suitable for ahci data.
+    uint32_t ahci_memory_zone_addr = 1024*1024*10;
+    
+    struct ahci_port_regs* regs;
+    int res = driver_ahci_get_port_regs(portNb, &regs);
+    
+    // Stop command engine
+    regs->command_and_status &= ~0x0001;
+    while(TRUE)
+    {
+        if(AHCI_PxCMD_ST(regs->command_and_status))
+            continue;
+        if(AHCI_PxCMD_CR(regs->command_and_status))
+            continue;
+
+        break;
+    }
+    regs->command_and_status &= ~0x0010;
+    
+    regs->command_list_base_addr_lower = ahci_memory_zone_addr + (portNb << 10);
+    regs->command_list_base_addr_upper = 0;
+    memset(regs->command_list_base_addr_lower, 0, 1024);
+    
+    regs->fis_base_addr_lower = ahci_memory_zone_addr + (32<<10) + (portNb << 8);
+    regs->fis_base_addr_upper = 0;
+    memset(regs->fis_base_addr_lower, 0, 256);
+    
+    struct ahci_port_commandlist* commands = (struct ahci_port_commandlist*)regs->command_list_base_addr_lower;
+    for(int i = 0; i < 32; i++)
+    {
+        commands->entries[i].prdtl = 8;
+        commands->entries[i].commandtableBaseAddr = ahci_memory_zone_addr + (40 << 10) + portNb << 13 + (i << 8);
+        commands->entries[i].commandtableBaseAddrUpper = 0;
+        memset(commands->entries[i].commandtableBaseAddr, 0, 256);
+    }
+    
+    // Start command engine
+    while(AHCI_PxCMD_CR(regs->command_and_status));
+    
+    regs->command_and_status |= 0x0010;
+    regs->command_and_status |= 0x0001;
 }
 
 uint8_t driver_ahci_get_default_port()

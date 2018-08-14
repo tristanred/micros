@@ -40,7 +40,7 @@
 #define AHCI_CAP_SALP(x)    (x & 1<<26) // #26 Supports Aggressive Link Power Management
 #define AHCI_CAP_SAL(x)     (x & 1<<25) // #25 Supports Activity LED
 #define AHCI_CAP_SCLO(x)    (x & 1<<24) // #24 Supports Command List Override
-#define AHCI_CAP_ISS(x)     (x & 0xF00000>>20) // #23:20 Interface Speed Support
+#define AHCI_CAP_ISS(x)     ((x & 0xF00000)>>20) // #23:20 Interface Speed Support
 #define AHCI_CAP_SAM(x)     (x & 1<<18) // #18 Supports AHCI mode only
 #define AHCI_CAP_SPM(x)     (x & 1<<17) // #17 Supports Port Multiplier
 #define AHCI_CAP_FBSS(x)    (x & 1<<16) // #16 FIS-based Switching Supported
@@ -58,6 +58,30 @@
 #define AHCI_GHC_MRSM(x)    (x & 1<<2)  // #02 MSI Revert to Single Message
 #define AHCI_GHC_IE(x)      (x & 1<<1)  // #01 Interrupt Enable
 #define AHCI_GHC_HR(x)      (x & 1)  // #00 HBA Reset
+
+// AHCI Port's Command and Status
+#define AHCI_PxCMD_ICC(x)   ((x & 0xF0000000) >> 28) // #32:28 Interface Communication Control
+#define AHCI_PxCMD_ASP(x)   (x & 1<<27) // #27 Aggressive Slumber / Partial
+#define AHCI_PxCMD_ALPE(x)  (x & 1<<26) // #26 Aggressive Link Power Management Enable
+#define AHCI_PxCMD_DLAE(x)  (x & 1<<25) // #25 Drive LED on ATAPI Enable
+#define AHCI_PxCMD_ATAPI(x) (x & 1<<24) // #24 Device is ATAPI
+#define AHCI_PxCMD_APSTE(x) (x & 1<<23) // #23 Automatic Partial to Slumber Transitions Enabled
+#define AHCI_PxCMD_FBSCP(x) (x & 1<<22) // #22 FIS-based Switching Capable Port
+#define AHCI_PxCMD_ESP(x)   (x & 1<<21) // #21 External SATA Port
+#define AHCI_PxCMD_CPD(x)   (x & 1<<20) // #20 Cold Presence Detection
+#define AHCI_PxCMD_MPSP(x)  (x & 1<<19) // #19 Mechanical Presence Switch Attached to Port
+#define AHCI_PxCMD_HPCP(x)  (x & 1<<18) // #18 Hot Plug Capable Port
+#define AHCI_PxCMD_PMA(x)   (x & 1<<17) // #17 Port Multiplier Attached
+#define AHCI_PxCMD_CPS(x)   (x & 1<<16) // #16 Cold Presence State
+#define AHCI_PxCMD_CR(x)    (x & 1<<15) // #15 Command List Running
+#define AHCI_PxCMD_FR(x)    (x & 1<<14) // #14 FIS Receive Running
+#define AHCI_PxCMD_MPSS(x)  (x & 1<<13) // #13 Mechanical Presence Switch State
+#define AHCI_PxCMD_CSS(x)   ((x & 0x1F00) >> 8) // #12:08 Current Command Slot
+#define AHCI_PxCMD_FRE(x)   (x & 1<<4) // #4 FIS Receive Enable
+#define AHCI_PxCMD_CLO(x)   (x & 1<<3) // #3 Command List Override
+#define AHCI_PxCMD_POD(x)   (x & 1<<2) // #2 Spin-Up Device
+#define AHCI_PxCMD_SUD(x)   (x & 1<<1) // #2 Power On Device
+#define AHCI_PxCMD_ST(x)    (x & 1)    // #1 Start
 
 #pragma pack(1)
 struct ahci_host_regs
@@ -246,7 +270,7 @@ int driver_ahci_find_disks(struct pci_controlset* pcs);
  * AHCI registers. This will allocate heap memory with some alignment
  * requirements.
  */
-int driver_ahci_setup_memory();
+int driver_ahci_setup_memory(uint8_t portNb);
 
 /**
  * For testing, returns whatever port we will always use for issuing

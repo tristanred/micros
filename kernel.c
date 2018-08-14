@@ -153,14 +153,14 @@ void kernel_main(multiboot_info_t* arg1)
     // This special thread is always active and sitting at the lowest priority.
     // This is so the kernel always have something to do.
     ks_create_system_proc();
-    fbPutString("Just done the system proc !\n");
+    kBootProgress("Just done the system proc !\n");
 
     //      TEST ZONE
     init_module_ata_driver(kernel_info);
 
     struct diskman* dm = create_diskman();
 
-    kWriteLog("PCI SCAN START\n");
+    kBootProgress("PCI SCAN START\n");
     int total = 0;
     struct pci_controlset* set = get_devices_list(&total);
 
@@ -171,31 +171,41 @@ void kernel_main(multiboot_info_t* arg1)
         kWriteLog("Device #%d", i);
         print_pci_device_info(set->deviceList[i]);
     }
-    kWriteLog("PCI SCAN END\n");
+    kBootProgress("PCI SCAN END\n");
 
     pa_disable_paging();
 
-    Debugger();
+    kBootProgress("Starting AHCI tests\n");
+    
     init_module_ahci_driver(kernel_info);
     int res = driver_ahci_find_disks(set);
-    res = driver_ahci_setup_memory();
+    if(SUCCESS(res))
+    {
+        kBootProgress("Found a valid disk\n");
+        res = driver_ahci_setup_memory(driver_ahci_get_default_port());
+        res = driver_ahci_print_ports_info();
 
-    res = driver_ahci_print_ports_info();
+        uint8_t readBuf[4096];
+        memset(readBuf, 1, 4096);
+        res = driver_ahci_read_data(driver_ahci_get_default_port(), 0, 0, 4096, readBuf);
 
-    uint8_t def = driver_ahci_get_default_port();
-    struct ahci_host_regs* host;
-    res = driver_ahci_read_GHC_regs(host);
-    struct ahci_port_regs* portreg;
-    res = driver_ahci_read_port_regs(def, portreg);
-    struct ahci_port_commandlist* data;
-    res = driver_ahci_read_port_commandlist(def, data);
-    struct ahci_port_command_header head = data->entries[0];
-    struct ahci_port_commandtable* table;
-    res = driver_ahci_read_port_commandtable(def, 0, table);
+        kBootProgress("AHCI Tests complete\n");
+    }
+    else
+    {
+        kBootProgress("No compatible AHCI disks were found.\n");
+    }
 
-    uint8_t readBuf[4096];
-    memset(readBuf, 1, 4096);
-    res = driver_ahci_read_data(driver_ahci_get_default_port(), 0, 0, 4096, readBuf);
+    // uint8_t def = driver_ahci_get_default_port();
+    // struct ahci_host_regs* host;
+    // res = driver_ahci_read_GHC_regs(host);
+    // struct ahci_port_regs* portreg;
+    // res = driver_ahci_read_port_regs(def, portreg);
+    // struct ahci_port_commandlist* data;
+    // res = driver_ahci_read_port_commandlist(def, data);
+    // struct ahci_port_command_header head = data->entries[0];
+    // struct ahci_port_commandtable* table;
+    // res = driver_ahci_read_port_commandtable(def, 0, table);
 
     Debugger();
 
