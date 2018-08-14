@@ -47,6 +47,7 @@
 #include "disk_manager.h"
 #include "ahci_driver.h"
 #include "paging.h"
+#include "ata.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -187,6 +188,10 @@ void kernel_main(multiboot_info_t* arg1)
 
         uint8_t readBuf[4096];
         memset(readBuf, 1, 4096);
+        
+        struct ata_identify_device ident;
+        memset(&ident, 0, sizeof(struct ata_identify_device));
+        res = driver_ahci_identify(driver_ahci_get_default_port(), &ident);
         res = driver_ahci_read_data(driver_ahci_get_default_port(), 0, 0, 4096, readBuf);
 
         kBootProgress("AHCI Tests complete\n");

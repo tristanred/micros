@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "kernel.h"
+#include "ata.h"
 
 // Generic ATA
 #define ATA_STATUS_BUSY 0x80
@@ -325,6 +326,7 @@ int driver_ahci_print_ports_info();
 /* IO Procedures */
 int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, uint32_t length, uint8_t* buf);
 
+int driver_ahci_identify(uint8_t port, struct ata_identify_device* data);
 
 /* Command driving methods */
 int driver_ahci_make_command_header(uint8_t portNb, uint8_t cmdslot, struct ahci_port_command_header** cmd);

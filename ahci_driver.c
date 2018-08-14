@@ -108,7 +108,16 @@ uint8_t driver_ahci_get_default_port()
 {
     if(ahci_driver->port_count > 0)
     {
-        return ahci_driver->disk_ports[ahci_driver->port_count];
+        for(int i = 0; i < ahci_driver->port_count; i++)
+        {
+            struct ahci_port_regs portInfo;
+            int res = driver_ahci_read_port_regs(i, &portInfo);
+            
+            if(portInfo.signature == AHCI_SIG_ATA)
+            {
+                return ahci_driver->disk_ports[i];
+            }
+        }
     }
 
     return AHCI_INVALID_PORT;
@@ -275,23 +284,17 @@ int driver_ahci_print_ports_info()
 
 int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, uint32_t length, uint8_t* buf)
 {
-    (void)port;
-    (void)addr_low;
-    (void)addr_high;
-    (void)length;
-    (void)buf;
-
-    // Steps to read data :
-    // Find a free command slot
-    // Build a command header at that location in the list
-    //
-
-
     uint8_t cmdSlot = 0;
     int res = driver_ahci_get_next_cmdslot(port, &cmdSlot);
-
-    if(FAILED(res))
+    
+    if(res == E_IO_FULL)
+    {
+        // Wait a bit for IO to commands to free up
+    }
+    else if(FAILED(res))
+    {
         return res;
+    }
 
     Debugger();
     struct ahci_port_command_header* command = NULL;
@@ -320,7 +323,7 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     res = driver_ahci_make_command_fis(table, &cmd_fis);
     cmd_fis->type = AHCI_FIS_REG_H2D;
     cmd_fis->commandreg = 1;
-    cmd_fis->command = 0x20; // ATA_CMD_READ_DMA_EX
+    cmd_fis->command = ATA_CMD_READ_SECTORS; // ATA_CMD_READ_DMA_EX
     cmd_fis->device = 1<<6; // LBA Mode
     
     cmd_fis->lba_1 = (uint8_t)addr_low;
@@ -332,6 +335,108 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     
     cmd_fis->count_low = length && 0xFF;
     cmd_fis->count_high = (length >> 8) & 0xFF;
+    
+    // Wait until drive is ready for requests
+    int waitloop = 0;
+    BOOL waiting = TRUE;
+    struct ahci_port_regs* regs = NULL;
+    res = driver_ahci_get_port_regs(port,  &regs);
+    while(waiting)
+    {
+        if(regs->task_file_data & (ATA_STATUS_BUSY | ATA_STATUS_DATA_REQUEST))
+        {
+            waitloop++;
+        }
+        else
+        {
+            break;
+        }
+        
+        if(waitloop > 10000)
+        {
+            Debugger();
+            kWriteLog("IO TIMEOUT");
+            
+            return E_IO_TIMEOUT;
+        }
+    }
+    
+    regs->serial_command_issue = 1 << port; // Start the IO operation
+    
+    waitloop = 0;
+    waiting = TRUE;
+    while(waiting)
+    {
+        if((regs->serial_command_issue & (1 << port)) == 0)
+        {
+            break; // Command has cleared !
+        }
+        if(regs->interrupt_status & 0x40000000)
+        {
+            Debugger();
+            kWriteLog("IO Error");
+            return E_IO_ERROR;
+        }
+    }
+
+    return E_OK;
+}
+
+int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
+{
+    uint8_t cmdSlot = 0;
+    int res = driver_ahci_get_next_cmdslot(port, &cmdSlot);
+    
+    if(res == E_IO_FULL)
+    {
+        // Wait a bit for IO to commands to free up
+    }
+    else if(FAILED(res))
+    {
+        return res;
+    }
+
+    Debugger();
+    struct ahci_port_command_header* command = NULL;
+    memset(command, 0, sizeof(struct ahci_port_command_header));
+    res = driver_ahci_make_command_header(port, cmdSlot, &command);
+
+    if(FAILED(res))
+        return res;
+
+    command->prflags = sizeof(struct ahci_fis_reg_H2D) / sizeof(uint32_t); // 5
+    command->prflags = command->prflags & 0xFFBF; // Take all bits except #6, make sure #6 is 0 for a Read operation
+
+    // Need to calculate how many PRDT entries we will need
+    // Need to know how much data can a PRDT contain.
+    command->prdtl = 1; // Amount of PRDT entries in the table
+    
+    size_t dataSize = sizeof(struct ata_identify_device);
+    
+    // For now, we'll just use one PRDT
+    struct ahci_port_commandtable* table = (struct ahci_port_commandtable*)command->commandtableBaseAddr;
+    table->regions[0].addr_base = data;
+    table->regions[0].bytecount = dataSize; 
+    table->regions[0].bytecount |= 0x80000000; // Set bit #31 to enable interrupt on completion
+
+    // TODO : Fill the table PRDT regions
+
+    struct ahci_fis_reg_H2D* cmd_fis = NULL;
+    res = driver_ahci_make_command_fis(table, &cmd_fis);
+    cmd_fis->type = AHCI_FIS_REG_H2D;
+    cmd_fis->commandreg = 1;
+    cmd_fis->command = ATA_CMD_IDENTIFY_DEVICE; // ATA_CMD_READ_DMA_EX
+    cmd_fis->device = 1<<6; // LBA Mode
+    
+    cmd_fis->lba_1 = 0;
+    cmd_fis->lba_2 = 0;
+    cmd_fis->lba_3 = 0;
+    cmd_fis->lba_4 = 0;
+    cmd_fis->lba_5 = 0;
+    cmd_fis->lba_6 = 0;
+
+    cmd_fis->count_low = dataSize && 0xFF;
+    cmd_fis->count_high = (dataSize >> 8) & 0xFF;
     
     // Wait until drive is ready for requests
     int waitloop = 0;
