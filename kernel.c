@@ -48,6 +48,7 @@
 #include "ahci_driver.h"
 #include "paging.h"
 #include "ata.h"
+#include "ahci_terminal.h"
 
 uint32_t kErrorBad;
 char* kBadErrorMessage;
@@ -180,26 +181,30 @@ void kernel_main(multiboot_info_t* arg1)
     
     init_module_ahci_driver(kernel_info);
     int res = driver_ahci_find_disks(set);
-    if(SUCCESS(res))
-    {
-        kBootProgress("Found a valid disk\n");
-        res = driver_ahci_setup_memory(driver_ahci_get_default_port());
-        res = driver_ahci_print_ports_info();
+    
+    init_ahci_term();
+    ks_create_thread(&ahci_term_task);
+    
+    // if(SUCCESS(res))
+    // {
+    //     kBootProgress("Found a valid disk\n");
+    //     res = driver_ahci_setup_memory(driver_ahci_get_default_port());
+    //     res = driver_ahci_print_ports_info();
 
-        uint8_t readBuf[4096];
-        memset(readBuf, 1, 4096);
+    //     uint8_t readBuf[4096];
+    //     memset(readBuf, 1, 4096);
         
-        struct ata_identify_device ident;
-        memset(&ident, 0, sizeof(struct ata_identify_device));
-        res = driver_ahci_identify(driver_ahci_get_default_port(), &ident);
-        res = driver_ahci_read_data(driver_ahci_get_default_port(), 0, 0, 4096, readBuf);
+    //     struct ata_identify_device ident;
+    //     memset(&ident, 0, sizeof(struct ata_identify_device));
+    //     res = driver_ahci_identify(driver_ahci_get_default_port(), &ident);
+    //     res = driver_ahci_read_data(driver_ahci_get_default_port(), 0, 0, 4096, readBuf);
 
-        kBootProgress("AHCI Tests complete\n");
-    }
-    else
-    {
-        kBootProgress("No compatible AHCI disks were found.\n");
-    }
+    //     kBootProgress("AHCI Tests complete\n");
+    // }
+    // else
+    // {
+    //     kBootProgress("No compatible AHCI disks were found.\n");
+    // }
 
     // uint8_t def = driver_ahci_get_default_port();
     // struct ahci_host_regs* host;
@@ -212,13 +217,13 @@ void kernel_main(multiboot_info_t* arg1)
     // struct ahci_port_commandtable* table;
     // res = driver_ahci_read_port_commandtable(def, 0, table);
 
-    Debugger();
+    //Debugger();
 
-    ksh_take_fb_control();
+    //ksh_take_fb_control();
 
     while(TRUE)
     {
-        ksh_update();
+        //ksh_update();
 
         cpu_idle();
     }
