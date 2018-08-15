@@ -82,11 +82,11 @@ int driver_ahci_setup_memory(uint8_t portNb)
     
     regs->command_list_base_addr_lower = ahci_memory_zone_addr + (portNb << 10);
     regs->command_list_base_addr_upper = 0;
-    memset(regs->command_list_base_addr_lower, 0, 1024);
+    memset((void*)regs->command_list_base_addr_lower, 0, 1024);
     
     regs->fis_base_addr_lower = ahci_memory_zone_addr + (32<<10) + (portNb << 8);
     regs->fis_base_addr_upper = 0;
-    memset(regs->fis_base_addr_lower, 0, 256);
+    memset((void*)regs->fis_base_addr_lower, 0, 256);
     
     struct ahci_port_commandlist* commands = (struct ahci_port_commandlist*)regs->command_list_base_addr_lower;
     for(int i = 0; i < 32; i++)
@@ -94,7 +94,7 @@ int driver_ahci_setup_memory(uint8_t portNb)
         commands->entries[i].prdtl = 8;
         commands->entries[i].commandtableBaseAddr = ahci_memory_zone_addr + (40 << 10) + portNb << 13 + (i << 8);
         commands->entries[i].commandtableBaseAddrUpper = 0;
-        memset(commands->entries[i].commandtableBaseAddr, 0, 256);
+        memset((void*)commands->entries[i].commandtableBaseAddr, 0, 256);
     }
     
     // Start command engine
