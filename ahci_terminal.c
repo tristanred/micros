@@ -47,6 +47,8 @@ void ahci_term_update()
     {
         command_latch = FALSE;
         
+        ahci_term_parse_cmd(commandLineEntry);
+        
         memset(commandLineEntry, ' ', CMD_MAXLEN);
         commandLineIndex = 0;
     }
@@ -166,14 +168,18 @@ void ahci_term_update()
         
         if(cmdredraw == TRUE)
         {
-            fbMoveCursor(0, 19);
+            fbMoveCursor(0, 20);
             fbPutString(commandLineEntry);
         }
         
     }
     else if(current_state == PORT_SCREEN)
     {
-        
+        if(cmdredraw == TRUE)
+        {
+            fbMoveCursor(21, 20);
+            fbPutString(commandLineEntry);
+        }
     }
     else if(current_state == COMMAND_SCREEN)
     {
@@ -221,6 +227,45 @@ void ahci_term_kbhook(keyevent_info* info)
         else if(info->key == ENTER)
         {
             command_latch = TRUE;
+        }
+    }
+}
+
+void ahci_term_parse_cmd(const char* cmdline)
+{
+    Debugger();
+    
+    switch(current_state)
+    {
+        case MAIN_SCREEN:
+        {
+            if(cmdline[0] == 'p')
+            {
+                char portNumberStr[3];
+                strncpy(portNumberStr, cmdline+1, 2);
+                
+                int portNumber = (uint8_t)atoi(portNumberStr);
+                
+                view_port_nb = portNumber;
+                current_state = PORT_SCREEN;
+                ahci_term_drawoverlay();
+            }
+            
+            break;
+        }
+        case PORT_SCREEN:
+        {
+            if(cmdline[0] == 'h')
+            {
+                current_state = MAIN_SCREEN;
+                ahci_term_drawoverlay();
+            }
+            
+            break;
+        }
+        case COMMAND_SCREEN:
+        {
+            break;
         }
     }
 }

@@ -40,6 +40,7 @@ void ahci_term_drawdisplay();
 void ahci_term_task();
 void ahci_term_kbhook(keyevent_info* info);
 
+void ahci_term_parse_cmd(const char* cmdline);
 
 void ahci_term_drawoverlay();
 void ahci_term_drawoverlay_main();
