@@ -20,6 +20,10 @@ enum ahci_terminal_states current_state;
 uint8_t view_port_nb;
 uint8_t view_command_nb;
 
+int commandLineIndex;
+char commandLineEntry[64];
+BOOL command_latch;
+
 // int displayWidth;
 // int displayHeight;
 // char** display;

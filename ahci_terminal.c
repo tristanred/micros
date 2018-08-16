@@ -1,6 +1,7 @@
 #include "ahci_terminal.h"
 
 #include "memory.h"
+#include "timer.h"
 
 void init_ahci_term()
 {
@@ -21,16 +22,33 @@ void init_ahci_term()
     //         display[i][k] = ' ';
     //     }
     // }
+    Debugger();
     
     RegisterKeyboardHook(&ahci_term_kbhook);
     
     current_state = MAIN_SCREEN;
     view_port_nb = 0;
     view_command_nb = 0;
+    
+    commandLineIndex = 0;
+    command_latch = FALSE;
+    memset(commandLineEntry, 0, 64);
 }
 
 void ahci_term_update()
 {
+    // Update stuff
+    if(command_latch)
+    {
+        command_latch = FALSE;
+        
+        
+        
+        memset(commandLineEntry, 0, 64);
+        commandLineIndex = 0;
+    }
+    
+    // Draw stuff
     ahci_term_drawoverlay();
     
     // Get the host regs (11 dwords)
@@ -136,6 +154,9 @@ void ahci_term_update()
             
             fbPutString(buf);
         }
+        
+        fbMoveCursor(0, 19);
+        fbPutString(commandLineEntry);
     }
     else if(current_state == PORT_SCREEN)
     {
@@ -163,7 +184,28 @@ void ahci_term_task()
 
 void ahci_term_kbhook(keyevent_info* info)
 {
-    
+    if(info->key_state == KEYDOWN)
+    {
+        Debugger();
+        if(IsPrintableCharacter(info->key) == TRUE)
+        {
+            commandLineEntry[commandLineIndex] = info->key;
+            commandLineIndex++;
+        }
+        else if(info->key == BACKSPACE)
+        {
+            commandLineIndex--;
+            commandLineEntry[commandLineIndex] = 0;
+        }
+        else if(info->key == ESCAPE)
+        {
+            memset(commandLineEntry, 0, 64);
+        }
+        else if(info->key == ENTER)
+        {
+            command_latch = TRUE;
+        }
+    }
 }
 
 void ahci_term_drawoverlay()

@@ -27,7 +27,7 @@ void keyboard_interrupt_handler(registers_t regs)
         
         scancodeValue += res;
         
-        kWriteLog("Second value %d", res);        
+        kWriteLog("Second value %d", res);
     }
     else
     {
