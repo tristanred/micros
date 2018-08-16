@@ -33,7 +33,11 @@ void init_ahci_term()
     
     commandLineIndex = 0;
     command_latch = FALSE;
-    memset(commandLineEntry, 0, 64);
+    memset(commandLineEntry, ' ', CMD_MAXLEN);
+    commandLineEntry[CMD_MAXLEN] = '\0';
+    cmdredraw = FALSE;
+    
+    previous_host = kmalloc(sizeof(struct ahci_host_regs));
 }
 
 void ahci_term_update()
@@ -43,9 +47,7 @@ void ahci_term_update()
     {
         command_latch = FALSE;
         
-        
-        
-        memset(commandLineEntry, 0, 64);
+        memset(commandLineEntry, ' ', CMD_MAXLEN);
         commandLineIndex = 0;
     }
     
@@ -59,105 +61,115 @@ void ahci_term_update()
         goto error;
     
     char buf[256];
-    
+
     if(current_state == MAIN_SCREEN)
     {
-        fbMoveCursor(17, 4);
-        sprintf(buf, "%d", host.global_host_control);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 5);
-        sprintf(buf, "%d", host.global_host_control);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 6);
-        sprintf(buf, "%d", host.interrupt_status);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 7);
-        sprintf(buf, "%d", host.ports_implemented);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 8);
-        sprintf(buf, "%d", host.version);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 9);
-        sprintf(buf, "%d", host.command_completion_coalescing_control);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 10);
-        sprintf(buf, "%d", host.command_completion_coalescing_ports);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 11);
-        sprintf(buf, "%d", host.enclosure_management_location);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 12);
-        sprintf(buf, "%d", host.enclosure_management_control);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 13);
-        sprintf(buf, "%d", host.host_capabilities_extended);
-        fbPutString(buf);
-        
-        fbMoveCursor(17, 14);
-        sprintf(buf, "%d", host.bios_handoff_control_status);
-        fbPutString(buf);
-        
-        uint8_t ports[32] = { 0 };
-        uint8_t portNb = 0;
-        res = driver_ahci_get_disk_ports(ports, &portNb);
-        if(FAILED(res))
-            goto error;
-        
-        for(uint8_t i = 0; i < portNb; i++)
+        // Check if the information changed before drawing on fb
+        if(mcmp(&host, previous_host, sizeof(struct ahci_host_regs) != 0))
         {
-            struct ahci_port_regs portregs;
-            res = driver_ahci_read_port_regs(ports[i], &portregs);
+            memcpy(previous_host, &host, sizeof(struct ahci_host_regs));
+
+            fbMoveCursor(17, 4);
+            sprintf(buf, "%d", host.global_host_control);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 5);
+            sprintf(buf, "%d", host.global_host_control);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 6);
+            sprintf(buf, "%d", host.interrupt_status);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 7);
+            sprintf(buf, "%d", host.ports_implemented);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 8);
+            sprintf(buf, "%d", host.version);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 9);
+            sprintf(buf, "%d", host.command_completion_coalescing_control);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 10);
+            sprintf(buf, "%d", host.command_completion_coalescing_ports);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 11);
+            sprintf(buf, "%d", host.enclosure_management_location);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 12);
+            sprintf(buf, "%d", host.enclosure_management_control);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 13);
+            sprintf(buf, "%d", host.host_capabilities_extended);
+            fbPutString(buf);
+            
+            fbMoveCursor(17, 14);
+            sprintf(buf, "%d", host.bios_handoff_control_status);
+            fbPutString(buf);
+            
+            uint8_t ports[32] = { 0 };
+            uint8_t portNb = 0;
+            res = driver_ahci_get_disk_ports(ports, &portNb);
             if(FAILED(res))
                 goto error;
             
-            fbMoveCursor(35, 5 + i);
-            sprintf(buf, "%d", portregs.command_and_status);
-            fbPutString(buf);
-            
-            fbMoveCursor(47, 5 + i);
-            sprintf(buf, "%d", portregs.interrupt_status);
-            fbPutString(buf);
+            for(uint8_t i = 0; i < portNb; i++)
+            {
+                struct ahci_port_regs portregs;
+                res = driver_ahci_read_port_regs(ports[i], &portregs);
+                if(FAILED(res))
+                    goto error;
+                
+                fbMoveCursor(35, 5 + i);
+                sprintf(buf, "%d", portregs.command_and_status);
+                fbPutString(buf);
+                
+                fbMoveCursor(47, 5 + i);
+                sprintf(buf, "%d", portregs.interrupt_status);
+                fbPutString(buf);
 
-            fbMoveCursor(59, 5 + i);
-            sprintf(buf, "%d", portregs.serial_ata_status);
-            fbPutString(buf);
-            
-            fbMoveCursor(72, 5 + i);
-            if(portregs.signature == 0x00000101)
-            {
-                sprintf(buf, "%s", "ATA");
+                fbMoveCursor(59, 5 + i);
+                sprintf(buf, "%d", portregs.serial_ata_status);
+                fbPutString(buf);
+                
+                fbMoveCursor(72, 5 + i);
+                if(portregs.signature == 0x00000101)
+                {
+                    sprintf(buf, "%s", "ATA");
+                }
+                else if(portregs.signature == 0xEB140101)
+                {
+                    sprintf(buf, "%s", "ATAPI");
+                }
+                else if(portregs.signature == 0xC33C0101)
+                {
+                    sprintf(buf, "%s", "SEMB");
+                }
+                else if(portregs.signature == 0x96690101)
+                {
+                    sprintf(buf, "%s", "PM");
+                }
+                else
+                {
+                    sprintf(buf, "%s", "UKNOWN");
+                }
+                
+                fbPutString(buf);
             }
-            else if(portregs.signature == 0xEB140101)
-            {
-                sprintf(buf, "%s", "ATAPI");
-            }
-            else if(portregs.signature == 0xC33C0101)
-            {
-                sprintf(buf, "%s", "SEMB");
-            }
-            else if(portregs.signature == 0x96690101)
-            {
-                sprintf(buf, "%s", "PM");
-            }
-            else
-            {
-                sprintf(buf, "%s", "UKNOWN");
-            }
-            
-            fbPutString(buf);
         }
         
-        fbMoveCursor(0, 19);
-        fbPutString(commandLineEntry);
+        if(cmdredraw == TRUE)
+        {
+            fbMoveCursor(0, 19);
+            fbPutString(commandLineEntry);
+        }
+        
     }
     else if(current_state == PORT_SCREEN)
     {
@@ -178,6 +190,7 @@ void ahci_term_task()
 {
     enable_interrupts();
     ahci_term_drawoverlay();
+    
     while(TRUE)
     {
         ahci_term_update();
@@ -189,6 +202,8 @@ void ahci_term_kbhook(keyevent_info* info)
 {
     if(info->key_state == KEYDOWN)
     {
+        cmdredraw = TRUE;
+        
         if(IsPrintableCharacter(info->key) == TRUE)
         {
             commandLineEntry[commandLineIndex] = GetAscii(info->key);
@@ -197,11 +212,11 @@ void ahci_term_kbhook(keyevent_info* info)
         else if(info->key == BACKSPACE)
         {
             commandLineIndex--;
-            commandLineEntry[commandLineIndex] = 0;
+            commandLineEntry[commandLineIndex] = ' ';
         }
         else if(info->key == ESCAPE)
         {
-            memset(commandLineEntry, 0, 64);
+            memset(commandLineEntry, ' ', CMD_MAXLEN);
         }
         else if(info->key == ENTER)
         {

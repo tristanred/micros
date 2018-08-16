@@ -20,9 +20,13 @@ enum ahci_terminal_states current_state;
 uint8_t view_port_nb;
 uint8_t view_command_nb;
 
+#define CMD_MAXLEN 30
 int commandLineIndex;
-char commandLineEntry[64];
+char commandLineEntry[CMD_MAXLEN];
 BOOL command_latch;
+BOOL cmdredraw;
+
+struct ahci_host_regs* previous_host;
 
 // int displayWidth;
 // int displayHeight;
