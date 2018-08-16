@@ -2,6 +2,7 @@
 
 #include "memory.h"
 #include "timer.h"
+#include "idt.h"
 
 void init_ahci_term()
 {
@@ -49,7 +50,7 @@ void ahci_term_update()
     }
     
     // Draw stuff
-    ahci_term_drawoverlay();
+    //ahci_term_drawoverlay();
     
     // Get the host regs (11 dwords)
     struct ahci_host_regs host;
@@ -175,6 +176,8 @@ error:
 
 void ahci_term_task()
 {
+    enable_interrupts();
+    ahci_term_drawoverlay();
     while(TRUE)
     {
         ahci_term_update();
@@ -186,10 +189,9 @@ void ahci_term_kbhook(keyevent_info* info)
 {
     if(info->key_state == KEYDOWN)
     {
-        Debugger();
         if(IsPrintableCharacter(info->key) == TRUE)
         {
-            commandLineEntry[commandLineIndex] = info->key;
+            commandLineEntry[commandLineIndex] = GetAscii(info->key);
             commandLineIndex++;
         }
         else if(info->key == BACKSPACE)

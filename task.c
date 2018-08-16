@@ -270,7 +270,7 @@ BOOL ks_should_preempt_current()
         timeout &&
         hasOtherTasks)
     {
-        Debugger();
+        //Debugger();
 
         return TRUE;
     }
