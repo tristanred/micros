@@ -27,6 +27,7 @@ BOOL command_latch;
 BOOL cmdredraw;
 
 struct ahci_host_regs* previous_host;
+struct ahci_port_regs* previous_ports;
 
 // int displayWidth;
 // int displayHeight;

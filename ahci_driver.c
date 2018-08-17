@@ -92,7 +92,7 @@ int driver_ahci_setup_memory(uint8_t portNb)
     for(int i = 0; i < 32; i++)
     {
         commands->entries[i].prdtl = 8;
-        commands->entries[i].commandtableBaseAddr = ahci_memory_zone_addr + (40 << 10) + portNb << 13 + (i << 8);
+        commands->entries[i].commandtableBaseAddr = ahci_memory_zone_addr + (40 << 10) + (portNb << 13) + (i << 8);
         commands->entries[i].commandtableBaseAddrUpper = 0;
         memset((void*)commands->entries[i].commandtableBaseAddr, 0, 256);
     }
@@ -102,6 +102,8 @@ int driver_ahci_setup_memory(uint8_t portNb)
     
     regs->command_and_status |= 0x0010;
     regs->command_and_status |= 0x0001;
+    
+    return E_OK;
 }
 
 uint8_t driver_ahci_get_default_port()
@@ -313,7 +315,7 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     
     // For now, we'll just use one PRDT
     struct ahci_port_commandtable* table = (struct ahci_port_commandtable*)command->commandtableBaseAddr;
-    table->regions[0].addr_base = buf;
+    table->regions[0].addr_base = (uint32_t)buf;
     table->regions[0].bytecount = length; // 512 bytes per sector
     table->regions[0].bytecount |= 0x80000000; // Set bit #31 to enable interrupt on completion
 
@@ -415,7 +417,7 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
     
     // For now, we'll just use one PRDT
     struct ahci_port_commandtable* table = (struct ahci_port_commandtable*)command->commandtableBaseAddr;
-    table->regions[0].addr_base = data;
+    table->regions[0].addr_base = (uint32_t)data;
     table->regions[0].bytecount = dataSize; 
     table->regions[0].bytecount |= 0x80000000; // Set bit #31 to enable interrupt on completion
 

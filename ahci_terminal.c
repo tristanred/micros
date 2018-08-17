@@ -23,7 +23,7 @@ void init_ahci_term()
     //         display[i][k] = ' ';
     //     }
     // }
-    Debugger();
+    
     
     RegisterKeyboardHook(&ahci_term_kbhook);
     
@@ -38,6 +38,7 @@ void init_ahci_term()
     cmdredraw = FALSE;
     
     previous_host = kmalloc(sizeof(struct ahci_host_regs));
+    previous_ports = kmalloc(sizeof(struct ahci_port_regs));
 }
 
 void ahci_term_update()
@@ -67,7 +68,7 @@ void ahci_term_update()
     if(current_state == MAIN_SCREEN)
     {
         // Check if the information changed before drawing on fb
-        if(mcmp(&host, previous_host, sizeof(struct ahci_host_regs) != 0))
+        if(mcmp((uint8_t*)&host, (uint8_t*)previous_host, sizeof(struct ahci_host_regs) != 0))
         {
             memcpy(previous_host, &host, sizeof(struct ahci_host_regs));
 
@@ -175,6 +176,83 @@ void ahci_term_update()
     }
     else if(current_state == PORT_SCREEN)
     {
+        Debugger();
+        struct ahci_port_regs pr;
+        res = driver_ahci_read_port_regs(view_port_nb, &pr);
+        if(FAILED(res))
+            goto error;
+        
+        if(mcmp((uint8_t*)&pr, (uint8_t*)previous_ports, sizeof(struct ahci_port_regs)) != 0)
+        {
+            memcpy(previous_ports, &pr, sizeof(struct ahci_port_regs));
+            
+            fbMoveCursor(9, 4);
+            sprintf(buf, "%d", pr.command_list_base_addr_lower);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 5);
+            sprintf(buf, "%d", pr.command_list_base_addr_upper);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 6);
+            sprintf(buf, "%d", pr.fis_base_addr_lower);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 7);
+            sprintf(buf, "%d", pr.fis_base_addr_upper);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 8);
+            sprintf(buf, "%d", pr.interrupt_status);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 9);
+            sprintf(buf, "%d", pr.interrupt_enable);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 10);
+            sprintf(buf, "%d", pr.command_and_status);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 11);
+            sprintf(buf, "%d", pr.task_file_data);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 12);
+            sprintf(buf, "%d", pr.signature);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 13);
+            sprintf(buf, "%d", pr.serial_ata_status);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 14);
+            sprintf(buf, "%d", pr.serial_ata_control);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 15);
+            sprintf(buf, "%d", pr.serial_ata_error);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 16);
+            sprintf(buf, "%d", pr.serial_ata_active);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 17);
+            sprintf(buf, "%d", pr.serial_command_issue);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 18);
+            sprintf(buf, "%d", pr.serial_ata_notification);
+            fbPutString(buf);
+
+            fbMoveCursor(9, 19);
+            sprintf(buf, "%d", pr.fis_based_switching_control);
+            fbPutString(buf);
+
+            // Get the list of active commands
+        }
+        
         if(cmdredraw == TRUE)
         {
             fbMoveCursor(21, 20);
@@ -232,8 +310,6 @@ void ahci_term_kbhook(keyevent_info* info)
 
 void ahci_term_parse_cmd(const char* cmdline)
 {
-    Debugger();
-    
     switch(current_state)
     {
         case MAIN_SCREEN:
@@ -248,6 +324,9 @@ void ahci_term_parse_cmd(const char* cmdline)
                 view_port_nb = portNumber;
                 current_state = PORT_SCREEN;
                 ahci_term_drawoverlay();
+                
+                // To make sure it changes and causes a redraw
+                memset(previous_ports, 0, sizeof(struct ahci_port_regs));
             }
             
             break;
@@ -257,6 +336,7 @@ void ahci_term_parse_cmd(const char* cmdline)
             if(cmdline[0] == 'h')
             {
                 current_state = MAIN_SCREEN;
+                memset(previous_host, 0, sizeof(struct ahci_host_regs));
                 ahci_term_drawoverlay();
             }
             
