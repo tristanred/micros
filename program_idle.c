@@ -5,11 +5,9 @@
 
 int program_idle_main()
 {
-    enable_interrupts();
-    
     while(TRUE)
     {
-        
+        sleep(1);
     }
     
     return 0;

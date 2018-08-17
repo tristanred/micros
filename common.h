@@ -15,3 +15,4 @@
 #include "flagutils.h"
 #include "array_utils.h"
 #include "status.h"
+#include "timer.h"

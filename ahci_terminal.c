@@ -194,7 +194,6 @@ error:
 
 void ahci_term_task()
 {
-    enable_interrupts();
     ahci_term_drawoverlay();
     
     while(TRUE)

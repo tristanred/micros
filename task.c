@@ -188,7 +188,7 @@ struct task_t* ks_create_thread(uint32_t entrypoint)
     newTask->regs.edi = 8;
     newTask->regs.eip = 0;
     newTask->regs.cs = 10;
-    newTask->regs.flags = 0;
+    newTask->regs.flags = 0x200; // Enable the IF flag
 
     // Add the thread to the scheduler list.
     vector_add(sched->ts->list, newTask);

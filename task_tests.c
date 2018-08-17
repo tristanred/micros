@@ -2,8 +2,6 @@
 
 void task1()
 {
-    enable_interrupts();
-    
     int incr = 0;
     while(TRUE)
     {
@@ -20,8 +18,6 @@ void task1()
 
 void task2()
 {
-    enable_interrupts();
-    
     int incr = 0;
     while(TRUE)
     {
