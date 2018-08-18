@@ -323,6 +323,11 @@ int driver_ahci_get_disk_ports(uint8_t* ports, uint8_t* amount);
  */
 int driver_ahci_print_ports_info();
 
+/* Drive Operation */
+int driver_ahci_reset_controller();
+int driver_ahci_reset_port(uint8_t portNb);
+int driver_ahci_reset_all_ports();
+
 /* IO Procedures */
 int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, uint32_t length, uint8_t* buf);
 

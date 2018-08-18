@@ -38,7 +38,7 @@ int driver_ahci_find_disks(struct pci_controlset* pcs)
             // report error.
             return E_DEVICE_INVALID;
         }
-        
+
         ahci_driver->hba_device = dev;
         ahci_driver->abar = dev->barAddress5;
 
@@ -63,10 +63,10 @@ int driver_ahci_setup_memory(uint8_t portNb)
 {
     // TODO : Find area of memory suitable for ahci data.
     uint32_t ahci_memory_zone_addr = 1024*1024*10;
-    
+
     struct ahci_port_regs* regs;
     int res = driver_ahci_get_port_regs(portNb, &regs);
-    
+
     // Stop command engine
     regs->command_and_status &= ~0x0001;
     while(TRUE)
@@ -79,15 +79,15 @@ int driver_ahci_setup_memory(uint8_t portNb)
         break;
     }
     regs->command_and_status &= ~0x0010;
-    
+
     regs->command_list_base_addr_lower = ahci_memory_zone_addr + (portNb << 10);
     regs->command_list_base_addr_upper = 0;
     memset((void*)regs->command_list_base_addr_lower, 0, 1024);
-    
+
     regs->fis_base_addr_lower = ahci_memory_zone_addr + (32<<10) + (portNb << 8);
     regs->fis_base_addr_upper = 0;
     memset((void*)regs->fis_base_addr_lower, 0, 256);
-    
+
     struct ahci_port_commandlist* commands = (struct ahci_port_commandlist*)regs->command_list_base_addr_lower;
     for(int i = 0; i < 32; i++)
     {
@@ -96,13 +96,13 @@ int driver_ahci_setup_memory(uint8_t portNb)
         commands->entries[i].commandtableBaseAddrUpper = 0;
         memset((void*)commands->entries[i].commandtableBaseAddr, 0, 256);
     }
-    
+
     // Start command engine
     while(AHCI_PxCMD_CR(regs->command_and_status));
-    
+
     regs->command_and_status |= 0x0010;
     regs->command_and_status |= 0x0001;
-    
+
     return E_OK;
 }
 
@@ -114,7 +114,7 @@ uint8_t driver_ahci_get_default_port()
         {
             struct ahci_port_regs portInfo;
             int res = driver_ahci_read_port_regs(i, &portInfo);
-            
+
             if(portInfo.signature == AHCI_SIG_ATA)
             {
                 return ahci_driver->disk_ports[i];
@@ -168,16 +168,16 @@ int driver_ahci_read_port_commandtable(uint8_t portNb, int commandNb, struct ahc
 int driver_ahci_get_GHC_regs(struct ahci_host_regs** regs)
 {
     *regs = (struct ahci_host_regs*)ahci_driver->abar;
-    
+
     return E_OK;
 }
 
 int driver_ahci_get_port_regs(uint8_t portNb, struct ahci_port_regs** regs)
 {
     uint32_t portAddress = ahci_driver->abar + 0x100 + (portNb * 0x80);
-    
+
     *regs = (struct ahci_port_regs*)portAddress;
-    
+
     return E_OK;
 }
 
@@ -188,9 +188,9 @@ int driver_ahci_get_port_commandlist(uint8_t portNb, struct ahci_port_commandlis
     struct ahci_port_regs* port = (struct ahci_port_regs*)portAddress;
 
     uint32_t cmdlistaddr = port->command_list_base_addr_lower;
-    
+
     *data = (struct ahci_port_commandlist*)cmdlistaddr;
-    
+
     return E_OK;
 }
 
@@ -284,11 +284,113 @@ int driver_ahci_print_ports_info()
     return E_OK;
 }
 
+int driver_ahci_reset_controller()
+{
+    struct ahci_host_regs* host;
+    int res = driver_ahci_get_GHC_regs(&host);
+
+    if(SUCCESS(res))
+    {
+        // Set the reset bit to 1
+        host->global_host_control |= 0x1;
+
+        // Poll the same bit until it goes back to 0
+        //
+        int loopCount = 0;
+        while(TRUE)
+        {
+            if(loopCount > 1000)
+            {
+                // HBA has max 1 second to reset
+                return E_IO_TIMEOUT;
+            }
+
+            // Bit set to 0 when finished.
+            if(FLAG(host->global_host_control, 0x1) == FALSE )
+            {
+                break;
+            }
+            else
+            {
+                sleep(1);
+            }
+
+            loopCount++;
+        }
+
+        // TODO : Check if we support Staggered Spin Up
+        // That means we have to restart each disk one by
+        // one ourselves.
+
+        return E_OK;
+    }
+
+    return res;
+}
+
+int driver_ahci_reset_port(uint8_t portNb)
+{
+    struct ahci_port_regs* regs;
+    int res = driver_ahci_get_port_regs(portNb, &regs);
+    if(SUCCESS(res))
+    {
+        regs->command_and_status &= ~0x1;
+
+        int loopCount = 0;
+        while(TRUE)
+        {
+            if(loopCount > 1000)
+            {
+                return E_IO_TIMEOUT;
+            }
+
+            if(AHCI_PxCMD_ST(regs->command_and_status))
+            {
+                break;
+            }
+            else
+            {
+                sleep(1);
+            }
+
+            loopCount++;
+        }
+
+        return E_OK;
+    }
+
+    return res;
+}
+
+int driver_ahci_reset_all_ports()
+{
+    uint8_t portCount;
+    uint8_t* enabledPorts;
+    int res = driver_ahci_get_disk_ports(enabledPorts, &portCount);
+    if(SUCCESS(res))
+    {
+        for(uint8_t i = 0; i < portCount; i++)
+        {
+            res = driver_ahci_reset_port(enabledPorts[i]);
+
+            if(FAILED(res))
+            {
+                kWriteLog("Port %d failed to reset", i);
+                return res;
+            }
+        }
+
+        return E_OK;
+    }
+
+    return E_DEVICE_ERROR;
+}
+
 int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, uint32_t length, uint8_t* buf)
 {
     uint8_t cmdSlot = 0;
     int res = driver_ahci_get_next_cmdslot(port, &cmdSlot);
-    
+
     if(res == E_IO_FULL)
     {
         // Wait a bit for IO to commands to free up
@@ -312,7 +414,7 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     // Need to calculate how many PRDT entries we will need
     // Need to know how much data can a PRDT contain.
     command->prdtl = 1; // Amount of PRDT entries in the table
-    
+
     // For now, we'll just use one PRDT
     struct ahci_port_commandtable* table = (struct ahci_port_commandtable*)command->commandtableBaseAddr;
     table->regions[0].addr_base = (uint32_t)buf;
@@ -327,17 +429,17 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     cmd_fis->commandreg = 1;
     cmd_fis->command = ATA_CMD_READ_SECTORS; // ATA_CMD_READ_DMA_EX
     cmd_fis->device = 1<<6; // LBA Mode
-    
+
     cmd_fis->lba_1 = (uint8_t)addr_low;
     cmd_fis->lba_2 = (uint8_t)(addr_low >> 8);
     cmd_fis->lba_3 = (uint8_t)(addr_low >> 16);
     cmd_fis->lba_4 = (uint8_t)(addr_low >> 24);
     cmd_fis->lba_5 = (uint8_t)(addr_high);
     cmd_fis->lba_6 = (uint8_t)(addr_high >> 8);
-    
+
     cmd_fis->count_low = length && 0xFF;
     cmd_fis->count_high = (length >> 8) & 0xFF;
-    
+
     // Wait until drive is ready for requests
     int waitloop = 0;
     BOOL waiting = TRUE;
@@ -353,18 +455,18 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
         {
             break;
         }
-        
+
         if(waitloop > 10000)
         {
             Debugger();
             kWriteLog("IO TIMEOUT");
-            
+
             return E_IO_TIMEOUT;
         }
     }
-    
+
     regs->serial_command_issue = 1 << port; // Start the IO operation
-    
+
     waitloop = 0;
     waiting = TRUE;
     while(waiting)
@@ -388,7 +490,7 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
 {
     uint8_t cmdSlot = 0;
     int res = driver_ahci_get_next_cmdslot(port, &cmdSlot);
-    
+
     if(res == E_IO_FULL)
     {
         // Wait a bit for IO to commands to free up
@@ -412,13 +514,13 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
     // Need to calculate how many PRDT entries we will need
     // Need to know how much data can a PRDT contain.
     command->prdtl = 1; // Amount of PRDT entries in the table
-    
+
     size_t dataSize = sizeof(struct ata_identify_device);
-    
+
     // For now, we'll just use one PRDT
     struct ahci_port_commandtable* table = (struct ahci_port_commandtable*)command->commandtableBaseAddr;
     table->regions[0].addr_base = (uint32_t)data;
-    table->regions[0].bytecount = dataSize; 
+    table->regions[0].bytecount = dataSize;
     table->regions[0].bytecount |= 0x80000000; // Set bit #31 to enable interrupt on completion
 
     // TODO : Fill the table PRDT regions
@@ -429,7 +531,7 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
     cmd_fis->commandreg = 1;
     cmd_fis->command = ATA_CMD_IDENTIFY_DEVICE; // ATA_CMD_READ_DMA_EX
     cmd_fis->device = 1<<6; // LBA Mode
-    
+
     cmd_fis->lba_1 = 0;
     cmd_fis->lba_2 = 0;
     cmd_fis->lba_3 = 0;
@@ -439,7 +541,7 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
 
     cmd_fis->count_low = dataSize && 0xFF;
     cmd_fis->count_high = (dataSize >> 8) & 0xFF;
-    
+
     // Wait until drive is ready for requests
     int waitloop = 0;
     BOOL waiting = TRUE;
@@ -455,18 +557,18 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
         {
             break;
         }
-        
+
         if(waitloop > 10000)
         {
             Debugger();
             kWriteLog("IO TIMEOUT");
-            
+
             return E_IO_TIMEOUT;
         }
     }
-    
+
     regs->serial_command_issue = 1 << port; // Start the IO operation
-    
+
     waitloop = 0;
     waiting = TRUE;
     while(waiting)
@@ -499,7 +601,7 @@ int driver_ahci_make_command_header(uint8_t portNb, uint8_t cmdslot, struct ahci
 int driver_ahci_make_command_fis(struct ahci_port_commandtable* cmdtable, struct ahci_fis_reg_H2D** fis)
 {
     *fis = &cmdtable->cmd_fis;
-    
+
     return E_OK;
 }
 
