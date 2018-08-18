@@ -344,7 +344,8 @@ int driver_ahci_reset_port(uint8_t portNb)
                 return E_IO_TIMEOUT;
             }
 
-            if(AHCI_PxCMD_ST(regs->command_and_status))
+            // Wait until the port stops running the current command, if any.
+            if(regs->serial_command_issue == 0)
             {
                 break;
             }

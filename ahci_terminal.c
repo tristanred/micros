@@ -176,7 +176,6 @@ void ahci_term_update()
     }
     else if(current_state == PORT_SCREEN)
     {
-        Debugger();
         struct ahci_port_regs pr;
         res = driver_ahci_read_port_regs(view_port_nb, &pr);
         if(FAILED(res))
@@ -328,6 +327,18 @@ void ahci_term_parse_cmd(const char* cmdline)
                 // To make sure it changes and causes a redraw
                 memset(previous_ports, 0, sizeof(struct ahci_port_regs));
             }
+            else if(cmdline[0] == 'r')
+            {
+                int res = driver_ahci_reset_controller();
+                if(SUCCESS(res))
+                {
+                    kWriteLog("HBA Reset success !");
+                }
+                else
+                {
+                    kWriteLog("HBA Reset failed : %d", res);
+                }
+            }
             
             break;
         }
@@ -338,6 +349,18 @@ void ahci_term_parse_cmd(const char* cmdline)
                 current_state = MAIN_SCREEN;
                 memset(previous_host, 0, sizeof(struct ahci_host_regs));
                 ahci_term_drawoverlay();
+            }
+            else if(cmdline[0] == 'r')
+            {
+                int res = driver_ahci_reset_port(view_port_nb);
+                if(SUCCESS(res))
+                {
+                    kWriteLog("Port %d Reset success !", view_port_nb);
+                }
+                else
+                {
+                    kWriteLog("Port %d Reset failed : %d", view_port_nb, res);
+                }
             }
             
             break;
