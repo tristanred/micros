@@ -362,6 +362,19 @@ void ahci_term_parse_cmd(const char* cmdline)
                     kWriteLog("Port %d Reset failed : %d", view_port_nb, res);
                 }
             }
+            else if(cmdline[0] == 'w')
+            {
+                Debugger();
+                uint8_t mybuf[4096];
+                memset(mybuf, 1, 4096);
+                int res = driver_ahci_read_data(view_port_nb, 0, 0, 4096, mybuf);
+                
+                struct ata_identify_device ident;
+                memset(&ident, 0, sizeof(struct ata_identify_device));
+                res = driver_ahci_identify(view_port_nb, &ident);
+                
+                int i = 0;
+            }
             
             break;
         }

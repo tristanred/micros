@@ -401,7 +401,7 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
         return res;
     }
 
-    Debugger();
+    //Debugger();
     struct ahci_port_command_header* command = NULL;
     memset(command, 0, sizeof(struct ahci_port_command_header));
     res = driver_ahci_make_command_header(port, cmdSlot, &command);
@@ -472,6 +472,11 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
     waiting = TRUE;
     while(waiting)
     {
+        if(waitloop > 1000)
+        {
+            return E_IO_TIMEOUT;
+        }
+        
         if((regs->serial_command_issue & (1 << port)) == 0)
         {
             break; // Command has cleared !
@@ -482,6 +487,10 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
             kWriteLog("IO Error");
             return E_IO_ERROR;
         }
+        
+        sleep(1);
+        
+        waitloop++;
     }
 
     return E_OK;
@@ -501,7 +510,7 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
         return res;
     }
 
-    Debugger();
+    //Debugger();
     struct ahci_port_command_header* command = NULL;
     memset(command, 0, sizeof(struct ahci_port_command_header));
     res = driver_ahci_make_command_header(port, cmdSlot, &command);
@@ -574,6 +583,11 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
     waiting = TRUE;
     while(waiting)
     {
+        if(waitloop > 1000)
+        {
+            return E_IO_TIMEOUT;
+        }
+        
         if((regs->serial_command_issue & (1 << port)) == 0)
         {
             break; // Command has cleared !
@@ -584,6 +598,10 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
             kWriteLog("IO Error");
             return E_IO_ERROR;
         }
+        
+        sleep(1);
+        
+        waitloop++;
     }
 
     return E_OK;
