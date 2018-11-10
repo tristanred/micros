@@ -233,9 +233,6 @@ struct ahci_disk_info
  *
  */
 
-// If defined, the device register read functions will return a copy of the
-// data. Otherwise the structure returned by parameter will point to the
-// memory mapped registers.
 #define AHCI_INVALID_PORT 255
 
 struct pci_device;

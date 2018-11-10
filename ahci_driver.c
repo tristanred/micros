@@ -408,7 +408,6 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
         return res;
     }
 
-    //Debugger();
     struct ahci_port_command_header* command = NULL;
     memset(command, 0, sizeof(struct ahci_port_command_header));
     res = driver_ahci_make_command_header(port, cmdSlot, &command);
@@ -466,7 +465,6 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
 
         if(waitloop > 10000)
         {
-            Debugger();
             kWriteLog("IO TIMEOUT");
 
             return E_IO_TIMEOUT;
@@ -490,7 +488,6 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
         }
         if(regs->interrupt_status & 0x40000000)
         {
-            Debugger();
             kWriteLog("IO Error");
             return E_IO_ERROR;
         }
@@ -517,7 +514,6 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
         return res;
     }
 
-    //Debugger();
     struct ahci_port_command_header* command = NULL;
     memset(command, 0, sizeof(struct ahci_port_command_header));
     res = driver_ahci_make_command_header(port, cmdSlot, &command);
@@ -577,7 +573,6 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
 
         if(waitloop > 10000)
         {
-            Debugger();
             kWriteLog("IO TIMEOUT");
 
             return E_IO_TIMEOUT;
@@ -601,7 +596,6 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
         }
         if(regs->interrupt_status & 0x40000000)
         {
-            Debugger();
             kWriteLog("IO Error");
             return E_IO_ERROR;
         }
@@ -626,7 +620,7 @@ int driver_ahci_make_command_header(uint8_t portNb, uint8_t cmdslot, struct ahci
 
 int driver_ahci_make_command_fis(struct ahci_port_commandtable* cmdtable, struct ahci_fis_reg_H2D** fis)
 {
-    *fis = &cmdtable->cmd_fis;
+    *fis = (struct ahci_fis_reg_H2D*)&cmdtable->cmd_fis;
 
     return E_OK;
 }

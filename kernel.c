@@ -160,13 +160,13 @@ void kernel_main(multiboot_info_t* arg1)
     //      TEST ZONE
     init_module_ata_driver(kernel_info);
 
-    struct diskman* dm = create_diskman();
+    //struct diskman* dm = create_diskman();
 
     kBootProgress("PCI SCAN START\n");
     int total = 0;
     struct pci_controlset* set = get_devices_list(&total);
 
-    struct pci_device* dev = NULL;
+    //struct pci_device* dev = NULL;
     for(int i = 0; i < total; i++)
     {
         kWriteLog("");
@@ -178,13 +178,16 @@ void kernel_main(multiboot_info_t* arg1)
     pa_disable_paging();
 
     kBootProgress("Starting AHCI tests\n");
-    
+
     init_module_ahci_driver(kernel_info);
     int res = driver_ahci_find_disks(set);
-    
+
+    if(FAILED(res))
+        kWriteLog("AHCI Find disk Failed!");
+
     init_ahci_term();
-    ks_create_thread(&ahci_term_task);
-    
+    ks_create_thread((uint32_t)&ahci_term_task);
+
     // if(SUCCESS(res))
     // {
     //     kBootProgress("Found a valid disk\n");
@@ -193,7 +196,7 @@ void kernel_main(multiboot_info_t* arg1)
 
     //     uint8_t readBuf[4096];
     //     memset(readBuf, 1, 4096);
-        
+
     //     struct ata_identify_device ident;
     //     memset(&ident, 0, sizeof(struct ata_identify_device));
     //     res = driver_ahci_identify(driver_ahci_get_default_port(), &ident);
