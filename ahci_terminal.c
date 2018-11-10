@@ -79,7 +79,7 @@ void ahci_term_update()
             //memcpy(previous_host, &host, sizeof(struct ahci_host_regs));
 
             fbMoveCursor(17, 4);
-            sprintf(buf, "%d", host.global_host_control);
+            sprintf(buf, "%d", host.host_capabilities);
             fbPutString(buf);
 
             fbMoveCursor(17, 5);
