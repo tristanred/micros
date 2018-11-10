@@ -16,11 +16,35 @@ Main screen
 12| |Host Cap Ext = 4294967295| | 8 = 4294967295  4294967295  4294967295          ||12
 13| |Bios Handoff = 4294967295| | 9 = 4294967295  4294967295  4294967295          ||13
 14| +-------------------------+ +-------------------------------------------------+|14
-15|                                                                                |15
-16|                                                                                |16
-17|                                                                                |17
-18|                                                                                |18
-19|                                                                                |19
+15|   CMD = ################################################################## |15
+16|   (1) Host Cap     (5) Version       (9) EM  CTL      (r) Reset HBA            |16
+17|   (2) GBL Host Ctl (6) CCC  CTL     (10) Host Cap Ext                          |17
+18|   (3) Interrupt St (7) CCC Ports    (11) Bios Handoff                          |18
+19|   (4) Ports Impl   (8) EM  Location (p0-9) Goto Port                           |19
+  +--------------------------------------------------------------------------------+
+
+Host registers details
+  +--------------------------------------------------------------------------------+
+00| +-----------------------+                                                      |00
+01| | Host Cap = 4294967295 |                                                      |01
+02| +-----------------------+                                                      |02
+03|  31   (S64A) Sup 64bit Addr        = 0     06   (EMS) Encl Manage Sup  = 0     |03
+04|  30   (SNCQ) Sup Native Cmd Que    = 0     05   (SXS) Sup Extern SATA  = 0     |04
+05|  29  (SSNTF) Sup SNotif Reg        = 0    00:04 (NP)  NB Ports         = 32    |05
+06|  28   (SMPS) Sup Mech Pres Swch    = 0                                         |06
+07|  27   (SSS)  Sup Stagger Spinup    = 0                                         |07
+08|  26   (SALP) Sup Aggr Link PW Man  = 0                                         |08
+09|  25   (SAL)  Sup Activity LED      = 0                                         |09
+10|  24   (SCLO) Sup Cmd List Override = 0                                         |10
+11| 23:20 (ISS)  if Speed Support      = 3                                         |11
+12|  18   (SAM)  Sup AHCI only         = 0                                         |12
+13|  17   (SPM)  Sup Port Multiplier   = 0                                         |13
+14|  16   (FBSS) FIS switch Supp       = 0                                         |14
+15|  15   (PMD)  PIO Mult DRQ blok     = 0                                         |15
+16|  14   (SSC)  Slumber State Capable = 0  CMD = ################################ |16
+17|  13   (PSC)  Partial State Capable = 0                                         |17
+18| 12:08 (NCS)  Nb Cmd Slot           = 32                                        |18
+19|  07   (CCCS) Cmd Cmpl Coales       = 0                                         |19
   +--------------------------------------------------------------------------------+
 
 
@@ -47,4 +71,3 @@ Port screen (can only show info of 10 commands at a time)
 18| |FBS  = 4294967295| +-----------------------------+                            |18
 19| +-----------------+                                                            |19
   +--------------------------------------------------------------------------------+
-

@@ -48,7 +48,7 @@
 #define AHCI_CAP_PMD(x)     (x & 1<<15) // #15 PIO Multiple DRQ Block
 #define AHCI_CAP_SSC(x)     (x & 1<<14) // #14 Slumber State Capable
 #define AHCI_CAP_PSC(x)     (x & 1<<13) // #13 Partial State Capable
-#define AHCI_CAP_NCS(x)     (x & 1<<12) // #12:08 Number of Command Slots
+#define AHCI_CAP_NCS(x)     (x & 0x1F00) // #12:08 Number of Command Slots
 #define AHCI_CAP_CCCS(x)    (x & 1<<7)  // #07 Command Completion Coalescing Supported
 #define AHCI_CAP_EMS(x)     (x & 1<<6)  // #06 Enclosure Management Supported
 #define AHCI_CAP_SXS(x)     (x & 1<<5)  // #05 Supports External SATA

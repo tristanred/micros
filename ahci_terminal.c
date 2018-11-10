@@ -75,107 +75,25 @@ void ahci_term_update()
         // Check if the information changed before drawing on fb
         if(ahci_term_check_main_redraw() == TRUE)
         {
-            //Debugger();
-            //memcpy(previous_host, &host, sizeof(struct ahci_host_regs));
-
-            fbMoveCursor(17, 4);
-            sprintf(buf, "%d", host.host_capabilities);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 5);
-            sprintf(buf, "%d", host.global_host_control);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 6);
-            sprintf(buf, "%d", host.interrupt_status);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 7);
-            sprintf(buf, "%d", host.ports_implemented);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 8);
-            sprintf(buf, "%d", host.version);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 9);
-            sprintf(buf, "%d", host.command_completion_coalescing_control);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 10);
-            sprintf(buf, "%d", host.command_completion_coalescing_ports);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 11);
-            sprintf(buf, "%d", host.enclosure_management_location);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 12);
-            sprintf(buf, "%d", host.enclosure_management_control);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 13);
-            sprintf(buf, "%d", host.host_capabilities_extended);
-            fbPutString(buf);
-
-            fbMoveCursor(17, 14);
-            sprintf(buf, "%d", host.bios_handoff_control_status);
-            fbPutString(buf);
-
-            uint8_t ports[32] = { 0 };
-            uint8_t portNb = 0;
-            res = driver_ahci_get_disk_ports(ports, &portNb);
-            if(FAILED(res))
-                goto error;
-
-            for(uint8_t i = 0; i < portNb; i++)
-            {
-                struct ahci_port_regs portregs;
-                res = driver_ahci_read_port_regs(ports[i], &portregs);
-                if(FAILED(res))
-                    goto error;
-
-                fbMoveCursor(35, 5 + i);
-                sprintf(buf, "%d", portregs.command_and_status);
-                fbPutString(buf);
-
-                fbMoveCursor(47, 5 + i);
-                sprintf(buf, "%d", portregs.interrupt_status);
-                fbPutString(buf);
-
-                fbMoveCursor(59, 5 + i);
-                sprintf(buf, "%d", portregs.serial_ata_status);
-                fbPutString(buf);
-
-                fbMoveCursor(72, 5 + i);
-                if(portregs.signature == 0x00000101)
-                {
-                    sprintf(buf, "%s", "ATA");
-                }
-                else if(portregs.signature == 0xEB140101)
-                {
-                    sprintf(buf, "%s", "ATAPI");
-                }
-                else if(portregs.signature == 0xC33C0101)
-                {
-                    sprintf(buf, "%s", "SEMB");
-                }
-                else if(portregs.signature == 0x96690101)
-                {
-                    sprintf(buf, "%s", "PM");
-                }
-                else
-                {
-                    sprintf(buf, "%s", "UKNOWN");
-                }
-
-                fbPutString(buf);
-            }
+            ahci_term_draw_values_main(&host);
         }
 
         if(cmdredraw == TRUE)
         {
-            fbMoveCursor(0, 20);
+            fbMoveCursor(9, 16);
+            fbPutString(commandLineEntry);
+        }
+    }
+    else if(current_state == MAIN_SCREEN_CAP)
+    {
+        if(ahci_term_check_main_cap_redraw() == TRUE)
+        {
+            ahci_term_draw_values_main_host_cap(host.host_capabilities);
+        }
+
+        if(cmdredraw == TRUE)
+        {
+            fbMoveCursor(47, 17);
             fbPutString(commandLineEntry);
         }
     }
@@ -345,6 +263,24 @@ void ahci_term_parse_cmd(const char* cmdline)
                     kWriteLog("HBA Reset failed : %d", res);
                 }
             }
+            else if(cmdline[0] == '1')
+            {
+                Debugger();
+
+                current_state = MAIN_SCREEN_CAP;
+                ahci_term_drawoverlay();
+            }
+
+            break;
+        }
+        case MAIN_SCREEN_CAP:
+        {
+            if(cmdline[0] == 'h')
+            {
+                current_state = MAIN_SCREEN;
+                memset(previous_host, 0, sizeof(struct ahci_host_regs));
+                ahci_term_drawoverlay();
+            }
 
             break;
         }
@@ -401,6 +337,11 @@ void ahci_term_drawoverlay()
             ahci_term_drawoverlay_main();
             break;
         }
+        case MAIN_SCREEN_CAP:
+        {
+            ahci_term_drawoverlay_main_host_cap();
+            break;
+        }
         case PORT_SCREEN:
         {
             ahci_term_drawoverlay_port();
@@ -432,11 +373,277 @@ void ahci_term_drawoverlay_main()
     fbPutString(" |Host Cap Ext =           | | 8 =                                             |");
     fbPutString(" |Bios Handoff =           | | 9 =                                             |");
     fbPutString(" +-------------------------+ +-------------------------------------------------+");
-    fbPutString("                                                                                ");
-    fbPutString("                                                                                ");
-    fbPutString("                                                                                ");
-    fbPutString("                                                                                ");
-    fbPutString("                                                                                ");
+    fbPutString("   CMD =                                                                        ");
+    fbPutString("   (1) Host Cap     (5) Version       (9) EM  CTL      (r) Reset HBA            ");
+    fbPutString("   (2) GBL Host Ctl (6) CCC  CTL     (10) Host Cap Ext                          ");
+    fbPutString("   (3) Interrupt St (7) CCC Ports    (11) Bios Handoff                          ");
+    fbPutString("   (4) Ports Impl   (8) EM  Location (p0-9) Goto Port                           ");
+}
+
+BOOL ahci_term_check_main_redraw()
+{
+    BOOL should_redraw = FALSE;
+
+    // Read the host regs
+    struct ahci_host_regs current_host_regs;
+    int res = driver_ahci_read_GHC_regs(&current_host_regs);
+    if(FAILED(res))
+        return FALSE;
+
+    if(mcmp((uint8_t*)&current_host_regs, (uint8_t*)previous_host, sizeof(struct ahci_host_regs)) != 0)
+    {
+        memcpy(previous_host, &current_host_regs, sizeof(struct ahci_host_regs));
+
+        should_redraw = TRUE;
+    }
+
+    struct ahci_port_regs current_port_regs[MAIN_SHOWPORTS_NB];
+    for(int i = 0; i < MAIN_SHOWPORTS_NB; i++)
+    {
+        res = driver_ahci_read_port_regs(i, &current_port_regs[i]);
+
+        if(FAILED(res))
+            return FALSE;
+
+        if(mcmp((uint8_t*)&current_port_regs[i], (uint8_t*)main_previous_ports[i], sizeof(struct ahci_port_regs)) != 0)
+        {
+            memcpy(main_previous_ports[i], &current_port_regs[i], sizeof(struct ahci_port_regs));
+
+            should_redraw = TRUE;
+        }
+    }
+
+    return should_redraw;
+}
+
+void ahci_term_draw_values_main(struct ahci_host_regs* regs)
+{
+    char buf[256];
+
+    fbMoveCursor(17, 4);
+    sprintf(buf, "%d", regs->host_capabilities);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 5);
+    sprintf(buf, "%d", regs->global_host_control);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 6);
+    sprintf(buf, "%d", regs->interrupt_status);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 7);
+    sprintf(buf, "%d", regs->ports_implemented);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 8);
+    sprintf(buf, "%d", regs->version);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 9);
+    sprintf(buf, "%d", regs->command_completion_coalescing_control);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 10);
+    sprintf(buf, "%d", regs->command_completion_coalescing_ports);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 11);
+    sprintf(buf, "%d", regs->enclosure_management_location);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 12);
+    sprintf(buf, "%d", regs->enclosure_management_control);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 13);
+    sprintf(buf, "%d", regs->host_capabilities_extended);
+    fbPutString(buf);
+
+    fbMoveCursor(17, 14);
+    sprintf(buf, "%d", regs->bios_handoff_control_status);
+    fbPutString(buf);
+
+    uint8_t ports[32] = { 0 };
+    uint8_t portNb = 0;
+    int res = driver_ahci_get_disk_ports(ports, &portNb);
+    if(FAILED(res))
+        ASSERT(FALSE, "Oh shit");
+
+    for(uint8_t i = 0; i < portNb; i++)
+    {
+        struct ahci_port_regs portregs;
+        res = driver_ahci_read_port_regs(ports[i], &portregs);
+        if(FAILED(res))
+            ASSERT(FALSE, "Oh shit");
+
+        fbMoveCursor(35, 5 + i);
+        sprintf(buf, "%d", portregs.command_and_status);
+        fbPutString(buf);
+
+        fbMoveCursor(47, 5 + i);
+        sprintf(buf, "%d", portregs.interrupt_status);
+        fbPutString(buf);
+
+        fbMoveCursor(59, 5 + i);
+        sprintf(buf, "%d", portregs.serial_ata_status);
+        fbPutString(buf);
+
+        fbMoveCursor(72, 5 + i);
+        if(portregs.signature == 0x00000101)
+        {
+            sprintf(buf, "%s", "ATA");
+        }
+        else if(portregs.signature == 0xEB140101)
+        {
+            sprintf(buf, "%s", "ATAPI");
+        }
+        else if(portregs.signature == 0xC33C0101)
+        {
+            sprintf(buf, "%s", "SEMB");
+        }
+        else if(portregs.signature == 0x96690101)
+        {
+            sprintf(buf, "%s", "PM");
+        }
+        else
+        {
+            sprintf(buf, "%s", "UKNOWN");
+        }
+
+        fbPutString(buf);
+    }
+}
+
+void ahci_term_drawoverlay_main_host_cap()
+{
+    fbMoveCursor(0, 0);
+    fbPutString(" +-----------------------+                                                      ");
+    fbPutString(" | Host Cap =            |                                                      ");
+    fbPutString(" +-----------------------+                                                      ");
+    fbPutString("  31   (S64A) Sup 64bit Addr        =       06   (EMS) Encl Manage Sup  =       ");
+    fbPutString("  30   (SNCQ) Sup Native Cmd Que    =       05   (SXS) Sup Extern SATA  =       ");
+    fbPutString("  29  (SSNTF) Sup SNotif Reg        =      00:04 (NP)  NB Ports         =       ");
+    fbPutString("  28   (SMPS) Sup Mech Pres Swch    =                                           ");
+    fbPutString("  27   (SSS)  Sup Stagger Spinup    =                                           ");
+    fbPutString("  26   (SALP) Sup Aggr Link PW Man  =                                           ");
+    fbPutString("  25   (SAL)  Sup Activity LED      =                                           ");
+    fbPutString("  24   (SCLO) Sup Cmd List Override =                                           ");
+    fbPutString(" 23:20 (ISS)  if Speed Support      =                                           ");
+    fbPutString("  18   (SAM)  Sup AHCI only         =                                           ");
+    fbPutString("  17   (SPM)  Sup Port Multiplier   =                                           ");
+    fbPutString("  16   (FBSS) FIS switch Supp       =                                           ");
+    fbPutString("  15   (PMD)  PIO Mult DRQ blok     =                                           ");
+    fbPutString("  14   (SSC)  Slumber State Capable =    CMD =                                  ");
+    fbPutString("  13   (PSC)  Partial State Capable =                                           ");
+    fbPutString(" 12:08 (NCS)  Nb Cmd Slot           =                                           ");
+    fbPutString("  07   (CCCS) Cmd Cmpl Coales       =                                           ");
+}
+
+BOOL ahci_term_check_main_cap_redraw()
+{
+    struct ahci_host_regs current_host_regs;
+    int res = driver_ahci_read_GHC_regs(&current_host_regs);
+    if(FAILED(res))
+        return FALSE;
+
+    if(current_host_regs.host_capabilities != previous_cap_reg_value)
+    {
+        previous_cap_reg_value = current_host_regs.host_capabilities;
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+void ahci_term_draw_values_main_host_cap(uint32_t reg)
+{
+    char buf[256];
+
+    fbMoveCursor(14, 2);
+    sprintf(buf, "%d", reg);
+    fbPutString(buf);
+
+    fbMoveCursor(38, 4);
+    sprintf(buf, "%b", AHCI_CAP_S64A(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 5);
+    sprintf(buf, "%b", AHCI_CAP_SNCQ(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 6);
+    sprintf(buf, "%b", AHCI_CAP_SSNTF(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 7);
+    sprintf(buf, "%b", AHCI_CAP_SMPS(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 8);
+    sprintf(buf, "%b", AHCI_CAP_SSS(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 9);
+    sprintf(buf, "%b", AHCI_CAP_SALP(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 10);
+    sprintf(buf, "%b", AHCI_CAP_SAL(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 11);
+    sprintf(buf, "%b", AHCI_CAP_SCLO(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 12);
+    sprintf(buf, "%d", AHCI_CAP_ISS(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 13);
+    sprintf(buf, "%b", AHCI_CAP_SAM(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 14);
+    sprintf(buf, "%b", AHCI_CAP_SPM(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 15);
+    sprintf(buf, "%b", AHCI_CAP_FBSS(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 16);
+    sprintf(buf, "%b", AHCI_CAP_PMD(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 17);
+    sprintf(buf, "%b", AHCI_CAP_SSC(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 18);
+    sprintf(buf, "%b", AHCI_CAP_PSC(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 19);
+    sprintf(buf, "%d", AHCI_CAP_NCS(reg) >> 8);
+    fbPutString(buf);
+
+    fbMoveCursor(38, 20);
+    sprintf(buf, "%b", AHCI_CAP_CCCS(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(74, 4);
+    sprintf(buf, "%b", AHCI_CAP_EMS(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(74, 5);
+    sprintf(buf, "%b", AHCI_CAP_SXS(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(74, 6);
+    sprintf(buf, "%d", AHCI_CAP_NP(reg));
+    fbPutString(buf);
 }
 
 void ahci_term_drawoverlay_port()
@@ -477,42 +684,6 @@ void ahci_term_update_main()
 void ahci_term_update_port()
 {
 
-}
-
-BOOL ahci_term_check_main_redraw()
-{
-    BOOL should_redraw = FALSE;
-
-    // Read the host regs
-    struct ahci_host_regs current_host_regs;
-    int res = driver_ahci_read_GHC_regs(&current_host_regs);
-    if(FAILED(res))
-        return FALSE;
-
-    if(mcmp((uint8_t*)&current_host_regs, (uint8_t*)previous_host, sizeof(struct ahci_host_regs)) != 0)
-    {
-        memcpy(previous_host, &current_host_regs, sizeof(struct ahci_host_regs));
-
-        should_redraw = TRUE;
-    }
-
-    struct ahci_port_regs current_port_regs[MAIN_SHOWPORTS_NB];
-    for(int i = 0; i < MAIN_SHOWPORTS_NB; i++)
-    {
-        res = driver_ahci_read_port_regs(i, &current_port_regs[i]);
-
-        if(FAILED(res))
-            return FALSE;
-
-        if(mcmp((uint8_t*)&current_port_regs[i], (uint8_t*)main_previous_ports[i], sizeof(struct ahci_port_regs)) != 0)
-        {
-            memcpy(main_previous_ports[i], &current_port_regs[i], sizeof(struct ahci_port_regs));
-
-            should_redraw = TRUE;
-        }
-    }
-
-    return should_redraw;
 }
 
 BOOL ahci_term_check_port_redraw()

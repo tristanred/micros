@@ -12,6 +12,7 @@
 enum ahci_terminal_states
 {
     MAIN_SCREEN,
+    MAIN_SCREEN_CAP,
     PORT_SCREEN,
     COMMAND_SCREEN
 };
@@ -33,6 +34,9 @@ struct ahci_port_regs* previous_ports;
 struct ahci_host_regs* previous_host;
 struct ahci_port_regs* main_previous_ports[MAIN_SHOWPORTS_NB];
 
+// Main Screen CAP variables
+uint32_t previous_cap_reg_value;
+
 // Port Screen variables
 
 // int displayWidth;
@@ -50,15 +54,25 @@ void ahci_term_kbhook(keyevent_info* info);
 void ahci_term_parse_cmd(const char* cmdline);
 
 void ahci_term_drawoverlay();
+
 void ahci_term_drawoverlay_main();
+BOOL ahci_term_check_main_redraw();
+void ahci_term_draw_values_main(struct ahci_host_regs* regs);
+
+void ahci_term_drawoverlay_main_host_cap();
+BOOL ahci_term_check_main_cap_redraw();
+void ahci_term_draw_values_main_host_cap(uint32_t reg);
+
 void ahci_term_drawoverlay_port();
+BOOL ahci_term_check_port_redraw();
+void ahci_term_draw_values_port(struct ahci_port_regs* regs);
+
 void ahci_term_drawoverlay_command();
+//void ahci_term_draw_values_command();
 
 void ahci_term_update_main();
 void ahci_term_update_port();
 
-BOOL ahci_term_check_main_redraw();
-BOOL ahci_term_check_port_redraw();
 
 void ahci_term_log_main(struct ahci_host_regs* regs);
 void ahci_term_log_port(struct ahci_port_regs* regs);
