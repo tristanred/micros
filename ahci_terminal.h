@@ -26,8 +26,14 @@ char commandLineEntry[CMD_MAXLEN];
 BOOL command_latch;
 BOOL cmdredraw;
 
-struct ahci_host_regs* previous_host;
 struct ahci_port_regs* previous_ports;
+
+// Main Screen variables
+#define MAIN_SHOWPORTS_NB 6
+struct ahci_host_regs* previous_host;
+struct ahci_port_regs* main_previous_ports[MAIN_SHOWPORTS_NB];
+
+// Port Screen variables
 
 // int displayWidth;
 // int displayHeight;
@@ -47,5 +53,14 @@ void ahci_term_drawoverlay();
 void ahci_term_drawoverlay_main();
 void ahci_term_drawoverlay_port();
 void ahci_term_drawoverlay_command();
+
+void ahci_term_update_main();
+void ahci_term_update_port();
+
+BOOL ahci_term_check_main_redraw();
+BOOL ahci_term_check_port_redraw();
+
+void ahci_term_log_main(struct ahci_host_regs* regs);
+void ahci_term_log_port(struct ahci_port_regs* regs);
 
 #endif

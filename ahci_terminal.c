@@ -7,15 +7,15 @@
 void init_ahci_term()
 {
     // display = (char**)kmalloc(FBROWS * sizeof(char*));
-    
+
     // for(int i = 0; i < FBROWS; i++)
     // {
     //     display[i] = (char*)kmalloc(FBCOLS * sizeof(char));
     // }
-    
+
     // displayWidth = FBCOLS;
     // displayHeight = FBROWS;
-    
+
     // for(int i = 0; i < displayHeight; i++)
     // {
     //     for(int k = 0; k < displayWidth; k++)
@@ -23,22 +23,27 @@ void init_ahci_term()
     //         display[i][k] = ' ';
     //     }
     // }
-    
-    
+
+
     RegisterKeyboardHook(&ahci_term_kbhook);
-    
+
     current_state = MAIN_SCREEN;
     view_port_nb = 0;
     view_command_nb = 0;
-    
+
     commandLineIndex = 0;
     command_latch = FALSE;
     memset(commandLineEntry, ' ', CMD_MAXLEN);
     commandLineEntry[CMD_MAXLEN] = '\0';
     cmdredraw = FALSE;
-    
+
     previous_host = kmalloc(sizeof(struct ahci_host_regs));
     previous_ports = kmalloc(sizeof(struct ahci_port_regs));
+
+    for(int i = 0; i < MAIN_SHOWPORTS_NB; i++)
+    {
+        main_previous_ports[i] = kmalloc(sizeof(struct ahci_port_regs));
+    }
 }
 
 void ahci_term_update()
@@ -47,92 +52,93 @@ void ahci_term_update()
     if(command_latch)
     {
         command_latch = FALSE;
-        
+
         ahci_term_parse_cmd(commandLineEntry);
-        
+
         memset(commandLineEntry, ' ', CMD_MAXLEN);
         commandLineIndex = 0;
     }
-    
+
     // Draw stuff
     //ahci_term_drawoverlay();
-    
+
     // Get the host regs (11 dwords)
     struct ahci_host_regs host;
     int res = driver_ahci_read_GHC_regs(&host);
     if(FAILED(res))
         goto error;
-    
+
     char buf[256];
 
     if(current_state == MAIN_SCREEN)
     {
         // Check if the information changed before drawing on fb
-        if(mcmp((uint8_t*)&host, (uint8_t*)previous_host, sizeof(struct ahci_host_regs) != 0))
+        if(ahci_term_check_main_redraw() == TRUE)
         {
-            memcpy(previous_host, &host, sizeof(struct ahci_host_regs));
+            //Debugger();
+            //memcpy(previous_host, &host, sizeof(struct ahci_host_regs));
 
             fbMoveCursor(17, 4);
             sprintf(buf, "%d", host.global_host_control);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 5);
             sprintf(buf, "%d", host.global_host_control);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 6);
             sprintf(buf, "%d", host.interrupt_status);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 7);
             sprintf(buf, "%d", host.ports_implemented);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 8);
             sprintf(buf, "%d", host.version);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 9);
             sprintf(buf, "%d", host.command_completion_coalescing_control);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 10);
             sprintf(buf, "%d", host.command_completion_coalescing_ports);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 11);
             sprintf(buf, "%d", host.enclosure_management_location);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 12);
             sprintf(buf, "%d", host.enclosure_management_control);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 13);
             sprintf(buf, "%d", host.host_capabilities_extended);
             fbPutString(buf);
-            
+
             fbMoveCursor(17, 14);
             sprintf(buf, "%d", host.bios_handoff_control_status);
             fbPutString(buf);
-            
+
             uint8_t ports[32] = { 0 };
             uint8_t portNb = 0;
             res = driver_ahci_get_disk_ports(ports, &portNb);
             if(FAILED(res))
                 goto error;
-            
+
             for(uint8_t i = 0; i < portNb; i++)
             {
                 struct ahci_port_regs portregs;
                 res = driver_ahci_read_port_regs(ports[i], &portregs);
                 if(FAILED(res))
                     goto error;
-                
+
                 fbMoveCursor(35, 5 + i);
                 sprintf(buf, "%d", portregs.command_and_status);
                 fbPutString(buf);
-                
+
                 fbMoveCursor(47, 5 + i);
                 sprintf(buf, "%d", portregs.interrupt_status);
                 fbPutString(buf);
@@ -140,7 +146,7 @@ void ahci_term_update()
                 fbMoveCursor(59, 5 + i);
                 sprintf(buf, "%d", portregs.serial_ata_status);
                 fbPutString(buf);
-                
+
                 fbMoveCursor(72, 5 + i);
                 if(portregs.signature == 0x00000101)
                 {
@@ -162,17 +168,16 @@ void ahci_term_update()
                 {
                     sprintf(buf, "%s", "UKNOWN");
                 }
-                
+
                 fbPutString(buf);
             }
         }
-        
+
         if(cmdredraw == TRUE)
         {
             fbMoveCursor(0, 20);
             fbPutString(commandLineEntry);
         }
-        
     }
     else if(current_state == PORT_SCREEN)
     {
@@ -180,11 +185,11 @@ void ahci_term_update()
         res = driver_ahci_read_port_regs(view_port_nb, &pr);
         if(FAILED(res))
             goto error;
-        
+
         if(mcmp((uint8_t*)&pr, (uint8_t*)previous_ports, sizeof(struct ahci_port_regs)) != 0)
         {
             memcpy(previous_ports, &pr, sizeof(struct ahci_port_regs));
-            
+
             fbMoveCursor(9, 4);
             sprintf(buf, "%d", pr.command_list_base_addr_lower);
             fbPutString(buf);
@@ -251,7 +256,7 @@ void ahci_term_update()
 
             // Get the list of active commands
         }
-        
+
         if(cmdredraw == TRUE)
         {
             fbMoveCursor(21, 20);
@@ -260,9 +265,9 @@ void ahci_term_update()
     }
     else if(current_state == COMMAND_SCREEN)
     {
-        
+
     }
-    
+
     // Get the enabled ports regs 20 dwords
     return;
 error:
@@ -272,7 +277,7 @@ error:
 void ahci_term_task()
 {
     ahci_term_drawoverlay();
-    
+
     while(TRUE)
     {
         ahci_term_update();
@@ -285,7 +290,7 @@ void ahci_term_kbhook(keyevent_info* info)
     if(info->key_state == KEYDOWN)
     {
         cmdredraw = TRUE;
-        
+
         if(IsPrintableCharacter(info->key) == TRUE)
         {
             commandLineEntry[commandLineIndex] = GetAscii(info->key);
@@ -317,18 +322,19 @@ void ahci_term_parse_cmd(const char* cmdline)
             {
                 char portNumberStr[3];
                 strncpy(portNumberStr, cmdline+1, 2);
-                
+
                 int portNumber = (uint8_t)atoi(portNumberStr);
-                
+
                 view_port_nb = portNumber;
                 current_state = PORT_SCREEN;
                 ahci_term_drawoverlay();
-                
+
                 // To make sure it changes and causes a redraw
                 memset(previous_ports, 0, sizeof(struct ahci_port_regs));
             }
             else if(cmdline[0] == 'r')
             {
+                Debugger();
                 int res = driver_ahci_reset_controller();
                 if(SUCCESS(res))
                 {
@@ -339,7 +345,7 @@ void ahci_term_parse_cmd(const char* cmdline)
                     kWriteLog("HBA Reset failed : %d", res);
                 }
             }
-            
+
             break;
         }
         case PORT_SCREEN:
@@ -368,14 +374,15 @@ void ahci_term_parse_cmd(const char* cmdline)
                 uint8_t mybuf[4096];
                 memset(mybuf, 1, 4096);
                 int res = driver_ahci_read_data(view_port_nb, 0, 0, 4096, mybuf);
-                
+
                 struct ata_identify_device ident;
                 memset(&ident, 0, sizeof(struct ata_identify_device));
                 res = driver_ahci_identify(view_port_nb, &ident);
-                
-                int i = 0;
+
+                if(res == FALSE)
+                    kWriteLog("Failed to call IDENTIFY");
             }
-            
+
             break;
         }
         case COMMAND_SCREEN:
@@ -459,6 +466,100 @@ void ahci_term_drawoverlay_port()
 
 void ahci_term_drawoverlay_command()
 {
-    
+
 }
 
+void ahci_term_update_main()
+{
+
+}
+
+void ahci_term_update_port()
+{
+
+}
+
+BOOL ahci_term_check_main_redraw()
+{
+    BOOL should_redraw = FALSE;
+
+    // Read the host regs
+    struct ahci_host_regs current_host_regs;
+    int res = driver_ahci_read_GHC_regs(&current_host_regs);
+    if(FAILED(res))
+        return FALSE;
+
+    if(mcmp((uint8_t*)&current_host_regs, (uint8_t*)previous_host, sizeof(struct ahci_host_regs)) != 0)
+    {
+        memcpy(previous_host, &current_host_regs, sizeof(struct ahci_host_regs));
+
+        should_redraw = TRUE;
+    }
+
+    struct ahci_port_regs current_port_regs[MAIN_SHOWPORTS_NB];
+    for(int i = 0; i < MAIN_SHOWPORTS_NB; i++)
+    {
+        res = driver_ahci_read_port_regs(i, &current_port_regs[i]);
+
+        if(FAILED(res))
+            return FALSE;
+
+        if(mcmp((uint8_t*)&current_port_regs[i], (uint8_t*)main_previous_ports[i], sizeof(struct ahci_port_regs)) != 0)
+        {
+            memcpy(main_previous_ports[i], &current_port_regs[i], sizeof(struct ahci_port_regs));
+
+            should_redraw = TRUE;
+        }
+    }
+
+    return should_redraw;
+}
+
+BOOL ahci_term_check_port_redraw()
+{
+    return FALSE;
+}
+
+void ahci_term_log_main(struct ahci_host_regs* regs)
+{
+    kWriteLog("AHCI HOST REGS :");
+    kWriteLog("host_capabilities = %d", regs->host_capabilities);
+    kWriteLog("global_host_control = %d", regs->global_host_control);
+    kWriteLog("interrupt_status = %d", regs->interrupt_status);
+    kWriteLog("ports_implemented = %d", regs->ports_implemented);
+    kWriteLog("version = %d", regs->version);
+    kWriteLog("command_completion_coalescing_control = %d", regs->command_completion_coalescing_control);
+    kWriteLog("command_completion_coalescing_ports = %d", regs->command_completion_coalescing_ports);
+    kWriteLog("enclosure_management_location = %d", regs->enclosure_management_location);
+    kWriteLog("enclosure_management_control = %d", regs->enclosure_management_control);
+    kWriteLog("host_capabilities_extended = %d", regs->host_capabilities_extended);
+    kWriteLog("bios_handoff_control_status = %d", regs->bios_handoff_control_status);
+    kWriteLog("\n\n");
+}
+
+void ahci_term_log_port(struct ahci_port_regs* regs)
+{
+    kWriteLog("AHCI PORT REGS :");
+    kWriteLog("command_list_base_addr_lower = %d", regs->command_list_base_addr_lower);
+    kWriteLog("command_list_base_addr_upper = %d", regs->command_list_base_addr_upper);
+    kWriteLog("fis_base_addr_lower = %d", regs->fis_base_addr_lower);
+    kWriteLog("fis_base_addr_upper = %d", regs->fis_base_addr_upper);
+    kWriteLog("interrupt_status = %d", regs->interrupt_status);
+    kWriteLog("interrupt_enable = %d", regs->interrupt_enable);
+    kWriteLog("command_and_status = %d", regs->command_and_status);
+    kWriteLog("reserved1 = %d", regs->reserved1);
+    kWriteLog("task_file_data = %d", regs->task_file_data);
+    kWriteLog("signature = %d", regs->signature);
+    kWriteLog("serial_ata_status = %d", regs->serial_ata_status);
+    kWriteLog("serial_ata_control = %d", regs->serial_ata_control);
+    kWriteLog("serial_ata_error = %d", regs->serial_ata_error);
+    kWriteLog("serial_ata_active = %d", regs->serial_ata_active);
+    kWriteLog("serial_command_issue = %d", regs->serial_command_issue);
+    kWriteLog("serial_ata_notification = %d", regs->serial_ata_notification);
+    kWriteLog("fis_based_switching_control = %d", regs->fis_based_switching_control);
+    kWriteLog("device_sleep = %d", regs->device_sleep);
+    kWriteLog("reserved2 = %d", regs->reserved2);
+    kWriteLog("vendor_specific = %d", regs->vendor_specific);
+
+    kWriteLog("\n\n");
+}
