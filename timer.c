@@ -12,14 +12,14 @@ uint32_t tick = 0;
 static void timer_callback(registers_t regs)
 {
     mscounter++;
-    
+
     ks_update_task();
-    
+
     tick++;
     if(tick >= CPU_WAKEUP_FREQ)
     {
         tick = 0;
-        
+
         if(cpu_is_idle == TRUE)
         {
             regs.eip++;
@@ -32,7 +32,7 @@ void init_timer(uint32_t frequency)
 {
    // Firstly, register our timer callback.
    register_interrupt_handler(IRQ0, &timer_callback);
-   
+
    register_interrupt_handler(IRQ1, &keyboard_interrupt_handler);
 
    timer_freq = frequency;
@@ -42,7 +42,7 @@ void init_timer(uint32_t frequency)
    // that the divisor must be small enough to fit into 16-bits.
    uint32_t divisor = 1193180 / frequency;
    timer_div = divisor;
-   
+
    // Send the command byte.
    outb(0x43, 0x36);
 
@@ -58,9 +58,10 @@ void init_timer(uint32_t frequency)
 void sleep(uint32_t t)
 {
     uint32_t target = mscounter + t;
-    
+
     while(mscounter <= target)
     {
+        cpu_idle();
     }
 }
 

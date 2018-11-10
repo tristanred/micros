@@ -66,6 +66,8 @@ int driver_ahci_setup_memory(uint8_t portNb)
 
     struct ahci_port_regs* regs;
     int res = driver_ahci_get_port_regs(portNb, &regs);
+    if(FAILED(res))
+        return res;
 
     // Stop command engine
     regs->command_and_status &= ~0x0001;
@@ -114,6 +116,11 @@ uint8_t driver_ahci_get_default_port()
         {
             struct ahci_port_regs portInfo;
             int res = driver_ahci_read_port_regs(i, &portInfo);
+            if(FAILED(res))
+            {
+                kWriteLog("Unable to get the registers of port %d : %d", i, res);
+                continue;
+            }
 
             if(portInfo.signature == AHCI_SIG_ATA)
             {
@@ -365,8 +372,8 @@ int driver_ahci_reset_port(uint8_t portNb)
 
 int driver_ahci_reset_all_ports()
 {
-    uint8_t portCount;
-    uint8_t* enabledPorts;
+    uint8_t portCount = 0;
+    uint8_t* enabledPorts = NULL;
     int res = driver_ahci_get_disk_ports(enabledPorts, &portCount);
     if(SUCCESS(res))
     {
@@ -476,7 +483,7 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
         {
             return E_IO_TIMEOUT;
         }
-        
+
         if((regs->serial_command_issue & (1 << port)) == 0)
         {
             break; // Command has cleared !
@@ -487,9 +494,9 @@ int driver_ahci_read_data(uint8_t port, uint32_t addr_low, uint32_t addr_high, u
             kWriteLog("IO Error");
             return E_IO_ERROR;
         }
-        
+
         sleep(1);
-        
+
         waitloop++;
     }
 
@@ -587,7 +594,7 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
         {
             return E_IO_TIMEOUT;
         }
-        
+
         if((regs->serial_command_issue & (1 << port)) == 0)
         {
             break; // Command has cleared !
@@ -598,9 +605,9 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
             kWriteLog("IO Error");
             return E_IO_ERROR;
         }
-        
+
         sleep(1);
-        
+
         waitloop++;
     }
 
@@ -610,7 +617,7 @@ int driver_ahci_identify(uint8_t port, struct ata_identify_device* data)
 int driver_ahci_make_command_header(uint8_t portNb, uint8_t cmdslot, struct ahci_port_command_header** cmd)
 {
     struct ahci_port_regs pregs;
-    int res = driver_ahci_read_port_regs(portNb, &pregs);
+    driver_ahci_read_port_regs(portNb, &pregs);
     *cmd = (struct ahci_port_command_header*)pregs.command_list_base_addr_lower;
     *cmd += cmdslot;
 
