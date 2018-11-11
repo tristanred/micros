@@ -60,15 +60,15 @@ void ahci_term_parse_cmd(const char* cmdline);
 void ahci_term_drawoverlay();
 
 void ahci_term_drawoverlay_main();
-BOOL ahci_term_check_main_redraw();
+BOOL ahci_term_check_main_redraw(struct ahci_host_regs* regs);
 void ahci_term_draw_values_main(struct ahci_host_regs* regs);
 
 void ahci_term_drawoverlay_main_host_cap();
-BOOL ahci_term_check_main_cap_redraw();
+BOOL ahci_term_check_main_cap_redraw(uint32_t reg);
 void ahci_term_draw_values_main_host_cap(uint32_t reg);
 
 void ahci_term_drawoverlay_main_host_ghc();
-BOOL ahci_term_check_main_ghc_redraw();
+BOOL ahci_term_check_main_ghc_redraw(uint32_t reg);
 void ahci_term_draw_values_main_host_ghc(uint32_t reg);
 
 void ahci_term_drawoverlay_port();

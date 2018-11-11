@@ -73,7 +73,7 @@ void ahci_term_update()
     if(current_state == MAIN_SCREEN)
     {
         // Check if the information changed before drawing on fb
-        if(ahci_term_check_main_redraw() == TRUE)
+        if(ahci_term_check_main_redraw(&host) == TRUE)
         {
             ahci_term_draw_values_main(&host);
         }
@@ -86,7 +86,7 @@ void ahci_term_update()
     }
     else if(current_state == MAIN_SCREEN_CAP)
     {
-        if(ahci_term_check_main_cap_redraw() == TRUE)
+        if(ahci_term_check_main_cap_redraw(host.host_capabilities) == TRUE)
         {
             ahci_term_draw_values_main_host_cap(host.host_capabilities);
         }
@@ -99,7 +99,7 @@ void ahci_term_update()
     }
     else if(current_state == MAIN_SCREEN_GHC)
     {
-        if(ahci_term_check_main_ghc_redraw() == TRUE)
+        if(ahci_term_check_main_ghc_redraw(host.global_host_control) == TRUE)
         {
             ahci_term_draw_values_main_host_ghc(host.global_host_control);
         }
@@ -406,23 +406,18 @@ void ahci_term_drawoverlay_main()
     fbPutString("   (4) Ports Impl   (8) EM  Location (p0-9) Goto Port                           ");
 }
 
-BOOL ahci_term_check_main_redraw()
+BOOL ahci_term_check_main_redraw(struct ahci_host_regs* regs)
 {
     BOOL should_redraw = FALSE;
 
-    // Read the host regs
-    struct ahci_host_regs current_host_regs;
-    int res = driver_ahci_read_GHC_regs(&current_host_regs);
-    if(FAILED(res))
-        return FALSE;
-
-    if(mcmp((uint8_t*)&current_host_regs, (uint8_t*)previous_host, sizeof(struct ahci_host_regs)) != 0)
+    if(mcmp((uint8_t*)regs, (uint8_t*)previous_host, sizeof(struct ahci_host_regs)) != 0)
     {
-        memcpy(previous_host, &current_host_regs, sizeof(struct ahci_host_regs));
+        memcpy(previous_host, regs, sizeof(struct ahci_host_regs));
 
         should_redraw = TRUE;
     }
 
+    int res = 0;
     struct ahci_port_regs current_port_regs[MAIN_SHOWPORTS_NB];
     for(int i = 0; i < MAIN_SHOWPORTS_NB; i++)
     {
@@ -566,16 +561,11 @@ void ahci_term_drawoverlay_main_host_cap()
     fbPutString("  07   (CCCS) Cmd Cmpl Coales       =                                           ");
 }
 
-BOOL ahci_term_check_main_cap_redraw()
+BOOL ahci_term_check_main_cap_redraw(uint32_t reg)
 {
-    struct ahci_host_regs current_host_regs;
-    int res = driver_ahci_read_GHC_regs(&current_host_regs);
-    if(FAILED(res))
-        return FALSE;
-
-    if(current_host_regs.host_capabilities != previous_cap_reg_value)
+    if(reg != previous_cap_reg_value)
     {
-        previous_cap_reg_value = current_host_regs.host_capabilities;
+        previous_cap_reg_value = reg;
 
         return TRUE;
     }
@@ -697,16 +687,11 @@ void ahci_term_drawoverlay_main_host_ghc()
     fbPutString("                                                                                ");
 }
 
-BOOL ahci_term_check_main_ghc_redraw()
+BOOL ahci_term_check_main_ghc_redraw(uint32_t reg)
 {
-    struct ahci_host_regs current_host_regs;
-    int res = driver_ahci_read_GHC_regs(&current_host_regs);
-    if(FAILED(res))
-        return FALSE;
-
-    if(current_host_regs.global_host_control != previous_ghc_reg_value)
+    if(reg != previous_ghc_reg_value)
     {
-        previous_cap_reg_value = current_host_regs.global_host_control;
+        previous_cap_reg_value = reg;
 
         return TRUE;
     }
