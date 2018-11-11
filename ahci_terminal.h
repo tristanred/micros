@@ -14,6 +14,7 @@ enum ahci_terminal_states
     MAIN_SCREEN,
     MAIN_SCREEN_CAP,
     MAIN_SCREEN_GHC,
+    MAIN_SCREEN_ISR,
     PORT_SCREEN,
     COMMAND_SCREEN
 };
@@ -41,6 +42,9 @@ uint32_t previous_cap_reg_value;
 // Main Screen GHC variables
 uint32_t previous_ghc_reg_value;
 
+// Main Screen ISR variables
+uint32_t previous_isr_values;
+
 // Port Screen variables
 
 // int displayWidth;
@@ -59,17 +63,24 @@ void ahci_term_parse_cmd(const char* cmdline);
 
 void ahci_term_drawoverlay();
 
+// Main Overlay with HBA + 6 ports informations
 void ahci_term_drawoverlay_main();
 BOOL ahci_term_check_main_redraw(struct ahci_host_regs* regs);
 void ahci_term_draw_values_main(struct ahci_host_regs* regs);
 
+// Host Capabilities Register
 void ahci_term_drawoverlay_main_host_cap();
 BOOL ahci_term_check_main_cap_redraw(uint32_t reg);
 void ahci_term_draw_values_main_host_cap(uint32_t reg);
 
+// Global Host Controller Register
 void ahci_term_drawoverlay_main_host_ghc();
 BOOL ahci_term_check_main_ghc_redraw(uint32_t reg);
 void ahci_term_draw_values_main_host_ghc(uint32_t reg);
+
+void ahci_term_drawoverlay_main_host_isr();
+BOOL ahci_term_check_main_isr_redraw(uint32_t reg);
+void ahci_term_draw_values_main_host_isr(uint32_t reg);
 
 void ahci_term_drawoverlay_port();
 BOOL ahci_term_check_port_redraw();

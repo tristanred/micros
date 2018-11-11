@@ -110,6 +110,19 @@ void ahci_term_update()
             fbPutString(commandLineEntry);
         }
     }
+    else if(current_state == MAIN_SCREEN_ISR)
+    {
+        if(ahci_term_check_main_isr_redraw(host.interrupt_status) == TRUE)
+        {
+            ahci_term_draw_values_main_host_isr(host.interrupt_status);
+        }
+
+        if(cmdredraw == TRUE)
+        {
+            fbMoveCursor(42, 16);
+            fbPutString(commandLineEntry);
+        }
+    }
     else if(current_state == PORT_SCREEN)
     {
         struct ahci_port_regs pr;
@@ -290,11 +303,20 @@ void ahci_term_parse_cmd(const char* cmdline)
                 current_state = MAIN_SCREEN_GHC;
                 ahci_term_drawoverlay();
             }
+            else if(cmdline[0] == '3')
+            {
+                current_state = MAIN_SCREEN_ISR;
+                ahci_term_drawoverlay();
+
+                // Temp hack to force refresh
+                previous_isr_values = (uint32_t)-1;
+            }
 
             break;
         }
         case MAIN_SCREEN_CAP:
         case MAIN_SCREEN_GHC:
+        case MAIN_SCREEN_ISR:
         {
             if(cmdline[0] == 'h')
             {
@@ -366,6 +388,11 @@ void ahci_term_drawoverlay()
         case MAIN_SCREEN_GHC:
         {
             ahci_term_drawoverlay_main_host_ghc();
+            break;
+        }
+        case MAIN_SCREEN_ISR:
+        {
+            ahci_term_drawoverlay_main_host_isr();
             break;
         }
         case PORT_SCREEN:
@@ -721,6 +748,214 @@ void ahci_term_draw_values_main_host_ghc(uint32_t reg)
 
     fbMoveCursor(38, 7);
     sprintf(buf, "%b", AHCI_GHC_HR(reg));
+    fbPutString(buf);
+}
+
+void ahci_term_drawoverlay_main_host_isr()
+{
+    fbMoveCursor(0, 0);
+    fbPutString(" +-----------------------+                                                      ");
+    fbPutString(" | IR Pend  = 4294967295 |                                                      ");
+    fbPutString(" +-----------------------+                                                      ");
+    fbPutString(" 0 =        9  =        18 =        27 =                                        ");
+    fbPutString("                                                                                ");
+    fbPutString(" 1 =        10 =        19 =        28 =                                        ");
+    fbPutString("                                                                                ");
+    fbPutString(" 2 =        11 =        20 =        29 =                                        ");
+    fbPutString("                                                                                ");
+    fbPutString(" 3 =        12 =        21 =        30 =                                        ");
+    fbPutString("                                                                                ");
+    fbPutString(" 4 =        13 =        22 =        31 =                                        ");
+    fbPutString("                                                                                ");
+    fbPutString(" 5 =        14 =        23 =                                                    ");
+    fbPutString("                                                                                ");
+    fbPutString(" 6 =        15 =        24 =        CMD =                                       ");
+    fbPutString("                                                                                ");
+    fbPutString(" 7 =        16 =        25 =                                                    ");
+    fbPutString("                                                                                ");
+    fbPutString(" 8 =        17 =        26 =                                                    ");
+}
+
+BOOL ahci_term_check_main_isr_redraw(uint32_t reg)
+{
+    if(reg != previous_isr_values)
+    {
+        previous_isr_values = reg;
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+void ahci_term_draw_values_main_host_isr(uint32_t reg)
+{
+    Debugger();
+
+    char buf[256];
+
+    fbMoveCursor(14, 2);
+    sprintf(buf, "%d", reg);
+    fbPutString(buf);
+
+    // Port 0
+    fbMoveCursor(5, 4);
+    sprintf(buf, "%b", (reg & 1<<0));
+    fbPutString(buf);
+
+    // Port 1
+    fbMoveCursor(5, 6);
+    sprintf(buf, "%b", (reg & 1<<1));
+    fbPutString(buf);
+
+    // Port 2
+    fbMoveCursor(5, 8);
+    sprintf(buf, "%b", (reg & 1<<2));
+    fbPutString(buf);
+
+    // Port 3
+    fbMoveCursor(5, 10);
+    sprintf(buf, "%b", (reg & 1<<3));
+    fbPutString(buf);
+
+    // Port 4
+    fbMoveCursor(5, 12);
+    sprintf(buf, "%b", (reg & 1<<4));
+    fbPutString(buf);
+
+    // Port 5
+    fbMoveCursor(5, 14);
+    sprintf(buf, "%b", (reg & 1<<5));
+    fbPutString(buf);
+
+    // Port 6
+    fbMoveCursor(5, 16);
+    sprintf(buf, "%b", (reg & 1<<6));
+    fbPutString(buf);
+
+    // Port 7
+    fbMoveCursor(5, 18);
+    sprintf(buf, "%b", (reg & 1<<7));
+    fbPutString(buf);
+
+    // Port 8
+    fbMoveCursor(5, 20);
+    sprintf(buf, "%b", (reg & 1<<8));
+    fbPutString(buf);
+
+    // Port 9
+    fbMoveCursor(17, 4);
+    sprintf(buf, "%b", (reg & 1<<9));
+    fbPutString(buf);
+
+    // Port 10
+    fbMoveCursor(17, 6);
+    sprintf(buf, "%b", (reg & 1<<10));
+    fbPutString(buf);
+
+    // Port 11
+    fbMoveCursor(17, 8);
+    sprintf(buf, "%b", (reg & 1<<11));
+    fbPutString(buf);
+
+    // Port 12
+    fbMoveCursor(17, 10);
+    sprintf(buf, "%b", (reg & 1<<12));
+    fbPutString(buf);
+
+    // Port 13
+    fbMoveCursor(17, 12);
+    sprintf(buf, "%b", (reg & 1<<13));
+    fbPutString(buf);
+
+    // Port 14
+    fbMoveCursor(17, 14);
+    sprintf(buf, "%b", (reg & 1<<14));
+    fbPutString(buf);
+
+    // Port 15
+    fbMoveCursor(17, 16);
+    sprintf(buf, "%b", (reg & 1<<15));
+    fbPutString(buf);
+
+    // Port 16
+    fbMoveCursor(17, 18);
+    sprintf(buf, "%b", (reg & 1<<16));
+    fbPutString(buf);
+
+    // Port 17
+    fbMoveCursor(17, 20);
+    sprintf(buf, "%b", (reg & 1<<17));
+    fbPutString(buf);
+
+    // Port 18
+    fbMoveCursor(29, 4);
+    sprintf(buf, "%b", (reg & 1<<18));
+    fbPutString(buf);
+
+    // Port 19
+    fbMoveCursor(29, 6);
+    sprintf(buf, "%b", (reg & 1<<19));
+    fbPutString(buf);
+
+    // Port 20
+    fbMoveCursor(29, 8);
+    sprintf(buf, "%b", (reg & 1<<20));
+    fbPutString(buf);
+
+    // Port 21
+    fbMoveCursor(29, 10);
+    sprintf(buf, "%b", (reg & 1<<21));
+    fbPutString(buf);
+
+    // Port 22
+    fbMoveCursor(29, 12);
+    sprintf(buf, "%b", (reg & 1<<22));
+    fbPutString(buf);
+
+    // Port 23
+    fbMoveCursor(29, 14);
+    sprintf(buf, "%b", (reg & 1<<23));
+    fbPutString(buf);
+
+    // Port 24
+    fbMoveCursor(29, 16);
+    sprintf(buf, "%b", (reg & 1<<24));
+    fbPutString(buf);
+
+    // Port 25
+    fbMoveCursor(29, 18);
+    sprintf(buf, "%b", (reg & 1<<25));
+    fbPutString(buf);
+
+    // Port 26
+    fbMoveCursor(29, 20);
+    sprintf(buf, "%b", (reg & 1<<26));
+    fbPutString(buf);
+
+    // Port 27
+    fbMoveCursor(41, 4);
+    sprintf(buf, "%b", (reg & 1<<27));
+    fbPutString(buf);
+
+    // Port 28
+    fbMoveCursor(41, 6);
+    sprintf(buf, "%b", (reg & 1<<28));
+    fbPutString(buf);
+
+    // Port 29
+    fbMoveCursor(41, 8);
+    sprintf(buf, "%b", (reg & 1<<29));
+    fbPutString(buf);
+
+    // Port 30
+    fbMoveCursor(41, 10);
+    sprintf(buf, "%b", (reg & 1<<30));
+    fbPutString(buf);
+
+    // Port 31
+    fbMoveCursor(41, 12);
+    sprintf(buf, "%b", (reg & 1<<31));
     fbPutString(buf);
 }
 
