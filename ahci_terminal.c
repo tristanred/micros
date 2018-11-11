@@ -97,6 +97,19 @@ void ahci_term_update()
             fbPutString(commandLineEntry);
         }
     }
+    else if(current_state == MAIN_SCREEN_GHC)
+    {
+        if(ahci_term_check_main_ghc_redraw() == TRUE)
+        {
+            ahci_term_draw_values_main_host_ghc(host.global_host_control);
+        }
+
+        if(cmdredraw == TRUE)
+        {
+            fbMoveCursor(8, 11);
+            fbPutString(commandLineEntry);
+        }
+    }
     else if(current_state == PORT_SCREEN)
     {
         struct ahci_port_regs pr;
@@ -270,10 +283,18 @@ void ahci_term_parse_cmd(const char* cmdline)
                 current_state = MAIN_SCREEN_CAP;
                 ahci_term_drawoverlay();
             }
+            else if(cmdline[0] == '2')
+            {
+                Debugger();
+
+                current_state = MAIN_SCREEN_GHC;
+                ahci_term_drawoverlay();
+            }
 
             break;
         }
         case MAIN_SCREEN_CAP:
+        case MAIN_SCREEN_GHC:
         {
             if(cmdline[0] == 'h')
             {
@@ -340,6 +361,11 @@ void ahci_term_drawoverlay()
         case MAIN_SCREEN_CAP:
         {
             ahci_term_drawoverlay_main_host_cap();
+            break;
+        }
+        case MAIN_SCREEN_GHC:
+        {
+            ahci_term_drawoverlay_main_host_ghc();
             break;
         }
         case PORT_SCREEN:
@@ -643,6 +669,73 @@ void ahci_term_draw_values_main_host_cap(uint32_t reg)
 
     fbMoveCursor(74, 6);
     sprintf(buf, "%d", AHCI_CAP_NP(reg));
+    fbPutString(buf);
+}
+
+void ahci_term_drawoverlay_main_host_ghc()
+{
+    fbMoveCursor(0, 0);
+    fbPutString(" +-----------------------+                                                      ");
+    fbPutString(" | Host Ctl =            |                                                      ");
+    fbPutString(" +-----------------------+                                                      ");
+    fbPutString("  31   (AE)   AHCI Enable           =                                           ");
+    fbPutString("  02   (MRSM) MSI Revert Singl Msg  =                                           ");
+    fbPutString("  01   (IE)   Interrupt Enable      =                                           ");
+    fbPutString("  28   (HR)   HBA Reset             =                                           ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+    fbPutString("  CMD =                                                                         ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+    fbPutString("                                                                                ");
+}
+
+BOOL ahci_term_check_main_ghc_redraw()
+{
+    struct ahci_host_regs current_host_regs;
+    int res = driver_ahci_read_GHC_regs(&current_host_regs);
+    if(FAILED(res))
+        return FALSE;
+
+    if(current_host_regs.global_host_control != previous_ghc_reg_value)
+    {
+        previous_cap_reg_value = current_host_regs.global_host_control;
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+void ahci_term_draw_values_main_host_ghc(uint32_t reg)
+{
+    char buf[256];
+
+    fbMoveCursor(14, 2);
+    sprintf(buf, "%d", reg);
+    fbPutString(buf);
+
+    fbMoveCursor(38, 4);
+    sprintf(buf, "%b", AHCI_GHC_AE(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 5);
+    sprintf(buf, "%b", AHCI_GHC_MRSM(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 6);
+    sprintf(buf, "%b", AHCI_GHC_IE(reg));
+    fbPutString(buf);
+
+    fbMoveCursor(38, 7);
+    sprintf(buf, "%b", AHCI_GHC_HR(reg));
     fbPutString(buf);
 }
 

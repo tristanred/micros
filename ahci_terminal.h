@@ -13,6 +13,7 @@ enum ahci_terminal_states
 {
     MAIN_SCREEN,
     MAIN_SCREEN_CAP,
+    MAIN_SCREEN_GHC,
     PORT_SCREEN,
     COMMAND_SCREEN
 };
@@ -36,6 +37,9 @@ struct ahci_port_regs* main_previous_ports[MAIN_SHOWPORTS_NB];
 
 // Main Screen CAP variables
 uint32_t previous_cap_reg_value;
+
+// Main Screen GHC variables
+uint32_t previous_ghc_reg_value;
 
 // Port Screen variables
 
@@ -62,6 +66,10 @@ void ahci_term_draw_values_main(struct ahci_host_regs* regs);
 void ahci_term_drawoverlay_main_host_cap();
 BOOL ahci_term_check_main_cap_redraw();
 void ahci_term_draw_values_main_host_cap(uint32_t reg);
+
+void ahci_term_drawoverlay_main_host_ghc();
+BOOL ahci_term_check_main_ghc_redraw();
+void ahci_term_draw_values_main_host_ghc(uint32_t reg);
 
 void ahci_term_drawoverlay_port();
 BOOL ahci_term_check_port_redraw();
