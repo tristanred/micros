@@ -10,3 +10,4 @@ out/
 tools/build-*
 *.pro.user
 *.ui.autosave
+.DS_Store
